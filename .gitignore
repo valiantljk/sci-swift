@@ -99,3 +99,23 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+# other codes
+SciSwift.ipynb
+Swift_CPP_SDK/
+examples/Swift_CPP_SDK/
+examples/c2py_demo/
+examples/create_files.py
+examples/download.py
+examples/example.db
+examples/pickledb/
+examples/pythonInc.c
+examples/readme
+examples/sample.h
+examples/swift-client_c/
+examples/testdb
+examples/testdir/
+readme
+swift_cpp.tar
+swiftonfile/
+test.h5
