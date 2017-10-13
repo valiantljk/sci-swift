@@ -1,4 +1,4 @@
-# sci-swift
+# Sci-Swift
 Scientific Object Store based on Openstack Swift
 
 
