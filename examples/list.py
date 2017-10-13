@@ -14,10 +14,11 @@ if (len(argv)<2):
  print ("container name:")
  exit()
 container = argv[1]
-minimum_size = 1024
+minimum_size = -0.1
 with SwiftService() as swift:
     try:
         list_parts_gen = swift.list(container=container)
+	print (list_parts_gen)
         for page in list_parts_gen:
             if page["success"]:
                 for item in page["listing"]:
@@ -31,7 +32,7 @@ with SwiftService() as swift:
                             (i_name, i_size, i_etag)
                         )
             else:
-		#print page
+		print page
                 raise page["error"]
 
     except SwiftError as e:
