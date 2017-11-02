@@ -14,24 +14,24 @@ python upload.py
 ![scibox](https://user-images.githubusercontent.com/1396867/32252259-d83a685e-be51-11e7-8a2b-e5f30c1cf1ee.png)
 
 
-# Use SciSwift in Docker Container
+# SciSwift QuickStart
 
-Create a data only docker container
+**Step 1**. Create a data only docker container
  ```
   docker run -v /srv --name SWIFT_DATA busybox
 ```
-Create a openstack object store (with volume from the existing data container, binding host port 12345 with container port 8080)
+**Step 2**. Create a openstack object store (with volume from the existing data container, binding host port 12345 with container port 8080)
 ```
   docker run -d -p 12345:8080 --volumes-from SWIFT_DATA -t sciswift:py # might need 'docker login' first
 ```
 
-Start openstack swift
+**Step 3**. Start openstack swift
 ```
   docker ps # to get the containerID of the current running sciswift container 
   docker exec -it containerID bash # launch a shell for mornitoring purpose, i.e., you will see the openstack swift logs
   ./usr/local/bin/startmain.sh      # start the openstack swift server, i.e., launching account/object/proxy server process 
 ```
-Test openstack swift and sciswift
+**Step 4**. Test openstack swift and sciswift
 
    * Test connection to openstack swift from host
 ```
