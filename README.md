@@ -14,7 +14,8 @@ python upload.py
 ![scibox](https://user-images.githubusercontent.com/1396867/32252259-d83a685e-be51-11e7-8a2b-e5f30c1cf1ee.png)
 
 
-# SciSwift QuickStart (Step 1-3 building time ~ 2mins 35 sec)
+# SciSwift QuickStart 
+(Step 1-3 building time ~ 2mins 35 sec)
 
 **Step 1**. Create a data only docker container
  ```
