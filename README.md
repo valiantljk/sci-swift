@@ -52,7 +52,7 @@ python upload.py
 ```
    * Test with HDF5 Swift VOL, the real SciSwift feature 
 ```
-  cd /build/exahdf5/vol_plugins/test
+  cd /build/sci-swift/vol_plugins/test
   make
   ./sciswift 
 ```
