@@ -22,7 +22,7 @@ python upload.py
 ```
 **Step 2**. Create a openstack object store (with volume from the existing data container, binding host port 12345 with container port 8080)
 ```
-  docker run -d -p 12345:8080 --volumes-from SWIFT_DATA -t sciswift:py # might need 'docker login' first
+  docker run -d -p 12345:8080 --volumes-from SWIFT_DATA -t valiantljk/sciswift:v1 # need 'docker login' first
 ```
 
 **Step 3**. Start openstack swift
