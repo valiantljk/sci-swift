@@ -54,5 +54,5 @@ python upload.py
 ```
   cd /build/sci-swift/vol_plugins/test
   make
-  ./sciswift 
+  ./sciswift swift
 ```
