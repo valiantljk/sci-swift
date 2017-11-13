@@ -14,7 +14,8 @@ python upload.py
 ![scibox](https://user-images.githubusercontent.com/1396867/32252259-d83a685e-be51-11e7-8a2b-e5f30c1cf1ee.png)
 
 
-# SciSwift QuickStart
+# SciSwift QuickStart 
+(Step 1-3 building time ~ 2mins 35 sec)
 
 **Step 1**. Create a data only docker container
  ```
@@ -22,7 +23,7 @@ python upload.py
 ```
 **Step 2**. Create a openstack object store (with volume from the existing data container, binding host port 12345 with container port 8080)
 ```
-  docker run -d -p 12345:8080 --volumes-from SWIFT_DATA -t valiantljk/sciswift:v1 # need 'docker login' first
+  docker run -d -p 12345:8080 --volumes-from SWIFT_DATA -t valiantljk/sciswift:v3 # need 'docker login' first
 ```
 
 **Step 3**. Start openstack swift
@@ -51,7 +52,7 @@ python upload.py
 ```
    * Test with HDF5 Swift VOL, the real SciSwift feature 
 ```
-  cd /build/exahdf5/vol_plugins/test
+  cd /build/sci-swift/vol_plugins/test
   make
-  ./sciswift 
+  ./sciswift swift
 ```
