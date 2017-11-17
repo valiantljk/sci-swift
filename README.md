@@ -56,3 +56,31 @@ python upload.py
   make
   ./sciswift swift
 ```
+
+
+# Code Structure
+```
+.
+|-- LICENSE
+|-- README.md
+|-- examples
+|   |-- list.py
+|   |-- sourceme
+|   `-- upload.py
+|-- src
+|   |-- Makefile
+|   |-- __init__.py
+|   |-- swift.c
+|   |-- swift.h
+|   |-- swift.py
+|   |-- swift_vol.c
+|   `-- swift_vol.h
+`-- test
+    |-- Makefile
+    |-- __init__.py
+    |-- readme
+    |-- test.py
+    |-- test_swift.c
+    |-- test_swift.py
+    `-- test_swift_vol.c
+```
