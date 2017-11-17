@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include "hdf5.h"
-#include "swift_vol.h"
+#include "../src/swift_vol.h"
 static herr_t
 visit_cb(hid_t oid, const char *name,
          const H5O_info_t *oinfo, void *udata)

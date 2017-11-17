@@ -5,16 +5,18 @@ import logging
 from swiftclient.service import SwiftService, SwiftError
 from sys import argv
 
+
+
+
 logging.basicConfig(level=logging.ERROR)
 logging.getLogger("requests").setLevel(logging.CRITICAL)
 logging.getLogger("swiftclient").setLevel(logging.CRITICAL)
 logger = logging.getLogger(__name__)
-if (len(argv)<2):
- print ("container name:")
- exit()
-container = argv[1]
-minimum_size = -0.1
-with SwiftService() as swift:
+
+def swift_list(container):
+ container = container
+ minimum_size = -0.1
+ with SwiftService() as swift:
     try:
         list_parts_gen = swift.list(container=container)
 	print (list_parts_gen)
@@ -36,4 +38,3 @@ with SwiftService() as swift:
 
     except SwiftError as e:
         logger.error(e.value)
-
