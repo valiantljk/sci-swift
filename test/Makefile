@@ -1,7 +1,7 @@
 dir=../src/
 export PYTHONHOME=/root/anaconda
 CC = gcc
-CFLAGS = -g -c -fno-strict-aliasing -Wmissing-include-dirs -O2 -DNDEBUG -g -fwrapv -O3 -Wall -Wstrict-prototypes -I/root/anaconda/include/python2.7
+CFLAGS = -g -c -fno-strict-aliasing -Wmissing-include-dirs -O2 -DNDEBUG -g -fwrapv -O3 -Wall -Wstrict-prototypes -I/root/anaconda/include/python2.7 -Wno-unused-variable -Wno-strict-prototypes
 LDFLAGS = -L/root/anaconda/lib -lpython2.7 -lpthread -ldl -lutil -lm -Xlinker -export-dynamic
 
 ALL: swift swift_vol
