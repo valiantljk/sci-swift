@@ -1,5 +1,31 @@
 #include <Python.h>
 #include "swift.h"
+PyObject * swift_list(int n, char *args[]){
+    PyObject *pName, *pModule, *pFunc;
+    PyObject *pArgs, *pValue=NULL;
+    char * settings [] ={"swiftclient.service","SwiftService", "list","swift"};
+    pName = PyString_FromString(settings[0]);
+    pModule = PyImport_ImportModule(settings[0]);
+    Py_DECREF(pName);
+    if(pModule == NULL){
+      printf("Importing swiftclient.service failed\n");
+      PyErr_Print();
+      return NULL;
+    }
+    else {
+     printf("Importing swiftclient.service ok\n");
+     pFunc = PyObject_GetAttrString(pModule, settings[1]);
+     if(pFunc && PyCallable_Check(pFunc)){
+        printf("SwiftService is callable\n");
+     }
+     else {
+        printf ("SwiftService is not callable\n");
+        PyErr_Print();
+     }
+    }
+    return pValue;
+}
+
 PyObject * basic_check(int n, char *args[])
 {
     PyObject *pName, *pModule, *pFunc;
@@ -114,32 +140,3 @@ PyObject * operator_digest(int n, char *args[]){
     return pValue;
 }
 
-PyObject * swift_list(int n, char *args[]){
-    PyObject *pName, *pModule, *pFunc;
-    PyObject *pArgs, *pValue=NULL;
-    char * settings [] ={"swiftclient.service","SwiftService", "list","swift"};
-    pName = PyString_FromString(settings[0]);
-    //pModule = PyImport_ImportModuleNoBlock(pName);
-    //pModule = PyImport_ImportModuleEx(settings[1],NULL,NULL,pName);
-    pModule = PyImport_ImportModule(settings[0]);
-    Py_DECREF(pName);
-    if(pModule == NULL){
-      printf("Importing swiftclient.service failed\n");
-      printf("here 1:\n");
-      PyErr_Print();
-      printf("here 2:\n");
-      return NULL;
-    }
-    else {
-     printf("Importing swiftclient.service ok\n");
-     pFunc = PyObject_GetAttrString(pModule, settings[1]);
-     if(pFunc && PyCallable_Check(pFunc)){
-        printf("SwiftService is callable\n");
-     }
-     else {
-        printf ("SwiftService is not callable\n");
-        PyErr_Print();
-     }
-    }
-    return pValue;
-}

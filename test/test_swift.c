@@ -6,13 +6,14 @@ int test_list(){
      // swift_list(1, 'container') should return all objects in container
      //PyObject * pValue;
      int argc = 1;
-     char * argv []= {"scratch"};
+     char * argv []= {"swift"};
      PyObject * pValue =  swift_list(argc, argv); // I need to know the returned type of swift list
      printf("swift_list called\n");
      Py_ssize_t x = PyDict_Size(pValue);
+     Py_ssize_t y =1;
      //int count = (int) PyList_Size(x);
-     assert(x>2);  
-     printf("x:%zd \n",x);
+     assert(x>y);  
+     //printf("x:%zd \n",x);
      return 0; 
 }
 
@@ -32,7 +33,7 @@ int main(){
     PyObject * pValue=NULL;
     int n =  3; 
     char * args []={"test", "f", "10"};
-    printf("\nTesting basic c wrapper\n");
+    printf("\n>>>Testing Basic C Wrapper\n");
     printf ("number of args: %d\n",n);
     int i=0;
     printf("Input args list:");
@@ -45,7 +46,7 @@ int main(){
     }
     printf("\n");
     //Test 2: swift list 
-    printf("\nTesting swift list\n");
+    printf("\n>>>Testing Swift List\n");
     printf ("number of args: %d\n",n);
     printf("Input args list:");
     for(i=0;i<n;i++)
