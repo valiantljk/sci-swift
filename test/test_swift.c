@@ -51,10 +51,10 @@ int main(){
     for(i=0;i<n;i++)
      printf ("%s\t",args[i]);
     printf("\n");
-    //test_list();
+    test_list();
     printf("\n");
     printf("\n");
-    test_operator();
+    //test_operator();
     printf("\n");
     Py_Finalize();
     return 0;

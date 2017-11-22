@@ -64,28 +64,44 @@ PyObject * operator_digest(int n, char *args[]){
     else {
      printf ("Importing operator module ok\n");
      PyObject * pattr= PyString_FromString(settings[1]);
-     //int hasatt1=PyObject_HasAttrString(pModule,settings[1]);
-     int hasatt1 = PyObject_HasAttr(pModule,pattr);
-     if (hasatt1==1) {
- 	printf("operator has %s\n",settings[1]);	
-     }
-     else {
-     	printf("operator does not have %s\n",settings[1]);
-	PyErr_Print();
-	//return NULL;
-     }
-     printf("here\n");
-     hasatt1=PyObject_HasAttrString(pModule,settings[2]);
-     if (hasatt1==1) {
-        printf("operator has %s\n",settings[2]); 
-     }
-     else {
-        printf("operator does not have %s\n",settings[2]);
-        PyErr_Print();
-        //return NULL;
-     }
-     printf("here\n");
+     PyObject * pattr_add = PyString_FromString(settings[2]);
      pFunc = PyObject_GetAttrString(pModule,settings[1]);
+     /*
+     // CallMethod
+     PyObject * pcall= PyObject_CallMethod(pModule,settings[1],NULL);
+     if(pcall == NULL) printf("calling _compare_digest in operator failed\n");
+     // GetAttr
+     pFunc = PyObject_GenericGetAttr(pModule, pattr);
+     if (pFunc == NULL) printf("GenericGet _compare_digest failed\n");
+     else printf("GenericGet _compare_digest ok\n");
+     PyObject * pFunc2 = PyObject_GenericGetAttr(pModule, pattr_add);
+     if (pFunc2 == NULL) printf ("GenericGet add failed\n");
+     else printf("GenericGet add ok\n");
+     // GetDict
+     PyObject * plist= PyModule_GetDict(pModule);
+     if (plist == NULL) printf("GetDict(operator) failed\n");
+     else {
+	printf("GetDict(operator) ok\n");
+	Py_ssize_t lendict= PyDict_Size(plist);
+	printf("Size of dict(operator):%zd\n",lendict);
+	PyObject * pkeys = PyDict_Keys(plist);
+	if (pkeys == NULL) printf("Dick_Keys(operator) failed\n");
+	else {
+		Py_ssize_t isz=0;
+		for (isz=0; isz<lendict; isz++){
+		     PyObject * pit = PyList_GetItem(pkeys,isz);
+		     if(pit == NULL) printf("GetItem %zd returns NULL\n",isz);
+		     else {
+				//printf item
+				PyObject * pstr= PyObject_Str(pit);
+				printf("%zd item is %s\n",isz,PyString_AsString(pstr));
+			  }
+		}
+	}
+     }
+     */
+     // Callable_Check
+     printf("\nhere\n");
      if(pFunc && PyCallable_Check(pFunc)){
     	printf("_compare_digest is callable\n");
      }
@@ -93,6 +109,7 @@ PyObject * operator_digest(int n, char *args[]){
     	printf ("_compare_digest is not callable\n");
 	PyErr_Print();
      }
+     printf("here\n");
     }
     return pValue;
 }
