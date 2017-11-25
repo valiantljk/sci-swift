@@ -17,11 +17,31 @@ PyObject * swift_list(int n, char *args[]){
      pFunc = PyObject_GetAttrString(pModule, settings[1]);
      if(pFunc && PyCallable_Check(pFunc)){
         printf("SwiftService is callable\n");
+	int is_class = PyClass_Check(pFunc);
+	if(is_class>0) printf("SwiftService is a class,%d\n",is_class);
+	else printf("SwiftService is not a class,%d\n",is_class);
+	if(is_class){
+	 PyObject * p_inst = PyInstance_New(pFunc, NULL, NULL);
+	 if(p_inst != NULL) printf("Got an instance of SwiftService Class, thank you\n");
+	 else printf ("Couldn't get an instance of SwiftService class, bye\n");
+	}
+	PyObject * p_list = PyObject_GetAttrString(pFunc, settings[2]);
+	if (p_list != NULL){
+		printf("SwiftService().list ok\n");
+		pArgs = PyTuple_New(1);
+		PyTuple_SetItem(pArgs, 0, PyString_FromString(settings[3]));
+		pValue = PyObject_CallObject(p_list, pArgs);
+	        if(pValue == NULL) printf("swift.list(%s) returns empty\n",settings[3]);	
+	}
+	else printf("SwiftService().list failed\n");
+	//pValue = PyObject_CallObject(pFunc, pArgs);
+	Py_DECREF(pFunc);
      }
      else {
         printf ("SwiftService is not callable\n");
         PyErr_Print();
      }
+     Py_DECREF(pModule);
     }
     return pValue;
 }

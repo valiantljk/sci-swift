@@ -9,11 +9,16 @@ int test_list(){
      char * argv []= {"swift"};
      PyObject * pValue =  swift_list(argc, argv); // I need to know the returned type of swift list
      printf("swift_list called\n");
-     Py_ssize_t x = PyDict_Size(pValue);
-     Py_ssize_t y =1;
-     //int count = (int) PyList_Size(x);
-     assert(x>y);  
+     if(pValue != NULL){
+      Py_ssize_t x = PyDict_Size(pValue);
+      Py_ssize_t y =1;
+      //int count = (int) PyList_Size(x);
+      assert(x>y);  
      //printf("x:%zd \n",x);
+     }
+     else {
+	printf("pValue is NULL\n");
+     }
      return 0; 
 }
 
