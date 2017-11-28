@@ -1,0 +1,3 @@
+export PYTHONPATH=.:$PYTHONPATH
+export PYTHONHOME=/root/anaconda
+export LD_LIBRARY_PATH=/root/anaconda/lib:$LD_LIBRARY_PATH

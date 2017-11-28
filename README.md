@@ -10,6 +10,7 @@ python list.py
 python upload.py
 ```
 
+Python 2.7.13 :: Anaconda 2.3.0 (64-bit)
 
 ![scibox](https://user-images.githubusercontent.com/1396867/32252259-d83a685e-be51-11e7-8a2b-e5f30c1cf1ee.png)
 

@@ -1,7 +1,7 @@
 #include <Python.h>
 #include "swift.h"
 PyObject * swift_list(int n, char *args[]){
-    PyObject *pName, *pModule, *pFunc;
+    PyObject *pName, *pModule, *pFunc, *pInstance =NULL;
     PyObject *pArgs, *pValue=NULL;
     char * settings [] ={"swiftclient.service","SwiftService", "list","swift"};
     pName = PyString_FromString(settings[0]);
@@ -16,29 +16,54 @@ PyObject * swift_list(int n, char *args[]){
      printf("Importing swiftclient.service ok\n");
      pFunc = PyObject_GetAttrString(pModule, settings[1]);
      if(pFunc && PyCallable_Check(pFunc)){
-        printf("SwiftService is callable\n");
+        printf("SwiftService is callable\n\n");
+
+        //check is_class, is_instance, is_type
+
 	int is_class = PyClass_Check(pFunc);
 	if(is_class>0) printf("SwiftService is a class,%d\n",is_class);
-	else printf("SwiftService is not a class,%d\n",is_class);
-	if(is_class){
+	else printf("--->SwiftService is not a class,%d\n\n",is_class);
+
+	int is_instance = PyInstance_Check(pFunc);
+	if(is_instance>0) printf("SwiftService is an instance,%d\n",is_instance);
+        else printf("--->SwiftService is not an instance,%d\n\n",is_instance);
+
+	int is_type = PyType_Check(pFunc);
+	if (is_type >0) printf("SwiftService is a type,%d\n\n",is_type);
+	else printf("--->SwiftService is not a type,%d\n\n",is_type);
+
+	if(is_class>=0){
 	 PyObject * p_inst = PyInstance_New(pFunc, NULL, NULL);
 	 if(p_inst != NULL) printf("Got an instance of SwiftService Class, thank you\n");
-	 else printf ("Couldn't get an instance of SwiftService class, bye\n");
+	 else printf ("--->Couldn't get an instance of SwiftService class, bye\n\n");
 	}
+
+        // trying pydict
+	
+        PyObject * pDict = PyModule_GetDict(pModule);
+	PyObject * pClass = PyDict_GetItemString(pDict, settings[1]);
+	if(PyCallable_Check(pClass)){
+		printf("SwiftService class is callable\n");
+		pInstance = PyObject_CallObject(pClass, NULL);
+		PyErr_Print();
+	}
+	if(pInstance != NULL) printf("Instance success, SwiftService\n\n");
+	else printf("Instance failed, SwiftService \n\n");
 	PyObject * p_list = PyObject_GetAttrString(pFunc, settings[2]);
+
 	if (p_list != NULL){
 		printf("SwiftService().list ok\n");
 		pArgs = PyTuple_New(1);
 		PyTuple_SetItem(pArgs, 0, PyString_FromString(settings[3]));
-		pValue = PyObject_CallObject(p_list, pArgs);
-	        if(pValue == NULL) printf("swift.list(%s) returns empty\n",settings[3]);	
+		//pValue = PyObject_CallObject(p_list, pArgs);
+	        //if(pValue == NULL) printf("swift.list(%s) returns empty\n",settings[3]);	
 	}
-	else printf("SwiftService().list failed\n");
+	else printf("--->SwiftService().list failed\n");
 	//pValue = PyObject_CallObject(pFunc, pArgs);
 	Py_DECREF(pFunc);
      }
      else {
-        printf ("SwiftService is not callable\n");
+        printf ("--->SwiftService is not callable\n");
         PyErr_Print();
      }
      Py_DECREF(pModule);
