@@ -3,10 +3,9 @@ Scientific Object Store based on Openstack Swift
 
 # Why Sci-Swift
 
-* Simply recompiling existing scientific appliations codes to use Openstack Swift with HDF5 file formats. 
-* Programmingly wirte/read HDF5 files using HDF5 C library to/from Openstack Swift, with expected scalability and performance. 
-* Sci-Swift's VOL python layer allows you to plug any kind of formats/storage using your favourite python library.
-  e.g, FITs, Parquet, ROOT... 
+* No code change required for existing HDF5 applications to use object store (A promising HPC storage for replacing current PFS) 
+* Enable HDF5 to work with any kind of formats/storage using your favourite _python_ library.
+  e.g, FITs, Parquet, ROOT, TensorFlow, etc
 
 Python 2.7.13 :: Anaconda 2.3.0 (64-bit)
 
