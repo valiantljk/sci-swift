@@ -7,8 +7,8 @@
 #include "hdf5.h"
 #include "python_vol.h"
 #define PYTHON 502
-static herr_t H5VL_python_init(hid_t vipl_id);
-static herr_t H5VL_python_term(hid_t vtpl_id);
+//static herr_t H5VL_python_init(hid_t vipl_id);
+//static herr_t H5VL_python_term(hid_t vtpl_id);
 /* Datatype callbacks */
 static void *H5VL_python_datatype_commit(void *obj, H5VL_loc_params_t loc_params, const char *name, hid_t type_id, hid_t lcpl_id, hid_t tcpl_id, hid_t tapl_id, hid_t dxpl_id, void **req);
 static void *H5VL_python_datatype_open(void *obj, H5VL_loc_params_t loc_params, const char *name, hid_t tapl_id, hid_t dxpl_id, void **req);
@@ -129,20 +129,27 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
 {
     hid_t under_fapl;
     H5VL_python_t *file;
-
+    
     file = (H5VL_python_t *)calloc(1, sizeof(H5VL_python_t));
 
     under_fapl = *((hid_t *)H5Pget_vol_info(fapl_id));
     file->under_object = H5VLfile_create(name, flags, fcpl_id, under_fapl, dxpl_id, req);
+    
     PyObject *pName, *pModule, *pFunc;
     PyObject *pArgs, *pValue=NULL;
-    char pn[11]="python_vol";
-    char pf[24]="H5VL_python_file_create";
-    pName = PyString_FromString(pn);
-    pModule = PyImport_Import(pName);
-    Py_DECREF(pName);
+    char * args [] ={"python_vol","H5VL_python_file_create","test"};
+    //return (void *)file;
+    pModule = NULL;
+    pName = PyString_FromString(args[2]);
+    //pModule = PyImport_ImportModule(args[2]);
+    if(pName != NULL){
+     printf("pName is not NULL");
+     pModule = PyImport_Import(pName);
+    }
+    else printf("pName is NULL");
+    //return (void *)file;
     if (pModule != NULL) {
-     pFunc = PyObject_GetAttrString(pModule, pf);
+     pFunc = PyObject_GetAttrString(pModule, args[1]);
      if (pFunc && PyCallable_Check(pFunc)) {
 	pArgs = PyTuple_New(4);
 	PyTuple_SetItem(pArgs, 0, PyInt_FromLong(flags));
@@ -167,8 +174,9 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
      }
      printf("------- PYTHON H5Fcreate\n");
      
-     H5Py_vol_file_create;
+     //H5Py_vol_file_create;
     }
+
     return (void *)file;
 }
 
