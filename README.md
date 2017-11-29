@@ -9,8 +9,7 @@ Scientific Object Store based on Openstack Swift
 
 # Design
 
-
-![sciswift2](https://user-images.githubusercontent.com/1396867/33396268-de81e414-d4fc-11e7-910d-b511fc5ca2c0.png)
+![sciswift2](https://user-images.githubusercontent.com/1396867/33396383-2f32fdd0-d4fd-11e7-9038-a87dcc501d2d.png)
 
 # QuickStart 
 (Step 1-3 building time ~ 2mins 35 sec)
