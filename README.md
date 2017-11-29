@@ -8,13 +8,14 @@ Scientific Object Store based on Openstack Swift
   e.g, FITs, Parquet, ROOT, TensorFlow, etc
 
 # Design
-Python 2.7.13 :: Anaconda 2.3.0 (64-bit)
 
-![scibox](https://user-images.githubusercontent.com/1396867/32252259-d83a685e-be51-11e7-8a2b-e5f30c1cf1ee.png)
 
+![sciswift2](https://user-images.githubusercontent.com/1396867/33396268-de81e414-d4fc-11e7-910d-b511fc5ca2c0.png)
 
 # QuickStart 
 (Step 1-3 building time ~ 2mins 35 sec)
+
+Python 2.7.13 :: Anaconda 2.3.0 (64-bit)
 
 **Step 1**. Create a data only docker container
  ```
