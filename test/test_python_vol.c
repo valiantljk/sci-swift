@@ -1,3 +1,4 @@
+#include <Python.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -51,7 +52,7 @@ int main(int argc, char **argv) {
         ssize_t len;
         char name[25];
         static hsize_t      ds_size[2] = {10, 20};
-
+	Py_Initialize();
         under_fapl = H5Pcreate (H5P_FILE_ACCESS);
         H5Pset_fapl_native(under_fapl);
         assert(H5VLis_registered("native") == 1);

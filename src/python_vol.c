@@ -122,7 +122,10 @@ typedef struct H5VL_python_t {
     void   *under_object;
 } H5VL_python_t;
 
+//static void C_Call_Py(int n, char * args[], ){
 
+//} 
+ 
 /* File callbacks Implementation*/
 static void *
 H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t fapl_id, hid_t dxpl_id, void **req)
@@ -135,30 +138,21 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
     under_fapl = *((hid_t *)H5Pget_vol_info(fapl_id));
     file->under_object = H5VLfile_create(name, flags, fcpl_id, under_fapl, dxpl_id, req);
     
-    PyObject *pName, *pModule, *pFunc;
+    PyObject *pModule, *pFunc;
     PyObject *pArgs, *pValue=NULL;
-    char * args [] ={"python_vol","H5VL_python_file_create","test"};
-    //return (void *)file;
-    pModule = NULL;
-    pName = PyString_FromString(args[2]);
-    //pModule = PyImport_ImportModule(args[2]);
-    if(pName != NULL){
-     printf("pName is not NULL");
-     pModule = PyImport_Import(pName);
-    }
-    else printf("pName is NULL");
-    //return (void *)file;
+    char * args [] ={"python_vol","H5VL_python_file_create"};
+    pModule = PyImport_ImportModule(args[0]);
     if (pModule != NULL) {
      pFunc = PyObject_GetAttrString(pModule, args[1]);
      if (pFunc && PyCallable_Check(pFunc)) {
-	pArgs = PyTuple_New(4);
-	PyTuple_SetItem(pArgs, 0, PyInt_FromLong(flags));
-	PyTuple_SetItem(pArgs, 1, PyInt_FromLong(fcpl_id));
-	PyTuple_SetItem(pArgs, 2, PyInt_FromLong(under_fapl));
-	PyTuple_SetItem(pArgs, 3, PyInt_FromLong(dxpl_id));
+	pArgs = PyTuple_New(5);
+        PyTuple_SetItem(pArgs, 0, PyString_FromString(name));
+	PyTuple_SetItem(pArgs, 1, PyInt_FromLong(flags));
+	PyTuple_SetItem(pArgs, 2, PyInt_FromLong(fcpl_id));
+	PyTuple_SetItem(pArgs, 3, PyInt_FromLong(under_fapl));
+	PyTuple_SetItem(pArgs, 4, PyInt_FromLong(dxpl_id));
 	//PyTuple_SetItem(pArgs, 4, PyInt_FromLong(req));
         pValue = PyObject_CallObject(pFunc, pArgs);
-        printf("called\n");
         if (pValue != NULL) {
 		printf("Result of call: %ld\n", PyInt_AsLong(pValue));
         }
