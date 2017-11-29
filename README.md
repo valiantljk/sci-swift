@@ -1,17 +1,17 @@
-# Sci-Swift
+## Sci-Swift
 Scientific Object Store based on Openstack Swift
 
-# Why Sci-Swift
+## Why Sci-Swift
 
 * **_No code change_** required for existing HDF5 applications to use object store (A promising HPC storage for replacing current PFS) 
 * Enable HDF5 to work with **_any kind of formats/storage_** using your favourite **_python_** library.
   e.g, FITs, Parquet, ROOT, TensorFlow, etc
 
-# Design
+## Design
 
 ![sciswift2](https://user-images.githubusercontent.com/1396867/33396383-2f32fdd0-d4fd-11e7-9038-a87dcc501d2d.png)
 
-# QuickStart 
+## QuickStart 
 (Step 1-3 building time ~ 2mins 35 sec)
 
 Python 2.7.13 :: Anaconda 2.3.0 (64-bit)
@@ -57,7 +57,7 @@ Python 2.7.13 :: Anaconda 2.3.0 (64-bit)
 ```
 
 
-# Code Structure
+## Code Structure
 ```
 .
 |-- LICENSE
