@@ -44,7 +44,7 @@ PyObject * swift_list(int n, char *args[]){
 	PyObject * pClass = PyDict_GetItemString(pDict, settings[1]);
 	if(PyCallable_Check(pClass)){
 		printf("SwiftService class is callable\n");
-		pInstance = PyObject_CallObject(pClass, NULL);
+       //		pInstance = PyObject_CallObject(pClass, NULL);
 		PyErr_Print();
 	}
 	if(pInstance != NULL) printf("Instance success, SwiftService\n\n");
