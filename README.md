@@ -3,8 +3,8 @@ Scientific Object Store based on Openstack Swift
 
 # Why Sci-Swift
 
-* No code change required for existing HDF5 applications to use object store (A promising HPC storage for replacing current PFS) 
-* Enable HDF5 to work with any kind of formats/storage using your favourite _python_ library.
+* **_No code change_** required for existing HDF5 applications to use object store (A promising HPC storage for replacing current PFS) 
+* Enable HDF5 to work with **_any kind of formats/storage_** using your favourite **_python_** library.
   e.g, FITs, Parquet, ROOT, TensorFlow, etc
 
 # Design
