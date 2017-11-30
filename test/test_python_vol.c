@@ -74,11 +74,10 @@ int main(int argc, char **argv) {
 	file_id = H5Fcreate(file_name, H5F_ACC_TRUNC, H5P_DEFAULT, acc_tpl);
         len = H5VLget_plugin_name(file_id, name, 25);
         printf ("FILE VOL name = %s  %ld\n", name, len);
-
 	group_id = H5Gcreate2(file_id, group_name, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
         len = H5VLget_plugin_name(group_id, name, 50);
         printf ("GROUP VOL name = %s  %ld\n", name, len);
-
+/*
         int_id = H5Tcopy(H5T_NATIVE_INT);
         H5Tcommit2(file_id, "int", int_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
         len = H5VLget_plugin_name(int_id, name, 50);
@@ -120,7 +119,7 @@ int main(int argc, char **argv) {
 	free (data);
         H5Oclose(int_id);
         H5Sclose (space);
-	H5Gclose(group_id);
+*/	H5Gclose(group_id);
 #if 0
 
         attr = H5Acreate2(group_id, "attr1", int_id, space, H5P_DEFAULT, H5P_DEFAULT);
