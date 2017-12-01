@@ -190,12 +190,12 @@ H5VL_python_file_open(const char *name, unsigned flags, hid_t fapl_id, hid_t dxp
     if (pModule != NULL) {
      pFunc = PyObject_GetAttrString(pModule, args[1]);
      if (pFunc && PyCallable_Check(pFunc)) {
-        pArgs = PyTuple_New(4);
+        pArgs = PyTuple_New(5);
         PyTuple_SetItem(pArgs, 0, PyString_FromString(name));
         PyTuple_SetItem(pArgs, 1, PyLong_FromLong(flags));
         PyTuple_SetItem(pArgs, 2, PyLong_FromLong(fcpl_id));
         PyTuple_SetItem(pArgs, 3, PyLong_FromLong(dxpl_id));
-        //PyTuple_SetItem(pArgs, 4, PyLong_FromLong(req)); //ignoring req now, or pass a NULL, which is same; In future considering async IO
+        PyTuple_SetItem(pArgs, 4, PyCapsule_New(*req, "req", NULL)); //ignoring req now, or pass a NULL, which is same; In future considering async IO
         pValue = PyObject_CallObject(pFunc, pArgs);
         if (pValue != NULL) {
                 printf("Result of H5Fopen: %ld\n", PyInt_AsLong(pValue));
@@ -235,7 +235,34 @@ H5VL_python_file_close(void *file, hid_t dxpl_id, void **req)
 
     H5VLfile_close(f->under_object, native_plugin_id, dxpl_id, req);
     free(f);
+    PyObject *pModule, *pFunc;
+    PyObject *pArgs, *pValue=NULL;
+    char * args [] ={"python_vol","H5VL_python_file_close"};
+    pModule = PyImport_ImportModule(args[0]);
+    if (pModule != NULL) {
+     pFunc = PyObject_GetAttrString(pModule, args[1]);
+     if (pFunc && PyCallable_Check(pFunc)) {
+        pArgs = PyTuple_New(3);
+        PyTuple_SetItem(pArgs, 0, PyCapsule_New(file, "file", NULL)); 
+        PyTuple_SetItem(pArgs, 1, PyLong_FromLong(dxpl_id));
+        PyTuple_SetItem(pArgs, 2, PyCapsule_New(*req, "req", NULL)); //ignoring req now, or pass a NULL, which is same; In future considering async IO
+        pValue = PyObject_CallObject(pFunc, pArgs);
+        if (pValue != NULL) {
+                printf("Result of H5Fclose: %ld\n", PyInt_AsLong(pValue));
+        }
+        else {
+                Py_DECREF(pFunc);
+                Py_DECREF(pModule);
+                Py_XDECREF(pArgs);
+                PyErr_Print();
+                fprintf(stderr,"Call failed\n");
+                return NULL;
+        }
+        Py_XDECREF(pArgs);
+     }
+     printf("------- PYTHON H5Fclose\n");
 
+    }
     printf("------- PYTHON H5Fclose\n");
     return 1;
 }
@@ -258,12 +285,12 @@ H5VL_python_group_create(void *obj, H5VL_loc_params_t loc_params, const char *na
      pFunc = PyObject_GetAttrString(pModule, args[1]);
      if (pFunc && PyCallable_Check(pFunc)) {
         pArgs = PyTuple_New(5);
+	PyTuple_SetItem(pArgs, 2, PyCapsule_New(obj, "obj", NULL));
         PyTuple_SetItem(pArgs, 0, PyString_FromString(name));
-        PyTuple_SetItem(pArgs, 1, PyLong_FromLong(flags));
-        PyTuple_SetItem(pArgs, 2, PyLong_FromLong(fcpl_id));
-        PyTuple_SetItem(pArgs, 3, PyLong_FromLong(under_fapl));
+        PyTuple_SetItem(pArgs, 1, PyLong_FromLong(gcpl_id));
+        PyTuple_SetItem(pArgs, 2, PyLong_FromLong(gapl_id));
         PyTuple_SetItem(pArgs, 4, PyLong_FromLong(dxpl_id));
-        //PyTuple_SetItem(pArgs, 4, PyLong_FromLong(req));
+        PyTuple_SetItem(pArgs, 4, PyCapsule_New(req));
         pValue = PyObject_CallObject(pFunc, pArgs);
         if (pValue != NULL) {
                 printf("Result of H5Gcreat: %ld\n", PyInt_AsLong(pValue));
