@@ -70,14 +70,17 @@ int main(int argc, char **argv) {
 
         acc_tpl = H5Pcreate (H5P_FILE_ACCESS);
         H5Pset_vol(acc_tpl, vol_id, &under_fapl);
+        //Test file create
 
 	file_id = H5Fcreate(file_name, H5F_ACC_TRUNC, H5P_DEFAULT, acc_tpl);
         len = H5VLget_plugin_name(file_id, name, 25);
+
         printf ("FILE VOL name = %s  %ld\n", name, len);
+        // Test group create
 	group_id = H5Gcreate2(file_id, group_name, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
         len = H5VLget_plugin_name(group_id, name, 50);
         printf ("GROUP VOL name = %s  %ld\n", name, len);
-/*
+
         int_id = H5Tcopy(H5T_NATIVE_INT);
         H5Tcommit2(file_id, "int", int_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
         len = H5VLget_plugin_name(int_id, name, 50);
@@ -93,6 +96,7 @@ int main(int argc, char **argv) {
         len = H5VLget_plugin_name(int_id, name, 50);
         printf ("DT OOPEN name = %s  %ld\n", name, len);
 
+/*
         len = H5Fget_name(file_id, name, 50);
         printf("name = %ld  %s\n", len, name);
 
