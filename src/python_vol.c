@@ -151,7 +151,7 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
 	PyTuple_SetItem(pArgs, 2, PyLong_FromLong(fcpl_id));
 	PyTuple_SetItem(pArgs, 3, PyLong_FromLong(under_fapl));
 	PyTuple_SetItem(pArgs, 4, PyLong_FromLong(dxpl_id));
- 	//PyTuple_SetItem(pArgs, 5, PyCapsule_New(*req, "req", NULL)); 
+ 	PyTuple_SetItem(pArgs, 5, PyCapsule_New(*req, "req", NULL)); 
         pValue = PyObject_CallObject(pFunc, pArgs);
         if (pValue != NULL) {
 		printf("------- PYTHON H5Fcreate\n");
