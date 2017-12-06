@@ -122,10 +122,7 @@ typedef struct H5VL_python_t {
     void   *under_object;
 } H5VL_python_t;
 
-//static void C_Call_Py(int n, char * args[], ){
 
-//} 
- 
 /* File callbacks Implementation*/
 static void *
 H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t fapl_id, hid_t dxpl_id, void **req)
