@@ -145,13 +145,17 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
     if (pModule != NULL) {
      pFunc = PyObject_GetAttrString(pModule, args[1]);
      if (pFunc && PyCallable_Check(pFunc)) {
-	pArgs = PyTuple_New(5);
+	pArgs = PyTuple_New(6);
         PyTuple_SetItem(pArgs, 0, PyString_FromString(name));
 	PyTuple_SetItem(pArgs, 1, PyLong_FromLong(flags));
 	PyTuple_SetItem(pArgs, 2, PyLong_FromLong(fcpl_id));
 	PyTuple_SetItem(pArgs, 3, PyLong_FromLong(under_fapl));
 	PyTuple_SetItem(pArgs, 4, PyLong_FromLong(dxpl_id));
- 	PyTuple_SetItem(pArgs, 5, PyCapsule_New(*req, "req", NULL)); 
+	if(req!=NULL)
+ 	 PyTuple_SetItem(pArgs, 5, Py_BuildValue("O",PyCapsule_New(req, "req", NULL)));
+        else
+	 PyTuple_SetItem(pArgs, 5, PyString_FromString("None")); 
+	PyErr_Print();
         pValue = PyObject_CallObject(pFunc, pArgs);
         if (pValue != NULL) {
 		printf("------- PYTHON H5Fcreate\n");
@@ -200,7 +204,10 @@ H5VL_python_file_open(const char *name, unsigned flags, hid_t fapl_id, hid_t dxp
         PyTuple_SetItem(pArgs, 1, PyLong_FromLong(flags));
         PyTuple_SetItem(pArgs, 2, PyLong_FromLong(fapl_id));
         PyTuple_SetItem(pArgs, 3, PyLong_FromLong(dxpl_id));
-        PyTuple_SetItem(pArgs, 4, PyCapsule_New(*req, "req", NULL)); //ignoring req now, or pass a NULL, which is same; In future considering async IO
+	if(req!=NULL)
+         PyTuple_SetItem(pArgs, 4, Py_BuildValue("O",PyCapsule_New(req, "req", NULL)));
+        else
+         PyTuple_SetItem(pArgs, 4, PyString_FromString("None"));
         pValue = PyObject_CallObject(pFunc, pArgs);
         if (pValue != NULL) {
      		printf("------- PYTHON H5Fopen\n");
@@ -256,10 +263,16 @@ H5VL_python_file_close(void *file, hid_t dxpl_id, void **req)
         pArgs = PyTuple_New(3);
         PyTuple_SetItem(pArgs, 0, PyCapsule_New(file, "file", NULL)); 
         PyTuple_SetItem(pArgs, 1, PyLong_FromLong(dxpl_id));
-        PyTuple_SetItem(pArgs, 2, PyCapsule_New(*req, "req", NULL)); //ignoring req now, or pass a NULL, which is same; In future considering async IO
+	//TODO: struct item from c to python
+	if(req!=NULL)
+         PyTuple_SetItem(pArgs, 2, Py_BuildValue("O",PyCapsule_New(req, "req", NULL)));
+        else
+         PyTuple_SetItem(pArgs, 2, PyString_FromString("None"));
+        //TODO: struct item from c to python
         pValue = PyObject_CallObject(pFunc, pArgs);
         if (pValue != NULL) {
-                printf("Result of H5Fclose: %ld\n", PyInt_AsLong(pValue));
+		printf("------- PYTHON H5Fclose\n");
+		printf("------- Result of H5Fclose from python: %ld\n", PyInt_AsLong(pValue));
         }
         else {
                 Py_DECREF(pFunc);
@@ -271,11 +284,17 @@ H5VL_python_file_close(void *file, hid_t dxpl_id, void **req)
         }
         Py_XDECREF(pArgs);
      }
-     printf("------- PYTHON H5Fclose\n");
-
+     else {
+      	fprintf(stderr, "------- PYTHON H5Fclose failed\n");
+      	return -1;
+     }
     }
-    printf("------- PYTHON H5Fclose\n");
-    return 1;
+    else {
+	fprintf(stderr, "------- Python module :%s is not available\n",args[0]);
+    }
+    printf ("------- PYTHON H5Fclose\n");
+    //TODO: figureout the file object
+    return (void *) file;
 }
 /* Group callbacks Implementation*/
 static void *
@@ -296,16 +315,22 @@ H5VL_python_group_create(void *obj, H5VL_loc_params_t loc_params, const char *na
      pFunc = PyObject_GetAttrString(pModule, args[1]);
      if (pFunc && PyCallable_Check(pFunc)) {
         pArgs = PyTuple_New(7);
+	//TODO: struct pointer
 	PyTuple_SetItem(pArgs, 0, PyCapsule_New(obj, "obj", NULL));
+        //TODO: struct
 	PyTuple_SetItem(pArgs, 1, PyCapsule_New(&loc_params, "loc", NULL));
         PyTuple_SetItem(pArgs, 2, PyString_FromString(name));
         PyTuple_SetItem(pArgs, 3, PyLong_FromLong(gcpl_id));
         PyTuple_SetItem(pArgs, 4, PyLong_FromLong(gapl_id));
-        PyTuple_SetItem(pArgs, 5, PyLong_FromLong(dxpl_id));
-        PyTuple_SetItem(pArgs, 6, PyCapsule_New(req,"req", NULL));
+        PyTuple_SetItem(pArgs, 5, PyLong_FromLong(dxpl_id)); 
+        if(req!=NULL)
+         PyTuple_SetItem(pArgs, 6, Py_BuildValue("O",PyCapsule_New(req, "req", NULL)));
+        else
+         PyTuple_SetItem(pArgs, 6, PyString_FromString("None"));
         pValue = PyObject_CallObject(pFunc, pArgs);
         if (pValue != NULL) {
-                printf("Result of H5Gcreat: %ld\n", PyInt_AsLong(pValue));
+                printf("------- PYTHON H5Gcreate\n");
+                printf("------- Result of H5Gcreate from python: %ld\n", PyInt_AsLong(pValue));
         }
         else {
                 Py_DECREF(pFunc);
@@ -313,15 +338,23 @@ H5VL_python_group_create(void *obj, H5VL_loc_params_t loc_params, const char *na
                 Py_XDECREF(pArgs);
                 PyErr_Print();
                 fprintf(stderr,"Call failed\n");
-                return NULL;
+                return -1;
         }
         Py_XDECREF(pArgs);
      }
-     printf("------- PYTHON H5Gcreate\n");
-
+     else {
+	PyErr_Print();
+     	fprintf(stderr, "------- PYTHON H5Gcreate failed\n");
+	return -1;
+     }
     }
-    printf("------- PYTHON H5Gcreate\n");
-    return (void *)group;
+    else {
+	PyErr_Print();
+        fprintf(stderr, "------- Python module :%s is not available\n",args[0]);
+    }
+    printf ("------- PYTHON H5Gcreate\n");
+    //TODO: figureout the file object
+    return (void *) group;
 }
 
 static herr_t 
@@ -331,8 +364,46 @@ H5VL_python_group_close(void *grp, hid_t dxpl_id, void **req)
 
     H5VLgroup_close(g->under_object, native_plugin_id, dxpl_id, req);
     free(g);
-
-    printf("------- PYTHON H5Gclose\n");
+    PyObject *pModule, *pFunc;
+    PyObject *pArgs, *pValue=NULL;
+    char * args [] ={"python_vol","H5VL_python_group_close"};
+    pModule = PyImport_ImportModule(args[0]);
+    if (pModule != NULL) {
+     pFunc = PyObject_GetAttrString(pModule, args[1]);
+     if (pFunc && PyCallable_Check(pFunc)) {
+        pArgs = PyTuple_New(3);
+        //TODO: struct pointer
+        PyTuple_SetItem(pArgs, 0, PyCapsule_New(grp, "grp", NULL));
+        PyTuple_SetItem(pArgs, 1, PyLong_FromLong(dxpl_id));
+        //req can be NULL
+        if(req!=NULL)
+         PyTuple_SetItem(pArgs, 2, Py_BuildValue("O",PyCapsule_New(req, "req", NULL)));
+        else
+         PyTuple_SetItem(pArgs, 2, PyString_FromString("None"));
+        pValue = PyObject_CallObject(pFunc, pArgs);
+        if (pValue != NULL) {
+                printf("------- PYTHON H5Gclose\n");
+                printf("------- Result of H5Gclose from python: %ld\n", PyInt_AsLong(pValue));
+        }
+        else {
+                Py_DECREF(pFunc);
+                Py_DECREF(pModule);
+                Py_XDECREF(pArgs);
+                PyErr_Print();
+                fprintf(stderr,"Call failed\n");
+                return -1;
+        }
+        Py_XDECREF(pArgs);
+     }
+     else {
+        fprintf(stderr, "------- PYTHON H5Gclose failed\n");
+        return -1;
+     }
+    }
+    else {
+        fprintf(stderr, "------- Python module :%s is not available\n",args[0]);
+    }
+    printf ("------- PYTHON H5Gclose\n");
     return 1;
 }
 /* Datatypes callbacks Implementation*/
@@ -433,16 +504,22 @@ H5VL_python_dataset_create(void *obj, H5VL_loc_params_t loc_params, const char *
      pFunc = PyObject_GetAttrString(pModule, args[1]);
      if (pFunc && PyCallable_Check(pFunc)) {
         pArgs = PyTuple_New(7);
+	//TODO: struct pointer
 	PyTuple_SetItem(pArgs, 0, PyCapsule_New(obj, "obj", NULL));
+	//TODO: struct 
 	PyTuple_SetItem(pArgs, 1, PyCapsule_New(&loc_params, "loc", NULL));
 	PyTuple_SetItem(pArgs, 2, PyString_FromString(name));
         PyTuple_SetItem(pArgs, 3, PyLong_FromLong(dcpl_id));
         PyTuple_SetItem(pArgs, 4, PyLong_FromLong(dapl_id));
         PyTuple_SetItem(pArgs, 5, PyLong_FromLong(dxpl_id));
-        PyTuple_SetItem(pArgs, 6, PyCapsule_New(*req, "req", NULL));
+	if(req!=NULL)
+         PyTuple_SetItem(pArgs, 6, Py_BuildValue("O",PyCapsule_New(req, "req", NULL)));
+        else
+         PyTuple_SetItem(pArgs, 6, PyString_FromString("None"));
         pValue = PyObject_CallObject(pFunc, pArgs);
         if (pValue != NULL) {
-                printf("Result of call: %ld\n", PyInt_AsLong(pValue));
+                printf("------- PYTHON H5Dcreate\n");
+                printf("------- Result of H5Dcreate from python: %ld\n", PyInt_AsLong(pValue));
         }
         else {
                 Py_DECREF(pFunc);
@@ -454,11 +531,17 @@ H5VL_python_dataset_create(void *obj, H5VL_loc_params_t loc_params, const char *
         }
         Py_XDECREF(pArgs);
      }
-     printf("------- PYTHON H5Dcreate\n");
-
+     else {
+        fprintf(stderr, "------- PYTHON H5Dcreate failed\n");
+        return -1;
+     }
     }
-    printf("------- PYTHON H5Dcreate\n");
-    return (void *)dset;
+    else {
+        fprintf(stderr, "------- Python module :%s is not available\n",args[0]);
+    }
+    printf ("------- PYTHON H5Dcreate\n");
+    //TODO: figureout the file object
+    return (void *) dset;
 }
 
 static void *
@@ -477,16 +560,22 @@ H5VL_python_dataset_open(void *obj, H5VL_loc_params_t loc_params, const char *na
     if (pModule != NULL) {
      pFunc = PyObject_GetAttrString(pModule, args[1]);
      if (pFunc && PyCallable_Check(pFunc)) {
-        pArgs = PyTuple_New(7);
+        pArgs = PyTuple_New(6);
+        //TODO: struct pointer
         PyTuple_SetItem(pArgs, 0, PyCapsule_New(obj, "obj", NULL));
+        //TODO: struct 
         PyTuple_SetItem(pArgs, 1, PyCapsule_New(&loc_params, "loc", NULL));
         PyTuple_SetItem(pArgs, 2, PyString_FromString(name));
         PyTuple_SetItem(pArgs, 3, PyLong_FromLong(dapl_id));
         PyTuple_SetItem(pArgs, 4, PyLong_FromLong(dxpl_id));
-        PyTuple_SetItem(pArgs, 5, PyCapsule_New(*req, "req", NULL));
+        if(req!=NULL)
+         PyTuple_SetItem(pArgs, 5, Py_BuildValue("O",PyCapsule_New(req, "req", NULL)));
+        else
+         PyTuple_SetItem(pArgs, 5, PyString_FromString("None"));
         pValue = PyObject_CallObject(pFunc, pArgs);
         if (pValue != NULL) {
-                printf("Result of call: %ld\n", PyInt_AsLong(pValue));
+                printf("------- PYTHON H5Dopen\n");
+                printf("------- Result of H5Dopen from python: %ld\n", PyInt_AsLong(pValue));
         }
         else {
                 Py_DECREF(pFunc);
@@ -497,12 +586,18 @@ H5VL_python_dataset_open(void *obj, H5VL_loc_params_t loc_params, const char *na
                 return NULL;
         }
         Py_XDECREF(pArgs);
-     }
-     printf("------- PYTHON H5Dopen\n");
-
-    }
-    printf("------- PYTHON H5Dopen\n");
-    return (void *)dset;
+     } 
+     else {
+        fprintf(stderr, "------- PYTHON H5Dcreate failed\n");
+        return -1;
+     }  
+    }   
+    else {
+        fprintf(stderr, "------- Python module :%s is not available\n",args[0]);
+    }   
+    printf ("------- PYTHON H5Dcreate\n");
+    //TODO: figureout the file object
+    return (void *) dset;
 }
 
 static herr_t 
@@ -521,16 +616,23 @@ H5VL_python_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
      pFunc = PyObject_GetAttrString(pModule, args[1]);
      if (pFunc && PyCallable_Check(pFunc)) {
         pArgs = PyTuple_New(7);
+	//TODO: struct pointer
         PyTuple_SetItem(pArgs, 0, PyCapsule_New(dset, "dset", NULL));
         PyTuple_SetItem(pArgs, 1, PyLong_FromLong(mem_type_id));
         PyTuple_SetItem(pArgs, 2, PyLong_FromLong(mem_space_id));
         PyTuple_SetItem(pArgs, 3, PyLong_FromLong(file_space_id));
         PyTuple_SetItem(pArgs, 4, PyLong_FromLong(plist_id));
+	//TODO: buf must not be NULL, right?
         PyTuple_SetItem(pArgs, 5, PyCapsule_New(buf, "buf", NULL));
-        PyTuple_SetItem(pArgs, 6, PyCapsule_New(*req, "req", NULL));
+        //req can be NULL
+        if(req!=NULL)
+         PyTuple_SetItem(pArgs, 6, Py_BuildValue("O",PyCapsule_New(req, "req", NULL)));
+        else
+         PyTuple_SetItem(pArgs, 6, PyString_FromString("None"));
         pValue = PyObject_CallObject(pFunc, pArgs);
         if (pValue != NULL) {
-                printf("Result of call: %ld\n", PyInt_AsLong(pValue));
+                printf("------- PYTHON H5Dread\n");
+                printf("------- Result of H5Dread from python: %ld\n", PyInt_AsLong(pValue));
         }
         else {
                 Py_DECREF(pFunc);
@@ -541,12 +643,17 @@ H5VL_python_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
                 return -1;
         }
         Py_XDECREF(pArgs);
+     } 
+     else {
+        fprintf(stderr, "------- PYTHON H5Dread failed\n");
+        return -1;
      }
-     printf("------- PYTHON H5Dread\n");
-
     }
-    printf("------- PYTHON H5Dread\n");
-    return 1;
+    else {
+        fprintf(stderr, "------- Python module :%s is not available\n",args[0]);
+    }
+    printf ("------- PYTHON H5Dread\n");
+    return 1;     
 }
 static herr_t 
 H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
@@ -564,16 +671,73 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
      pFunc = PyObject_GetAttrString(pModule, args[1]);
      if (pFunc && PyCallable_Check(pFunc)) {
         pArgs = PyTuple_New(7);
+        //TODO: struct pointer
         PyTuple_SetItem(pArgs, 0, PyCapsule_New(dset, "dset", NULL));
         PyTuple_SetItem(pArgs, 1, PyLong_FromLong(mem_type_id));
         PyTuple_SetItem(pArgs, 2, PyLong_FromLong(mem_space_id));
         PyTuple_SetItem(pArgs, 3, PyLong_FromLong(file_space_id));
         PyTuple_SetItem(pArgs, 4, PyLong_FromLong(plist_id));
-        PyTuple_SetItem(pArgs, 5, PyCapsule_New(buf, "cbuf", NULL));
-        PyTuple_SetItem(pArgs, 6, PyCapsule_New(*req, "req", NULL));
+        //TODO: buf must not be NULL, right?
+        PyTuple_SetItem(pArgs, 5, PyCapsule_New(buf, "buf", NULL));
+        //req can be NULL
+        if(req!=NULL)
+         PyTuple_SetItem(pArgs, 6, Py_BuildValue("O",PyCapsule_New(req, "req", NULL)));
+        else
+         PyTuple_SetItem(pArgs, 6, PyString_FromString("None"));
         pValue = PyObject_CallObject(pFunc, pArgs);
         if (pValue != NULL) {
-                printf("Result of call: %ld\n", PyInt_AsLong(pValue));
+                printf("------- PYTHON H5Dwrite\n");
+                printf("------- Result of H5Dwrite from python: %ld\n", PyInt_AsLong(pValue));
+        }
+        else {
+                Py_DECREF(pFunc);
+                Py_DECREF(pModule);
+                Py_XDECREF(pArgs);
+                PyErr_Print();
+                fprintf(stderr,"Call failed\n");
+                return -1;
+        }
+        Py_XDECREF(pArgs);
+     } 
+     else {
+        fprintf(stderr, "------- PYTHON H5Dwrite failed\n");
+        return -1;
+     }  
+    }   
+    else {
+        fprintf(stderr, "------- Python module :%s is not available\n",args[0]);
+    }   
+    printf ("------- PYTHON H5Dwrite\n");
+    return 1;     
+
+}
+static herr_t 
+H5VL_python_dataset_close(void *dset, hid_t dxpl_id, void **req)
+{
+    H5VL_python_t *d = (H5VL_python_t *)dset;
+
+    H5VLdataset_close(d->under_object, native_plugin_id, dxpl_id, req);
+    free(d);
+    PyObject *pModule, *pFunc;
+    PyObject *pArgs, *pValue=NULL;
+    char * args [] ={"python_vol","H5VL_python_dataset_close"};
+    pModule = PyImport_ImportModule(args[0]);
+    if (pModule != NULL) {
+     pFunc = PyObject_GetAttrString(pModule, args[1]);
+     if (pFunc && PyCallable_Check(pFunc)) {
+        pArgs = PyTuple_New(3);
+        //TODO: struct pointer
+        PyTuple_SetItem(pArgs, 0, PyCapsule_New(dset, "dset", NULL));
+        PyTuple_SetItem(pArgs, 1, PyLong_FromLong(dxpl_id));
+        //req can be NULL
+        if(req!=NULL)
+         PyTuple_SetItem(pArgs, 2, Py_BuildValue("O",PyCapsule_New(req, "req", NULL)));
+        else
+         PyTuple_SetItem(pArgs, 2, PyString_FromString("None"));
+        pValue = PyObject_CallObject(pFunc, pArgs);
+        if (pValue != NULL) {
+                printf("------- PYTHON H5Dclose\n");
+                printf("------- Result of H5Dclose from python: %ld\n", PyInt_AsLong(pValue));
         }
         else {
                 Py_DECREF(pFunc);
@@ -585,21 +749,15 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
         }
         Py_XDECREF(pArgs);
      }
-     printf("------- PYTHON H5Dwrite\n");
-
+     else {
+        fprintf(stderr, "------- PYTHON H5Dclose failed\n");
+        return -1;
+     }
     }
-    printf("------- PYTHON H5Dwrite\n");
-    return 1;
-}
-static herr_t 
-H5VL_python_dataset_close(void *dset, hid_t dxpl_id, void **req)
-{
-    H5VL_python_t *d = (H5VL_python_t *)dset;
-
-    H5VLdataset_close(d->under_object, native_plugin_id, dxpl_id, req);
-    free(d);
-
-    printf("------- PYTHON H5Dclose\n");
+    else {
+        fprintf(stderr, "------- Python module :%s is not available\n",args[0]);
+    }
+    printf ("------- PYTHON H5Dclose\n");
     return 1;
 }
 #if 0

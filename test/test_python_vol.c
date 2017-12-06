@@ -123,7 +123,8 @@ int main(int argc, char **argv) {
 	free (data);
         H5Oclose(int_id);
         H5Sclose (space);
-*/	H5Gclose(group_id);
+	H5Gclose(group_id);
+*/
 #if 0
 
         attr = H5Acreate2(group_id, "attr1", int_id, space, H5P_DEFAULT, H5P_DEFAULT);
