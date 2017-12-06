@@ -158,7 +158,6 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
 	PyErr_Print();
         pValue = PyObject_CallObject(pFunc, pArgs);
         if (pValue != NULL) {
-		printf("------- PYTHON H5Fcreate\n");
 		printf("------- Result of H5Fcreate from python: %ld\n", PyInt_AsLong(pValue));
         }
         else {
@@ -179,6 +178,7 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
     else {
         fprintf(stderr, "Python module :%s is not available\n",args[0]);
     }
+    //printf("------- PYTHON H5Fcreate\n");
     return (void *)file;
 }
 
@@ -210,7 +210,6 @@ H5VL_python_file_open(const char *name, unsigned flags, hid_t fapl_id, hid_t dxp
          PyTuple_SetItem(pArgs, 4, PyString_FromString("None"));
         pValue = PyObject_CallObject(pFunc, pArgs);
         if (pValue != NULL) {
-     		printf("------- PYTHON H5Fopen\n");
 		printf("------- Result of H5Fopen from python: %ld\n", PyInt_AsLong(pValue));
         }
         else {
@@ -232,7 +231,7 @@ H5VL_python_file_open(const char *name, unsigned flags, hid_t fapl_id, hid_t dxp
 	fprintf(stderr, "------- Python module :%s is not available\n",args[0]);	
     }
 
-    printf("------- PYTHON H5Fopen\n");
+    //printf("------- PYTHON H5Fopen\n");
     return (void *)file;
 }
 
@@ -243,7 +242,7 @@ H5VL_python_file_get(void *file, H5VL_file_get_t get_type, hid_t dxpl_id, void *
 
     H5VLfile_get(f->under_object, native_plugin_id, get_type, dxpl_id, req, arguments);
 
-    printf("------- PYTHON H5Fget %d\n", get_type);
+    //printf("------- PYTHON H5Fget %d\n", get_type);
     return 1;
 }
 static herr_t 
@@ -271,7 +270,6 @@ H5VL_python_file_close(void *file, hid_t dxpl_id, void **req)
         //TODO: struct item from c to python
         pValue = PyObject_CallObject(pFunc, pArgs);
         if (pValue != NULL) {
-		printf("------- PYTHON H5Fclose\n");
 		printf("------- Result of H5Fclose from python: %ld\n", PyInt_AsLong(pValue));
         }
         else {
@@ -292,9 +290,9 @@ H5VL_python_file_close(void *file, hid_t dxpl_id, void **req)
     else {
 	fprintf(stderr, "------- Python module :%s is not available\n",args[0]);
     }
-    printf ("------- PYTHON H5Fclose\n");
+    //printf ("------- PYTHON H5Fclose\n");
     //TODO: figureout the file object
-    return (void *) file;
+    return 1;
 }
 /* Group callbacks Implementation*/
 static void *
@@ -329,7 +327,6 @@ H5VL_python_group_create(void *obj, H5VL_loc_params_t loc_params, const char *na
          PyTuple_SetItem(pArgs, 6, PyString_FromString("None"));
         pValue = PyObject_CallObject(pFunc, pArgs);
         if (pValue != NULL) {
-                printf("------- PYTHON H5Gcreate\n");
                 printf("------- Result of H5Gcreate from python: %ld\n", PyInt_AsLong(pValue));
         }
         else {
@@ -338,21 +335,21 @@ H5VL_python_group_create(void *obj, H5VL_loc_params_t loc_params, const char *na
                 Py_XDECREF(pArgs);
                 PyErr_Print();
                 fprintf(stderr,"Call failed\n");
-                return -1;
+                return NULL;
         }
         Py_XDECREF(pArgs);
      }
      else {
 	PyErr_Print();
      	fprintf(stderr, "------- PYTHON H5Gcreate failed\n");
-	return -1;
+	return NULL;
      }
     }
     else {
 	PyErr_Print();
         fprintf(stderr, "------- Python module :%s is not available\n",args[0]);
     }
-    printf ("------- PYTHON H5Gcreate\n");
+    //printf ("------- PYTHON H5Gcreate\n");
     //TODO: figureout the file object
     return (void *) group;
 }
@@ -382,7 +379,6 @@ H5VL_python_group_close(void *grp, hid_t dxpl_id, void **req)
          PyTuple_SetItem(pArgs, 2, PyString_FromString("None"));
         pValue = PyObject_CallObject(pFunc, pArgs);
         if (pValue != NULL) {
-                printf("------- PYTHON H5Gclose\n");
                 printf("------- Result of H5Gclose from python: %ld\n", PyInt_AsLong(pValue));
         }
         else {
@@ -403,7 +399,7 @@ H5VL_python_group_close(void *grp, hid_t dxpl_id, void **req)
     else {
         fprintf(stderr, "------- Python module :%s is not available\n",args[0]);
     }
-    printf ("------- PYTHON H5Gclose\n");
+    //printf ("------- PYTHON H5Gclose\n");
     return 1;
 }
 /* Datatypes callbacks Implementation*/
@@ -419,7 +415,7 @@ H5VL_python_datatype_commit(void *obj, H5VL_loc_params_t loc_params, const char 
     dt->under_object = H5VLdatatype_commit(o->under_object, loc_params, native_plugin_id, name, 
                                            type_id, lcpl_id, tcpl_id, tapl_id, dxpl_id, req);
 
-    printf("------- PYTHON H5Tcommit\n");
+    //printf("------- PYTHON H5Tcommit\n");
     return dt;
 }
 static void *
@@ -432,7 +428,7 @@ H5VL_python_datatype_open(void *obj, H5VL_loc_params_t loc_params, const char *n
 
     dt->under_object = H5VLdatatype_open(o->under_object, loc_params, native_plugin_id, name, tapl_id, dxpl_id, req);
 
-    printf("------- PYTHON H5Topen\n");
+    //printf("------- PYTHON H5Topen\n");
     return (void *)dt;
 }
 static herr_t 
@@ -443,7 +439,7 @@ H5VL_python_datatype_get(void *dt, H5VL_datatype_get_t get_type, hid_t dxpl_id, 
 
     ret_value = H5VLdatatype_get(o->under_object, native_plugin_id, get_type, dxpl_id, req, arguments);
 
-    printf("------- PYTHON datatype get\n");
+    //printf("------- PYTHON datatype get\n");
     return ret_value;
 }
 
@@ -457,7 +453,7 @@ H5VL_python_datatype_close(void *dt, hid_t dxpl_id, void **req)
     H5VLdatatype_close(type->under_object, native_plugin_id, dxpl_id, req);
     free(type);
 
-    printf("------- PYTHON H5Tclose\n");
+    //printf("------- PYTHON H5Tclose\n");
     return 1;
 }
 /* Object callbacks Implementation*/
@@ -471,7 +467,7 @@ H5VL_python_object_open(void *obj, H5VL_loc_params_t loc_params, H5I_type_t *ope
     
     new_obj->under_object = H5VLobject_open(o->under_object, loc_params, native_plugin_id, opened_type, dxpl_id, req);
 
-    printf("------- PYTHON H5Oopen\n");
+    //printf("------- PYTHON H5Oopen\n");
     return (void *)new_obj;
 }
 
@@ -483,7 +479,7 @@ H5VL_python_object_specific(void *obj, H5VL_loc_params_t loc_params, H5VL_object
 
     H5VLobject_specific(o->under_object, loc_params, native_plugin_id, specific_type, dxpl_id, req, arguments);
 
-    printf("------- PYTHON Object specific\n");
+    //printf("------- PYTHON Object specific\n");
     return 1;
 }
 /* Dataset callbacks Implementation*/
@@ -518,7 +514,6 @@ H5VL_python_dataset_create(void *obj, H5VL_loc_params_t loc_params, const char *
          PyTuple_SetItem(pArgs, 6, PyString_FromString("None"));
         pValue = PyObject_CallObject(pFunc, pArgs);
         if (pValue != NULL) {
-                printf("------- PYTHON H5Dcreate\n");
                 printf("------- Result of H5Dcreate from python: %ld\n", PyInt_AsLong(pValue));
         }
         else {
@@ -533,13 +528,13 @@ H5VL_python_dataset_create(void *obj, H5VL_loc_params_t loc_params, const char *
      }
      else {
         fprintf(stderr, "------- PYTHON H5Dcreate failed\n");
-        return -1;
+        return NULL;
      }
     }
     else {
         fprintf(stderr, "------- Python module :%s is not available\n",args[0]);
     }
-    printf ("------- PYTHON H5Dcreate\n");
+    //printf ("------- PYTHON H5Dcreate\n");
     //TODO: figureout the file object
     return (void *) dset;
 }
@@ -574,7 +569,6 @@ H5VL_python_dataset_open(void *obj, H5VL_loc_params_t loc_params, const char *na
          PyTuple_SetItem(pArgs, 5, PyString_FromString("None"));
         pValue = PyObject_CallObject(pFunc, pArgs);
         if (pValue != NULL) {
-                printf("------- PYTHON H5Dopen\n");
                 printf("------- Result of H5Dopen from python: %ld\n", PyInt_AsLong(pValue));
         }
         else {
@@ -589,13 +583,13 @@ H5VL_python_dataset_open(void *obj, H5VL_loc_params_t loc_params, const char *na
      } 
      else {
         fprintf(stderr, "------- PYTHON H5Dcreate failed\n");
-        return -1;
+        return NULL;
      }  
     }   
     else {
         fprintf(stderr, "------- Python module :%s is not available\n",args[0]);
     }   
-    printf ("------- PYTHON H5Dcreate\n");
+    //printf ("------- PYTHON H5Dcreate\n");
     //TODO: figureout the file object
     return (void *) dset;
 }
@@ -631,7 +625,6 @@ H5VL_python_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
          PyTuple_SetItem(pArgs, 6, PyString_FromString("None"));
         pValue = PyObject_CallObject(pFunc, pArgs);
         if (pValue != NULL) {
-                printf("------- PYTHON H5Dread\n");
                 printf("------- Result of H5Dread from python: %ld\n", PyInt_AsLong(pValue));
         }
         else {
@@ -652,7 +645,7 @@ H5VL_python_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
     else {
         fprintf(stderr, "------- Python module :%s is not available\n",args[0]);
     }
-    printf ("------- PYTHON H5Dread\n");
+    //printf ("------- PYTHON H5Dread\n");
     return 1;     
 }
 static herr_t 
@@ -686,7 +679,6 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
          PyTuple_SetItem(pArgs, 6, PyString_FromString("None"));
         pValue = PyObject_CallObject(pFunc, pArgs);
         if (pValue != NULL) {
-                printf("------- PYTHON H5Dwrite\n");
                 printf("------- Result of H5Dwrite from python: %ld\n", PyInt_AsLong(pValue));
         }
         else {
@@ -707,7 +699,7 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
     else {
         fprintf(stderr, "------- Python module :%s is not available\n",args[0]);
     }   
-    printf ("------- PYTHON H5Dwrite\n");
+    //printf ("------- PYTHON H5Dwrite\n");
     return 1;     
 
 }
@@ -736,7 +728,6 @@ H5VL_python_dataset_close(void *dset, hid_t dxpl_id, void **req)
          PyTuple_SetItem(pArgs, 2, PyString_FromString("None"));
         pValue = PyObject_CallObject(pFunc, pArgs);
         if (pValue != NULL) {
-                printf("------- PYTHON H5Dclose\n");
                 printf("------- Result of H5Dclose from python: %ld\n", PyInt_AsLong(pValue));
         }
         else {
@@ -757,7 +748,7 @@ H5VL_python_dataset_close(void *dset, hid_t dxpl_id, void **req)
     else {
         fprintf(stderr, "------- Python module :%s is not available\n",args[0]);
     }
-    printf ("------- PYTHON H5Dclose\n");
+    //printf ("------- PYTHON H5Dclose\n");
     return 1;
 }
 #if 0
