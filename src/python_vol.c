@@ -259,12 +259,10 @@ H5VL_python_file_close(void *file, hid_t dxpl_id, void **req)
         pArgs = PyTuple_New(3);
         PyTuple_SetItem(pArgs, 0, PyCapsule_New(file, "file", NULL)); 
         PyTuple_SetItem(pArgs, 1, PyLong_FromLong(dxpl_id));
-	//TODO: struct item from c to python
 	if(req!=NULL)
          PyTuple_SetItem(pArgs, 2, Py_BuildValue("O",PyCapsule_New(req, "req", NULL)));
         else
          PyTuple_SetItem(pArgs, 2, PyString_FromString("None"));
-        //TODO: struct item from c to python
         pValue = PyObject_CallObject(pFunc, pArgs);
         if (pValue != NULL) {
 		printf("------- Result of H5Fclose from python: %ld\n", PyInt_AsLong(pValue));
