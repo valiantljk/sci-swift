@@ -134,7 +134,12 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
 
     under_fapl = *((hid_t *)H5Pget_vol_info(fapl_id));
     file->under_object = H5VLfile_create(name, flags, fcpl_id, under_fapl, dxpl_id, req);
-    
+    PyObject * vol_cls =NULL;  // This layer will figure out which python vol to be called, based on fapl_id, similar to line 564 in H5F.c
+    //TODO: Remind myself, Dec 10 2017, For now, just figure out, how to return a swift file object, in future, figure out returning a generic python object
+    //TODO: Figure out which python vol to call 
+    //line 604, H5F.c    if(NULL == (vol_cls = (H5VL_class_t *)H5I_object_verify(plugin_prop.plugin_id, H5I_VOL)))
+    //    			HGOTO_ERROR(H5E_ARGS, H5E_BADTYPE, FAIL, "not a VOL plugin ID")	 
+    //pass the vol_cls to the python_vol.py, from where the dispatching happens, and the actual vol, e.g., swift, is called.   
     PyObject *pModule, *pFunc;
     PyObject *pArgs, *pValue=NULL;
     char * args [] ={"python_vol","H5VL_python_file_create"};
@@ -153,9 +158,14 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
         else
 	 PyTuple_SetItem(pArgs, 5, PyString_FromString("None")); 
 	PyErr_Print();
+	printf("calling pyobject start\n");
         pValue = PyObject_CallObject(pFunc, pArgs);
+        PyErr_Print();
+        printf("calling pyobject end\n");
         if (pValue != NULL) {
 		printf("------- Result of H5Fcreate from python: %ld\n", PyInt_AsLong(pValue));
+//		file->under_object = (void *) pValue;
+//		return (void *) file;
         }
         else {
                 Py_DECREF(pFunc);

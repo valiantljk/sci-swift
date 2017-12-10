@@ -6,10 +6,24 @@
 #H5VL_python_file_create
 def H5VL_python_file_create(name, flags, fcpl_id, fapl_id, dxpl_id, req):
     print ("------- PYTHON H5Fcreate:%s"%name)
+
     #call python vol 
-    #import h5py 
-    #f= h5py.File('test.h5','a')    
-    return 12
+     #import h5py 
+     #f= h5py.File('test.h5','a') 
+    #TODO:  
+    # Inatialize an python generic object, 
+    # Select the swift vol, return that swift file object 
+    # and cast to a generic python object
+    #print ("creating hdf5 file with h5py\n")
+    import h5py
+    f=1
+    try:
+	f = h5py.File('test.h5','a')
+    except Exception as e:
+        pass
+    return id(f)
+    # return id(generic_py_object)   
+#    return 12
 #H5VL_python_file_open
 # const char *name, unsigned flags, hid_t fapl_id, hid_t dxpl_id, void **req
 def H5VL_python_file_open(name, flags, fapl_id, dxpl_id, req):
