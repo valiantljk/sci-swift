@@ -1,4 +1,5 @@
 export PYTHONPATH=/build/sci-swift/src/:$PYTHONPATH # expose the python vol file path
+export PYTHONPATH=/root/anaconda/lib/python2.7/site-packages/:$PYTHONPATH
 export PYTHONPATH=.:$PYTHONPATH
 export PYTHONHOME=/root/anaconda
 export LD_LIBRARY_PATH=/root/anaconda/lib:$LD_LIBRARY_PATH
