@@ -133,7 +133,7 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
     file = (H5VL_python_t *)calloc(1, sizeof(H5VL_python_t));
 
     under_fapl = *((hid_t *)H5Pget_vol_info(fapl_id));
-    file->under_object = H5VLfile_create(name, flags, fcpl_id, under_fapl, dxpl_id, req);
+    //file->under_object = H5VLfile_create(name, flags, fcpl_id, under_fapl, dxpl_id, req);
     PyObject * vol_cls =NULL;  // This layer will figure out which python vol to be called, based on fapl_id, similar to line 564 in H5F.c
     //TODO: Remind myself, Dec 10 2017, For now, just figure out, how to return a swift file object, in future, figure out returning a generic python object
     //TODO: Figure out which python vol to call 
@@ -160,10 +160,14 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
 	PyErr_Print();
 	printf("calling pyobject start\n");
         pValue = PyObject_CallObject(pFunc, pArgs);
-        PyErr_Print();
+        //PyErr_Print();
         printf("calling pyobject end\n");
         if (pValue != NULL) {
 		printf("------- Result of H5Fcreate from python: %ld\n", PyInt_AsLong(pValue));
+		void * rt_py = PyLong_AsVoidPtr(pValue);
+                file->under_object = rt_py;
+		//file->under_object = (void *)pValue;
+                return file;
 //		file->under_object = (void *) pValue;
 //		return (void *) file;
         }
@@ -734,7 +738,7 @@ H5VL_python_dataset_close(void *dset, hid_t dxpl_id, void **req)
         pValue = PyObject_CallObject(pFunc, pArgs);
         if (pValue != NULL) {
                 printf("------- Result of H5Dclose from python: %ld\n", PyInt_AsLong(pValue));
-        }
+	}
         else {
                 Py_DECREF(pFunc);
                 Py_DECREF(pModule);
