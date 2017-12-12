@@ -165,11 +165,12 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
         if (pValue != NULL) {
 		printf("------- Result of H5Fcreate from python: %ld\n", PyInt_AsLong(pValue));
 		void * rt_py = PyLong_AsVoidPtr(pValue);
+		if (rt_py==NULL) printf("returned pointer from python is NULL\n");
                 file->under_object = rt_py;
 		//file->under_object = (void *)pValue;
-                return file;
+                //return file;
 //		file->under_object = (void *) pValue;
-//		return (void *) file;
+		return (void *) file;
         }
         else {
                 Py_DECREF(pFunc);
