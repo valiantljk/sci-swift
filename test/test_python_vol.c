@@ -69,18 +69,31 @@ int main(int argc, char **argv) {
         assert(native_plugin_id > 0);
 
         acc_tpl = H5Pcreate (H5P_FILE_ACCESS);
+        //TODO: H5Pinsert2(pid, PROP1_NAME, sizeof(int), 0, ...); test/tgenprop.c
+        //setup python vol plugin property, e.g., h5py, root, or swift, etc
+	size_t PROP1_SIZE=sizeof(int);
+ 	char pyplugin_name[5]="py";
+	int PROP1_DEF_VALUE=0;
+	//property name, py
+        //property value, 0: h5py
+	//		  1: swift
+	//		  2: root
+	//		  3: fit
+	H5Pinsert2(acc_tpl, pyplugin_name, PROP1_SIZE, &PROP1_DEF_VALUE, NULL, NULL, NULL, NULL, NULL, NULL);
         H5Pset_vol(acc_tpl, vol_id, &under_fapl);
+	//H5Pset_vol(acc_tpl, vol_id, NULL);
         //Test file create
+	//TODO:	acc_tpl taking specific python vol info
 
 	file_id = H5Fcreate(file_name, H5F_ACC_TRUNC, H5P_DEFAULT, acc_tpl);
         len = H5VLget_plugin_name(file_id, name, 25);
-
+	printf("File Create Test OK\n");
 //        printf ("FILE VOL name = %s  %ld\n", name, len);
         // Test group create
 	group_id = H5Gcreate2(file_id, group_name, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
         len = H5VLget_plugin_name(group_id, name, 50);
 //        printf ("GROUP VOL name = %s  %ld\n", name, len);
-
+	printf("Group Create Test OK\n");
         int_id = H5Tcopy(H5T_NATIVE_INT);
         H5Tcommit2(file_id, "int", int_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
         len = H5VLget_plugin_name(int_id, name, 50);

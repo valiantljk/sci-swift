@@ -14,12 +14,17 @@
  
 #H5VL_python_file_create
 
-def H5VL_python_file_create(name, flags, fcpl_id, fapl_id, dxpl_id, req):
+def H5VL_python_file_create(name, flags, fcpl_id, fapl_id, dxpl_id, req, ipvol):
     print ("------- PYTHON H5Fcreate:%s"%name)
-    import h5py 
-    f = h5py.File('vol_1.h5','a')
-    print ("id of file object is:",id(f))
-    return id(f)
+    print ("------- PYTHON Vol: %d"%ipvol)
+    #get h5py vol based on ipvol
+    if(ipvol==0):
+     import h5py 
+     f = h5py.File('vol_1.h5','a')
+     #print ("id of file object is:",id(f))
+     return id(f)
+    else:
+     print ("%d py vol is not implemented"%ipvol)
     #return f
 #import h5py 
 #    try: 

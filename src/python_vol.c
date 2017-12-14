@@ -133,9 +133,18 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
     file = (H5VL_python_t *)calloc(1, sizeof(H5VL_python_t));
 
     under_fapl = *((hid_t *)H5Pget_vol_info(fapl_id));
+    int ipvol=0; //default is using h5py for python vol
+    char pvol_name[3]="py"; 
+    if( H5Pexist(fapl_id, pvol_name)>0){
+      H5Pget(fapl_id, pvol_name, &ipvol);
+      //printf ("%s vol exists: %d\n",pvol_name,ipvol);
+    }
+   
     //file->under_object = H5VLfile_create(name, flags, fcpl_id, under_fapl, dxpl_id, req);
     PyObject * vol_cls =NULL;  // This layer will figure out which python vol to be called, based on fapl_id, similar to line 564 in H5F.c
     //TODO: Remind myself, Dec 10 2017, For now, just figure out, how to return a swift file object, in future, figure out returning a generic python object
+    //pexist in tgenprop.c TODO
+    //pget, don't forget to store in a pytho vol field, H5VL_python_t; 
     //TODO: Figure out which python vol to call 
     //line 604, H5F.c    if(NULL == (vol_cls = (H5VL_class_t *)H5I_object_verify(plugin_prop.plugin_id, H5I_VOL)))
     //    			HGOTO_ERROR(H5E_ARGS, H5E_BADTYPE, FAIL, "not a VOL plugin ID")	 
@@ -147,7 +156,7 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
     if (pModule != NULL) {
      pFunc = PyObject_GetAttrString(pModule, args[1]);
      if (pFunc && PyCallable_Check(pFunc)) {
-	pArgs = PyTuple_New(6);
+	pArgs = PyTuple_New(7);
         PyTuple_SetItem(pArgs, 0, PyString_FromString(name));
 	PyTuple_SetItem(pArgs, 1, PyLong_FromLong(flags));
 	PyTuple_SetItem(pArgs, 2, PyLong_FromLong(fcpl_id));
@@ -157,19 +166,13 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
  	 PyTuple_SetItem(pArgs, 5, Py_BuildValue("O",PyCapsule_New(req, "req", NULL)));
         else
 	 PyTuple_SetItem(pArgs, 5, PyString_FromString("None")); 
-	PyErr_Print();
-	printf("calling pyobject start\n");
+	PyTuple_SetItem(pArgs, 6, PyLong_FromLong(ipvol));
         pValue = PyObject_CallObject(pFunc, pArgs);
-        //PyErr_Print();
-        printf("calling pyobject end\n");
         if (pValue != NULL) {
-		printf("------- Result of H5Fcreate from python: %ld\n", PyInt_AsLong(pValue));
+		//printf("------- Result of H5Fcreate from python: %ld\n", PyInt_AsLong(pValue));
 		void * rt_py = PyLong_AsVoidPtr(pValue);
 		if (rt_py==NULL) printf("returned pointer from python is NULL\n");
                 file->under_object = rt_py;
-		//file->under_object = (void *)pValue;
-                //return file;
-//		file->under_object = (void *) pValue;
 		return (void *) file;
         }
         else {
@@ -314,7 +317,7 @@ H5VL_python_group_create(void *obj, H5VL_loc_params_t loc_params, const char *na
 
     group = (H5VL_python_t *)calloc(1, sizeof(H5VL_python_t));
 
-    group->under_object = H5VLgroup_create(o->under_object, loc_params, native_plugin_id, name, gcpl_id,  gapl_id, dxpl_id, req);
+    //group->under_object = H5VLgroup_create(o->under_object, loc_params, native_plugin_id, name, gcpl_id,  gapl_id, dxpl_id, req);
     PyObject *pModule, *pFunc;
     PyObject *pArgs, *pValue=NULL;
     char * args [] ={"python_vol","H5VL_python_group_create"};
@@ -338,6 +341,10 @@ H5VL_python_group_create(void *obj, H5VL_loc_params_t loc_params, const char *na
         pValue = PyObject_CallObject(pFunc, pArgs);
         if (pValue != NULL) {
                 printf("------- Result of H5Gcreate from python: %ld\n", PyInt_AsLong(pValue));
+                void * rt_py = PyLong_AsVoidPtr(pValue);
+                if (rt_py==NULL) printf("returned pointer from python is NULL\n");
+                file->under_object = rt_py;
+                return (void *) file;		
         }
         else {
                 Py_DECREF(pFunc);
