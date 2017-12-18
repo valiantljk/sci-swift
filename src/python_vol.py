@@ -13,17 +13,32 @@
     #print ("creating hdf5 file with h5py\n")    
  
 #H5VL_python_file_create
+import gc
+f=0
+def objects_by_id(id_):
+    for obj in gc.get_objects():
+        if id(obj) == id_:
+	    print ("found id:%d"%(id_))
+            return obj
+        else:
+           difid=id(obj)-id_
+           if abs(difid)<10:
+            print ("diff:%d"%difid)
+    raise Exception("No found")
 
 def H5VL_python_file_create(name, flags, fcpl_id, fapl_id, dxpl_id, req, ipvol):
     print ("------- PYTHON H5Fcreate:%s"%name)
     print ("------- PYTHON Vol: %d"%ipvol)
     #get h5py vol based on ipvol
     import gc
+    global f
     print ("len of gc in file create:%d"%len(gc.get_objects())) 
     if(ipvol==0):
      import h5py 
-     f = h5py.File('vol_1.h5','a')
+     f = h5py.File(name,'a')
      print ("id of file object is:",id(f)," and hex:",hex(id(f)))
+     f1=objects_by_id(id(f))
+     print ("f1:",f1)
      return id(f)
     else:
      print ("%d py vol is not implemented"%ipvol)
@@ -51,27 +66,19 @@ def H5VL_python_file_open(name, flags, fapl_id, dxpl_id, req):
 #static herr_t
 #H5VL_python_file_close(void *file, hid_t dxpl_id, void **req)
 def H5VL_python_file_close(file, dxpl_id, req):
+    print ("file close id:%d"%file)
     print ("------- PYTHON H5Fclose OK")
+    fx=objects_by_id(file)
+    print ("file close fx:",fx)
+    fx.close()
     #call python vol 
     #import h5py 
     #f= h5py.File('test.h5','a')    
-    return 12
+    return 1
 
 #static void *
 #H5VL_python_group_create(void *obj, H5VL_loc_params_t loc_params, const char *name,
 #                      hid_t gcpl_id, hid_t gapl_id, hid_t dxpl_id, void **req)
-import gc
-
-def objects_by_id(id_):
-    for obj in gc.get_objects():
-        if id(obj) == id_:
-            return obj
-        else:
-	   difid=id(obj)-id_
-	   if abs(difid)<10:
-	    print ("diff:%d"%difid)
-    raise Exception("No found")
-
 def H5VL_python_group_create(obj, loc_params, name, gcpl_id, gapl_id, dxpl_id, req):
     print ("------- PYTHON H5Gcreate:%s"%name)
     #recast python obj from void pointer, i.e., id in python layer
@@ -81,9 +88,11 @@ def H5VL_python_group_create(obj, loc_params, name, gcpl_id, gapl_id, dxpl_id, r
     import gc
     print ("len of objects:%d"%len(gc.get_objects()))
     fx=objects_by_id(obj)
-    fx.create_group(name)
+    grp=fx.create_group(name)
     print ("fx create_group:%s"%name)   
-    return 12
+    #fx.close()
+    print ("id of group:%d"%id(grp))
+    return id(grp)
 
 
 #static herr_t

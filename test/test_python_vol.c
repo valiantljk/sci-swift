@@ -26,7 +26,7 @@ visit_cb(hid_t oid, const char *name,
 
 int main(int argc, char **argv) {
         const char file_name[]="large_dataset.h5";
-	const char group_name[]="/Group";
+	const char group_name[]="/bowling";
 	const char dataset_name[]="Data";
 	/*if(argc !=2){
 		printf("Input: plugin name, e.g., python\n");
@@ -115,7 +115,7 @@ int main(int argc, char **argv) {
 
 //        len = H5Fget_name(file_id, name, 50);
 //        printf("name = %ld  %s\n", len, name);
-
+/*
 	data = malloc (sizeof(int)*nelem);
         data_in = malloc (sizeof(int)*nelem);
 	for(i=0;i<nelem;++i)
@@ -130,8 +130,9 @@ int main(int argc, char **argv) {
 	H5Sclose(dataspaceId);
 
         len = H5VLget_plugin_name(datasetId, name, 50);
+*/
 //        printf ("DSET name = %s  %ld\n", name, len);
-
+/*
 	H5Dwrite(datasetId, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
         H5Dread (datasetId, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_in);
 	H5Dclose(datasetId);
@@ -141,7 +142,9 @@ int main(int argc, char **argv) {
 	free (data);
         H5Oclose(int_id);
         H5Sclose (space);
+
 	H5Gclose(group_id);
+*/
 //*/
 #if 0
 
@@ -164,6 +167,8 @@ int main(int argc, char **argv) {
 #endif
 
 	H5Fclose(file_id);
+	printf("end of H5Fclose\n");
+/*
         H5Pclose(acc_tpl);
         H5Pclose(under_fapl);
 
@@ -171,6 +176,9 @@ int main(int argc, char **argv) {
         H5VLterminate(vol_id, H5P_DEFAULT);
         H5VLunregister (vol_id);
         assert(H5VLis_registered(plugin_name) == 0);
+*/  
+       printf("End before python finalize\n");
+       //Py_Finalize();
 	return 0;
 }
 

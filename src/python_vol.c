@@ -266,8 +266,9 @@ H5VL_python_file_close(void *file, hid_t dxpl_id, void **req)
 {
     H5VL_python_t *f = (H5VL_python_t *)file;
 
-    H5VLfile_close(f->under_object, native_plugin_id, dxpl_id, req);
-    free(f);
+    //H5VLfile_close(f->under_object, native_plugin_id, dxpl_id, req);
+    //free(f);
+    PyObject * plong = PyLong_FromVoidPtr(f->under_object);
     PyObject *pModule, *pFunc;
     PyObject *pArgs, *pValue=NULL;
     char * args [] ={"python_vol","H5VL_python_file_close"};
@@ -276,7 +277,8 @@ H5VL_python_file_close(void *file, hid_t dxpl_id, void **req)
      pFunc = PyObject_GetAttrString(pModule, args[1]);
      if (pFunc && PyCallable_Check(pFunc)) {
         pArgs = PyTuple_New(3);
-        PyTuple_SetItem(pArgs, 0, PyCapsule_New(file, "file", NULL)); 
+        PyTuple_SetItem(pArgs, 0,plong);
+        //PyTuple_SetItem(pArgs, 0, PyCapsule_New(file, "file", NULL)); 
         PyTuple_SetItem(pArgs, 1, PyLong_FromLong(dxpl_id));
 	if(req!=NULL)
          PyTuple_SetItem(pArgs, 2, Py_BuildValue("O",PyCapsule_New(req, "req", NULL)));
@@ -284,7 +286,7 @@ H5VL_python_file_close(void *file, hid_t dxpl_id, void **req)
          PyTuple_SetItem(pArgs, 2, PyString_FromString("None"));
         pValue = PyObject_CallObject(pFunc, pArgs);
         if (pValue != NULL) {
-		printf("------- Result of H5Fclose from python: %ld\n", PyInt_AsLong(pValue));
+		printf("------- Result of H5Fclose from python: %ld\n", PyLong_AsLong(pValue));
         }
         else {
                 Py_DECREF(pFunc);
@@ -304,7 +306,8 @@ H5VL_python_file_close(void *file, hid_t dxpl_id, void **req)
     else {
 	fprintf(stderr, "------- Python module :%s is not available\n",args[0]);
     }
-    //printf ("------- PYTHON H5Fclose\n");
+    printf ("------- PYTHON H5Fclose\n");
+    free(f);
     //TODO: figureout the file object
     return 1;
 }
