@@ -94,12 +94,15 @@ int main(int argc, char **argv) {
         len = H5VLget_plugin_name(group_id, name, 50);
 //        printf ("GROUP VOL name = %s  %ld\n", name, len);
 	printf("Group Create Test OK\n");
-        int_id = H5Tcopy(H5T_NATIVE_INT);
+/*        int_id = H5Tcopy(H5T_NATIVE_INT);
+	printf("H5Tcopy\n");
         H5Tcommit2(file_id, "int", int_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+        printf("H5VLget start\n");
         len = H5VLget_plugin_name(int_id, name, 50);
 //        printf ("DT COMMIT name = %s  %ld\n", name, len);
+        printf("H5VLget end\n");
         H5Tclose(int_id);
-
+	printf("H5Tcommit\n");
         int_id = H5Topen2(file_id, "int", H5P_DEFAULT);
         len = H5VLget_plugin_name(int_id, name, 50);
 //        printf ("DT OPEN name = %s  %ld\n", name, len);
@@ -108,9 +111,9 @@ int main(int argc, char **argv) {
         int_id = H5Oopen(file_id,"int",H5P_DEFAULT);
         len = H5VLget_plugin_name(int_id, name, 50);
 //        printf ("DT OOPEN name = %s  %ld\n", name, len);
+*/
 
-///*
-        len = H5Fget_name(file_id, name, 50);
+//        len = H5Fget_name(file_id, name, 50);
 //        printf("name = %ld  %s\n", len, name);
 
 	data = malloc (sizeof(int)*nelem);
@@ -121,7 +124,7 @@ int main(int argc, char **argv) {
 	dims [0] = 60;
 	dataspaceId = H5Screate_simple(1, dims, NULL); 
         space = H5Screate_simple (2, ds_size, ds_size);
-
+	printf("H5Dcreate2 starts:\n");
 	sprintf(fullpath,"%s/%s",group_name,dataset_name);
 	datasetId = H5Dcreate2(file_id,fullpath,H5T_NATIVE_INT,dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
 	H5Sclose(dataspaceId);

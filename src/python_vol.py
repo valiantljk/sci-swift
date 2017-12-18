@@ -18,10 +18,12 @@ def H5VL_python_file_create(name, flags, fcpl_id, fapl_id, dxpl_id, req, ipvol):
     print ("------- PYTHON H5Fcreate:%s"%name)
     print ("------- PYTHON Vol: %d"%ipvol)
     #get h5py vol based on ipvol
+    import gc
+    print ("len of gc in file create:%d"%len(gc.get_objects())) 
     if(ipvol==0):
      import h5py 
      f = h5py.File('vol_1.h5','a')
-     #print ("id of file object is:",id(f))
+     print ("id of file object is:",id(f)," and hex:",hex(id(f)))
      return id(f)
     else:
      print ("%d py vol is not implemented"%ipvol)
@@ -58,9 +60,29 @@ def H5VL_python_file_close(file, dxpl_id, req):
 #static void *
 #H5VL_python_group_create(void *obj, H5VL_loc_params_t loc_params, const char *name,
 #                      hid_t gcpl_id, hid_t gapl_id, hid_t dxpl_id, void **req)
+import gc
+
+def objects_by_id(id_):
+    for obj in gc.get_objects():
+        if id(obj) == id_:
+            return obj
+        else:
+	   difid=id(obj)-id_
+	   if abs(difid)<10:
+	    print ("diff:%d"%difid)
+    raise Exception("No found")
+
 def H5VL_python_group_create(obj, loc_params, name, gcpl_id, gapl_id, dxpl_id, req):
     print ("------- PYTHON H5Gcreate:%s"%name)
-
+    #recast python obj from void pointer, i.e., id in python layer
+    #TODO: recast into a generic python object as QK suggests, but now we cast into a h5py File obj, Dec. 17, 5:59pm
+    print("obj is:",obj)
+    print ("type of obj is",type(obj))
+    import gc
+    print ("len of objects:%d"%len(gc.get_objects()))
+    fx=objects_by_id(obj)
+    fx.create_group(name)
+    print ("fx create_group:%s"%name)   
     return 12
 
 

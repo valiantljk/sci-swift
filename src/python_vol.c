@@ -169,10 +169,11 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
 	PyTuple_SetItem(pArgs, 6, PyLong_FromLong(ipvol));
         pValue = PyObject_CallObject(pFunc, pArgs);
         if (pValue != NULL) {
-		//printf("------- Result of H5Fcreate from python: %ld\n", PyInt_AsLong(pValue));
+		printf("------- Result of H5Fcreate from python: %ld\n", PyInt_AsLong(pValue));
 		void * rt_py = PyLong_AsVoidPtr(pValue);
 		if (rt_py==NULL) printf("returned pointer from python is NULL\n");
                 file->under_object = rt_py;
+	 	printf("file obj: %p,file->under_object:%p\n",file,rt_py);
 		return (void *) file;
         }
         else {
@@ -225,7 +226,7 @@ H5VL_python_file_open(const char *name, unsigned flags, hid_t fapl_id, hid_t dxp
          PyTuple_SetItem(pArgs, 4, PyString_FromString("None"));
         pValue = PyObject_CallObject(pFunc, pArgs);
         if (pValue != NULL) {
-		printf("------- Result of H5Fopen from python: %ld\n", PyInt_AsLong(pValue));
+		printf("------- Result of H5Fopen from python: %ld\n", PyLong_AsLong(pValue));
         }
         else {
                 Py_DECREF(pFunc);
@@ -314,7 +315,10 @@ H5VL_python_group_create(void *obj, H5VL_loc_params_t loc_params, const char *na
 {
     H5VL_python_t *group;
     H5VL_python_t *o = (H5VL_python_t *)obj;
-
+    PyObject * plong = PyLong_FromVoidPtr(o); // get the id of py object, and pass into python layer to form a py obj
+    PyObject * plong_under = PyLong_FromVoidPtr(o->under_object);
+    printf("In Group create: file:%p,%ld\n",o,PyLong_AsLong(plong));
+    printf("In Group create: file->under_object:%p,%ld\n", o->under_object,PyLong_AsLong(plong_under));
     group = (H5VL_python_t *)calloc(1, sizeof(H5VL_python_t));
 
     //group->under_object = H5VLgroup_create(o->under_object, loc_params, native_plugin_id, name, gcpl_id,  gapl_id, dxpl_id, req);
@@ -327,7 +331,8 @@ H5VL_python_group_create(void *obj, H5VL_loc_params_t loc_params, const char *na
      if (pFunc && PyCallable_Check(pFunc)) {
         pArgs = PyTuple_New(7);
 	//TODO: struct pointer
-	PyTuple_SetItem(pArgs, 0, PyCapsule_New(obj, "obj", NULL));
+	//PyTuple_SetItem(pArgs, 0, PyCapsule_New(obj, "obj", NULL));
+	PyTuple_SetItem(pArgs, 0,plong_under);
         //TODO: struct
 	PyTuple_SetItem(pArgs, 1, PyCapsule_New(&loc_params, "loc", NULL));
         PyTuple_SetItem(pArgs, 2, PyString_FromString(name));
@@ -343,8 +348,8 @@ H5VL_python_group_create(void *obj, H5VL_loc_params_t loc_params, const char *na
                 printf("------- Result of H5Gcreate from python: %ld\n", PyInt_AsLong(pValue));
                 void * rt_py = PyLong_AsVoidPtr(pValue);
                 if (rt_py==NULL) printf("returned pointer from python is NULL\n");
-                file->under_object = rt_py;
-                return (void *) file;		
+                group->under_object = rt_py;
+                return (void *) group;		
         }
         else {
                 Py_DECREF(pFunc);
@@ -428,11 +433,11 @@ H5VL_python_datatype_commit(void *obj, H5VL_loc_params_t loc_params, const char 
     H5VL_python_t *o = (H5VL_python_t *)obj;
 
     dt = (H5VL_python_t *)calloc(1, sizeof(H5VL_python_t));
-
+    
     dt->under_object = H5VLdatatype_commit(o->under_object, loc_params, native_plugin_id, name, 
                                            type_id, lcpl_id, tcpl_id, tapl_id, dxpl_id, req);
 
-    //printf("------- PYTHON H5Tcommit\n");
+    printf("------- PYTHON H5Tcommit\n");
     return dt;
 }
 static void *
@@ -688,7 +693,7 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
         PyTuple_SetItem(pArgs, 3, PyLong_FromLong(file_space_id));
         PyTuple_SetItem(pArgs, 4, PyLong_FromLong(plist_id));
         //TODO: buf must not be NULL, right?
-        PyTuple_SetItem(pArgs, 5, PyCapsule_New(buf, "buf", NULL));
+        PyTuple_SetItem(pArgs, 5, PyCapsule_New((void *)buf, "buf", NULL));
         //req can be NULL
         if(req!=NULL)
          PyTuple_SetItem(pArgs, 6, Py_BuildValue("O",PyCapsule_New(req, "req", NULL)));
