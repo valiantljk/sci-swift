@@ -167,7 +167,7 @@ int main(int argc, char **argv) {
 #endif
 
 	H5Fclose(file_id);
-	printf("end of H5Fclose\n");
+//	printf("end of H5Fclose\n");
 /*
         H5Pclose(acc_tpl);
         H5Pclose(under_fapl);
@@ -177,8 +177,9 @@ int main(int argc, char **argv) {
         H5VLunregister (vol_id);
         assert(H5VLis_registered(plugin_name) == 0);
 */  
-       printf("End before python finalize\n");
-       //Py_Finalize();
+        printf("Begin python finalize\n");
+        //Py_Finalize();
+	printf("End python finalize\n");
 	return 0;
 }
 

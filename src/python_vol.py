@@ -18,7 +18,7 @@ f=0
 def objects_by_id(id_):
     for obj in gc.get_objects():
         if id(obj) == id_:
-	    print ("found id:%d"%(id_))
+	    #print ("found id:%d"%(id_))
             return obj
         else:
            difid=id(obj)-id_
@@ -32,28 +32,14 @@ def H5VL_python_file_create(name, flags, fcpl_id, fapl_id, dxpl_id, req, ipvol):
     #get h5py vol based on ipvol
     import gc
     global f
-    print ("len of gc in file create:%d"%len(gc.get_objects())) 
     if(ipvol==0):
      import h5py 
      f = h5py.File(name,'a')
-     print ("id of file object is:",id(f)," and hex:",hex(id(f)))
+     #print ("id of file object is:",id(f)," and hex:",hex(id(f)))
      f1=objects_by_id(id(f))
-     print ("f1:",f1)
      return id(f)
     else:
      print ("%d py vol is not implemented"%ipvol)
-    #return f
-#import h5py 
-#    try: 
-#     import h5py
-     #print (h5py.__file__)
-     #f = h5py.File('test1.h5','a')
-#    except Exception as e:
-#     print (e)
-    #    print (e)
-    #    pass
-    #return id(f)
-    # return id(generic_py_object)   
 
 #H5VL_python_file_open
 # const char *name, unsigned flags, hid_t fapl_id, hid_t dxpl_id, void **req
@@ -63,17 +49,14 @@ def H5VL_python_file_open(name, flags, fapl_id, dxpl_id, req):
     #import h5py 
     #f= h5py.File('test.h5','a')    
     return 12
+
 #static herr_t
 #H5VL_python_file_close(void *file, hid_t dxpl_id, void **req)
 def H5VL_python_file_close(file, dxpl_id, req):
-    print ("file close id:%d"%file)
     print ("------- PYTHON H5Fclose OK")
     fx=objects_by_id(file)
-    print ("file close fx:",fx)
+    #print ("file close fx:",fx)
     fx.close()
-    #call python vol 
-    #import h5py 
-    #f= h5py.File('test.h5','a')    
     return 1
 
 #static void *
@@ -83,15 +66,8 @@ def H5VL_python_group_create(obj, loc_params, name, gcpl_id, gapl_id, dxpl_id, r
     print ("------- PYTHON H5Gcreate:%s"%name)
     #recast python obj from void pointer, i.e., id in python layer
     #TODO: recast into a generic python object as QK suggests, but now we cast into a h5py File obj, Dec. 17, 5:59pm
-    print("obj is:",obj)
-    print ("type of obj is",type(obj))
-    import gc
-    print ("len of objects:%d"%len(gc.get_objects()))
     fx=objects_by_id(obj)
     grp=fx.create_group(name)
-    print ("fx create_group:%s"%name)   
-    #fx.close()
-    print ("id of group:%d"%id(grp))
     return id(grp)
 
 
