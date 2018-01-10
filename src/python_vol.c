@@ -151,6 +151,7 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
     //pass the vol_cls to the python_vol.py, from where the dispatching happens, and the actual vol, e.g., swift, is called.   
     PyObject *pModule, *pFunc;
     PyObject *pArgs, *pValue=NULL;
+    PyObject *pValue_file=NULL;
     char * args [] ={"python_vol","H5VL_python_file_create"};
     pModule = PyImport_ImportModule(args[0]);
     if (pModule != NULL) {
@@ -167,12 +168,15 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
         else
 	 PyTuple_SetItem(pArgs, 5, PyString_FromString("None")); 
 	PyTuple_SetItem(pArgs, 6, PyLong_FromLong(ipvol));
+        //pValue_file = PyObject_CallObject(pFunc, pArgs);
         pValue = PyObject_CallObject(pFunc, pArgs);
+	Py_INCREF(pValue);
         if (pValue != NULL) {
 		//printf("------- Result of H5Fcreate from python: %ld\n", PyInt_AsLong(pValue));
 		void * rt_py = PyLong_AsVoidPtr(pValue);
-		if (rt_py==NULL) printf("returned pointer from python is NULL\n");
+		if (rt_py==NULL) printf("File create, returned pointer from python is NULL\n");
                 file->under_object = rt_py;
+		Py_INCREF(pValue);//keep it alive by incrementing the ref count
 	 	//printf("file obj: %p,file->under_object:%p\n",file,rt_py);
 		return (void *) file;
         }
@@ -345,7 +349,8 @@ H5VL_python_group_create(void *obj, H5VL_loc_params_t loc_params, const char *na
         if (pValue != NULL) {
 //                printf("------- Result of H5Gcreate from python: %ld\n", PyInt_AsLong(pValue));
                 void * rt_py = PyLong_AsVoidPtr(pValue);
-                if (rt_py==NULL) printf("returned pointer from python is NULL\n");
+                if (rt_py==NULL) printf("Group create, returned pointer from python is NULL\n");
+		Py_INCREF(pValue);
                 group->under_object = rt_py;
                 return (void *) group;		
         }

@@ -126,7 +126,7 @@ int main(int argc, char **argv) {
         space = H5Screate_simple (2, ds_size, ds_size);
 	printf("H5Dcreate2 starts:\n");
 	sprintf(fullpath,"%s/%s",group_name,dataset_name);
-	datasetId = H5Dcreate2(file_id,fullpath,H5T_NATIVE_INT,dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
+//	datasetId = H5Dcreate2(file_id,fullpath,H5T_NATIVE_INT,dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
 	H5Sclose(dataspaceId);
 
         len = H5VLget_plugin_name(datasetId, name, 50);

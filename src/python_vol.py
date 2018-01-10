@@ -13,15 +13,54 @@
     #print ("creating hdf5 file with h5py\n")    
  
 #H5VL_python_file_create
-import gc
-f=0
+#import gc
+#gc.disable()
+#print ('gc is enabled? ',gc.isenabled())
+
+#class PyVol
+class H5PVol:
+    file_NO=(None,None) # (file Name, file Object)
+    obj_list={} # dictionary for various h5py objects, e.g., groups, datasets, links, etc. 
+    def H5VL_python_file_create(name, flags, fcpl_id, fapl_id, dxpl_id, req, ipvol):
+    	print ("------- PYTHON H5Fcreate:%s"%name)
+    	print ("------- PYTHON Vol: %d"%ipvol)
+	if(ipvol==0):
+     	  import h5py
+     	  f = h5py.File(name,'a')
+          self.file_NO=(name,f)
+          # return a hash value of name, TODO: potential conflict with HDF5 objects' name
+          return name.__hash__()
+        else:
+          print ("%d py vol is not implemented"%ipvol)
+    def H5VL_python_file_close(file, dxpl_id, req):
+    	print ("------- PYTHON H5Fclose OK")
+	# check if file obj is available in file_NO
+        try:
+	   obj = exist_obj(self.)
+   	self.h5file.close()
+        return 1
+    def H5VL_python_group_create(obj, loc_params, name, gcpl_id, gapl_id, dxpl_id, req):
+    	print ("------- PYTHON H5Gcreate:%s"%name)
+	try:
+	   print ('in python group create, obj is ',obj)
+           #fx=objects_by_id(obj)
+           grp=fx.create_group(name)
+     return id(grp)
+    except Exception as e:
+     print ('group create in python failed')
+     exit (1)
+     return 0 # TODO figure out failure return code
+
 def objects_by_id(id_):
+    print ('need to find obj id:',id_)
+    print ("Total number of objs:%d"%(len(gc.get_objects())))
     for obj in gc.get_objects():
         if id(obj) == id_:
-	    #print ("found id:%d"%(id_))
+	    print ("found id:%d"%(id_))
             return obj
         else:
            difid=id(obj)-id_
+           #print (id(obj) )
            if abs(difid)<10:
             print ("diff:%d"%difid)
     raise Exception("No found")
@@ -31,13 +70,18 @@ def H5VL_python_file_create(name, flags, fcpl_id, fapl_id, dxpl_id, req, ipvol):
     print ("------- PYTHON Vol: %d"%ipvol)
     #get h5py vol based on ipvol
     import gc
-    global f
+    #disable auto garbage collector
+    gc.disable()
+    print ("gc is enabled?",gc.isenabled())
+#    global f
     if(ipvol==0):
      import h5py 
      f = h5py.File(name,'a')
-     #print ("id of file object is:",id(f)," and hex:",hex(id(f)))
-     f1=objects_by_id(id(f))
+     print ("id of file object is:",id(f)," and hex:",hex(id(f)))
+     #f1=objects_by_id(id(f))
+
      return id(f)
+     #return f
     else:
      print ("%d py vol is not implemented"%ipvol)
 
@@ -54,6 +98,8 @@ def H5VL_python_file_open(name, flags, fapl_id, dxpl_id, req):
 #H5VL_python_file_close(void *file, hid_t dxpl_id, void **req)
 def H5VL_python_file_close(file, dxpl_id, req):
     print ("------- PYTHON H5Fclose OK")
+    import gc
+    gc.disable()
     fx=objects_by_id(file)
     #print ("file close fx:",fx)
     fx.close()
@@ -66,16 +112,24 @@ def H5VL_python_group_create(obj, loc_params, name, gcpl_id, gapl_id, dxpl_id, r
     print ("------- PYTHON H5Gcreate:%s"%name)
     #recast python obj from void pointer, i.e., id in python layer
     #TODO: recast into a generic python object as QK suggests, but now we cast into a h5py File obj, Dec. 17, 5:59pm
-    fx=objects_by_id(obj)
-    grp=fx.create_group(name)
-    return id(grp)
-
+    import gc
+    gc.disable()
+    try:
+     print ('in python group create, obj is ',obj)
+     fx=objects_by_id(obj)
+     grp=fx.create_group(name)
+     return id(grp)
+    except Exception as e:
+     print ('group create in python failed')
+     exit (1)
+     return 0 # TODO figure out failure return code
 
 #static herr_t
 #H5VL_python_group_close(void *grp, hid_t dxpl_id, void **req)
 def H5VL_python_group_close(grp, dxpl_id, req):
     print ("------- PYTHON H5Gclose OK")
-
+    import gc
+    gc.disable()
     return 12
 
 #static void *
