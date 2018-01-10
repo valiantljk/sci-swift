@@ -70,7 +70,76 @@ PyObject * swift_list(int n, char *args[]){
     }
     return pValue;
 }
+PyObject * pyvol_check(int n, char *args[])
+{
+    PyObject *pName, *pModule, *pFunc,*pInstance, *pClass;
+    PyObject *pArgs, *pValue=NULL;
+    pName = PyString_FromString(args[0]);
+    /* Error checking of pName left out */
+    long num = strtol(args[2], NULL, 10);
+    printf("inside pyvol_check\n");
+    pModule = PyImport_Import(pName);
+    Py_DECREF(pName);
+    if (pModule != NULL) {
+	printf("inside pyvol_check pModule\n");
+        pClass = PyObject_GetAttrString(pModule, args[1]); //args[1] is class name
+        // initianiate an object
+        PyObject* pInstance = PyInstance_New(pClass, NULL, NULL);
+        if(pInstance == NULL)printf("New instance failed\n");
+        else printf("pInstance ok\n");
+	const char * fname="94.h5";
+        pValue = PyObject_CallMethod(pInstance, args[2], "(sulllll)", fname,0,0,0,0,0,0); //args[2] is method: h5vl_python_file_create
+        PyErr_Print();
+        if(pValue){
+	   printf("Result of call should be 0, which is the file handle: %ld\n", PyInt_AsLong(pValue));
+	   PyObject * pValue_group;
+	   const char * gname="83";
+	   pValue_group= PyObject_CallMethod(pInstance, args[3], "(llsllll)", 0,0,gname,0,0,0,0);
+           if(pValue_group==NULL)printf("sorry, pValue_group is null\n");
+	   PyErr_Print();	
+	   printf("Result of call should be 1, which is the first object, 'group', id: %ld\n", PyInt_AsLong(pValue_group));
+	}else{
+	   printf("pValue is Null\n");
+	}        
+        /* pFunc is a new reference */
+        /*
+        if (pFunc && PyCallable_Check(pFunc)) {
+            pArgs = PyTuple_New(1);
+            PyTuple_SetItem(pArgs, 0, PyInt_FromLong(num));
+            pValue = PyObject_CallObject(pFunc, pArgs);
+            printf("called\n");
+            if (pValue != NULL) {
+                printf("Result of call: %ld\n", PyInt_AsLong(pValue));
+            }
+            else {
+                Py_DECREF(pFunc);
+                Py_DECREF(pModule);
+                Py_DECREF(PyTuple_GetItem(pArgs, 1));
+                Py_XDECREF(pArgs);
+                PyErr_Print();
+                fprintf(stderr,"Call failed\n");
+                return NULL;
+            }
+            // decref arrays in object 
+            //Py_DECREF(PyTuple_GetItem(pArgs, 1));
+            Py_XDECREF(pArgs);
+        }
+        else {
+            if (PyErr_Occurred())
+                PyErr_Print();
+            fprintf(stderr, "Cannot find function \"%s\"\n", args[2]);
+        }*/
+        //Py_XDECREF(pFunc);
+        Py_DECREF(pModule);
+    }
+    else {
+        PyErr_Print();
+        fprintf(stderr, "Failed to load \"%s\"\n", args[1]);
+        return NULL;
+    }
+    return pValue;
 
+}
 PyObject * basic_check(int n, char *args[])
 {
     PyObject *pName, *pModule, *pFunc;

@@ -23,4 +23,4 @@ test_python_vol.o: test_python_vol.c
 python_vol.o: ${dir}/python_vol.c
 	h5cc -g $(CFLAGS) ${dir}python_vol.c -o python_vol.o
 clean:
-	rm *.o swift python_vol *.h5 
+	rm *.o *.pyc swift python_vol *.h5 

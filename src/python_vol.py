@@ -16,40 +16,59 @@
 #import gc
 #gc.disable()
 #print ('gc is enabled? ',gc.isenabled())
-
 #class PyVol
 class H5PVol:
-    file_NO=(None,None) # (file Name, file Object)
-    obj_list={} # dictionary for various h5py objects, e.g., groups, datasets, links, etc. 
-    def H5VL_python_file_create(name, flags, fcpl_id, fapl_id, dxpl_id, req, ipvol):
+    obj_curid = 0
+    obj_list  = {} # dictionary for various h5py objects, e.g., groups, datasets, links, etc. 
+	           # starting obj is reserved for HDF5 file handle, with index 0 as its key
+                   # {0:hdf5_handle, ...}
+    def H5VL_python_file_create(self, name, flags, fcpl_id, fapl_id, dxpl_id, req, ipvol):
     	print ("------- PYTHON H5Fcreate:%s"%name)
     	print ("------- PYTHON Vol: %d"%ipvol)
 	if(ipvol==0):
-     	  import h5py
-     	  f = h5py.File(name,'a')
-          self.file_NO=(name,f)
-          # return a hash value of name, TODO: potential conflict with HDF5 objects' name
-          return name.__hash__()
+          try:
+     	    import h5py
+     	    f = h5py.File(name,'a')
+            self.obj_list[self.obj_curid]=f
+            curid=self.obj_curid
+	    self.obj_curid=curid+1
+            return curid
+          except Exception as e:
+            print ('file create failed in python with error: ',e)
+            return -1
         else:
           print ("%d py vol is not implemented"%ipvol)
-    def H5VL_python_file_close(file, dxpl_id, req):
+    def H5VL_python_file_close(self, file_id, dxpl_id, req):
     	print ("------- PYTHON H5Fclose OK")
 	# check if file obj is available in file_NO
         try:
-	   obj = exist_obj(self.)
-   	self.h5file.close()
+	   file_obj = self.obj_list[file_id] # retrive the file handle/obj based on id 'file_id'
+	   if file_obj == None:
+	     print ("Python File Obj is none")
+           else:
+   	     file_obj.close()
+	     self.obj_list={} # empty all ojects 
+	     self.obj_curid=0 # reset index to 0
+        except Exception as e:
+           print ('file close failed in python with error:',e)
+	   return -1
         return 1
-    def H5VL_python_group_create(obj, loc_params, name, gcpl_id, gapl_id, dxpl_id, req):
+    def H5VL_python_group_create(self, obj_id, loc_params, name, gcpl_id, gapl_id, dxpl_id, req):
     	print ("------- PYTHON H5Gcreate:%s"%name)
 	try:
-	   print ('in python group create, obj is ',obj)
-           #fx=objects_by_id(obj)
-           grp=fx.create_group(name)
-     return id(grp)
-    except Exception as e:
-     print ('group create in python failed')
-     exit (1)
-     return 0 # TODO figure out failure return code
+	   print ('in python group create, obj is ',obj_id)
+           grp_parent_obj=self.obj_list[obj_id]
+	   try:
+              grp_obj=grp_parent_obj.create_group(name)
+	      curid = self.obj_curid
+	      self.obj_list[curid] = grp_obj # insert new object
+	      self.obj_curid = curid+1       # update current index
+              return curid
+           except Exception as e:
+              print ('group create in python failed with error:',e)
+        except Exception as e:
+           print ('retrieve obj failed in python group create')
+        return -1 
 
 def objects_by_id(id_):
     print ('need to find obj id:',id_)
