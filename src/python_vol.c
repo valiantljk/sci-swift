@@ -122,6 +122,7 @@ typedef struct H5VL_python_t {
     void   *under_object;
 } H5VL_python_t;
 
+PyObject * pInstance=NULL;
 
 /* File callbacks Implementation*/
 static void *
@@ -129,76 +130,55 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
 {
     hid_t under_fapl;
     H5VL_python_t *file;
-    
     file = (H5VL_python_t *)calloc(1, sizeof(H5VL_python_t));
 
     under_fapl = *((hid_t *)H5Pget_vol_info(fapl_id));
+    printf("under_fapl:%ld\n",under_fapl);
     int ipvol=0; //default is using h5py for python vol
     char pvol_name[3]="py"; 
     if( H5Pexist(fapl_id, pvol_name)>0){
       H5Pget(fapl_id, pvol_name, &ipvol);
-      //printf ("%s vol exists: %d\n",pvol_name,ipvol);
     }
    
-    //file->under_object = H5VLfile_create(name, flags, fcpl_id, under_fapl, dxpl_id, req);
-    PyObject * vol_cls =NULL;  // This layer will figure out which python vol to be called, based on fapl_id, similar to line 564 in H5F.c
-    //TODO: Remind myself, Dec 10 2017, For now, just figure out, how to return a swift file object, in future, figure out returning a generic python object
-    //pexist in tgenprop.c TODO
-    //pget, don't forget to store in a pytho vol field, H5VL_python_t; 
-    //TODO: Figure out which python vol to call 
-    //line 604, H5F.c    if(NULL == (vol_cls = (H5VL_class_t *)H5I_object_verify(plugin_prop.plugin_id, H5I_VOL)))
-    //    			HGOTO_ERROR(H5E_ARGS, H5E_BADTYPE, FAIL, "not a VOL plugin ID")	 
-    //pass the vol_cls to the python_vol.py, from where the dispatching happens, and the actual vol, e.g., swift, is called.   
-    PyObject *pModule, *pFunc;
+    PyObject *pModule, *pClass;
     PyObject *pArgs, *pValue=NULL;
     PyObject *pValue_file=NULL;
-    char * args [] ={"python_vol","H5VL_python_file_create"};
-    pModule = PyImport_ImportModule(args[0]);
-    if (pModule != NULL) {
-     pFunc = PyObject_GetAttrString(pModule, args[1]);
-     if (pFunc && PyCallable_Check(pFunc)) {
-	pArgs = PyTuple_New(7);
-        PyTuple_SetItem(pArgs, 0, PyString_FromString(name));
-	PyTuple_SetItem(pArgs, 1, PyLong_FromLong(flags));
-	PyTuple_SetItem(pArgs, 2, PyLong_FromLong(fcpl_id));
-	PyTuple_SetItem(pArgs, 3, PyLong_FromLong(under_fapl));
-	PyTuple_SetItem(pArgs, 4, PyLong_FromLong(dxpl_id));
-	if(req!=NULL)
- 	 PyTuple_SetItem(pArgs, 5, Py_BuildValue("O",PyCapsule_New(req, "req", NULL)));
-        else
-	 PyTuple_SetItem(pArgs, 5, PyString_FromString("None")); 
-	PyTuple_SetItem(pArgs, 6, PyLong_FromLong(ipvol));
-        //pValue_file = PyObject_CallObject(pFunc, pArgs);
-        pValue = PyObject_CallObject(pFunc, pArgs);
-	Py_INCREF(pValue);
-        if (pValue != NULL) {
-		//printf("------- Result of H5Fcreate from python: %ld\n", PyInt_AsLong(pValue));
-		void * rt_py = PyLong_AsVoidPtr(pValue);
-		if (rt_py==NULL) printf("File create, returned pointer from python is NULL\n");
-                file->under_object = rt_py;
-		Py_INCREF(pValue);//keep it alive by incrementing the ref count
-	 	//printf("file obj: %p,file->under_object:%p\n",file,rt_py);
-		return (void *) file;
+    const char module_name[ ] = "python_vol";
+    const char class_name[ ] = "H5PVol";
+    char method_name[]= "H5VL_python_file_create";
+    pModule = PyImport_ImportModule(module_name);
+    pClass = PyObject_GetAttrString(pModule, class_name); // get file class 
+    // Initianiate an object
+    if(pClass !=NULL){
+       pInstance = PyInstance_New(pClass, NULL, NULL); // file object
+    }
+    else
+       printf("Failed to get non-null file class\n");
+
+    if(pInstance == NULL)
+       printf("New File instance failed\n");
+    else{
+       printf("parameters:\nname:%s\nflags:%u\nfcpl_id:%ld\nfapl_id:%ld\ndxpl_id:%ld\nipvol:%d\n",name, flags, fcpl_id, fapl_id, dxpl_id, ipvol);
+       pValue = PyObject_CallMethod(pInstance, method_name, "(suldldlddd)", name, flags, fcpl_id, fapl_id, dxpl_id, 0, 0);
+       //pValue = PyObject_CallMethod(pInstance, method_name, "(suldldldldld)", name, 0,0,0,0, 0, 0);
+       PyErr_Print();
+       printf("Calling method Done\n");
+       if (pValue != NULL) {
+	     printf("Going to return pValue\n");
+             void * rt_py = PyLong_AsVoidPtr(pValue);
+             if (rt_py==NULL) fprintf(stderr, "File create, returned pointer from python is NULL\n");
+             file->under_object = rt_py;
+ 	     return (void *) file;
         }
         else {
-                Py_DECREF(pFunc);
-                Py_DECREF(pModule);
-	        Py_XDECREF(pArgs);
-                PyErr_Print();
-                fprintf(stderr,"Call failed\n");
-                return NULL;
-        }
-	Py_XDECREF(pArgs);
-     }
-     else {
-     	fprintf(stderr, "------- PYTHON H5Fcreate Failed\n");
-	return NULL;
-     }
+             Py_DECREF(pModule);
+	     Py_DECREF(pClass);
+	     PyErr_Print();
+             fprintf(stderr,"Call failed in H5VL File Create\n");
+             return NULL;
+        }	
     }
-    else {
-        fprintf(stderr, "Python module :%s is not available\n",args[0]);
-    }
-    //printf("------- PYTHON H5Fcreate\n");
+    printf("------- PYTHON H5Fcreate\n");
     return (void *)file;
 }
 

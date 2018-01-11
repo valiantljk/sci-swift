@@ -33,6 +33,7 @@ int main(int argc, char **argv) {
 		return 0;
 	}*/
 	char plugin_name[7]="python";
+	printf("Start testing\n");
 	//strcpy(plugin_name,argv[1]);
 	char fullpath[500];
 	hid_t file_id;
@@ -84,7 +85,7 @@ int main(int argc, char **argv) {
 	//H5Pset_vol(acc_tpl, vol_id, NULL);
         //Test file create
 	//TODO:	acc_tpl taking specific python vol info
-
+	printf("VOL setup OK\n");
 	file_id = H5Fcreate(file_name, H5F_ACC_TRUNC, H5P_DEFAULT, acc_tpl);
         len = H5VLget_plugin_name(file_id, name, 25);
 	printf("File Create Test OK\n");
