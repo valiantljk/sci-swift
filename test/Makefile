@@ -15,7 +15,7 @@ test_swift.o: test_swift.c
 	$(CC) $(CFLAGS) test_swift.c -o test_swift.o
 
 python_vol: python_vol.o test_python_vol.o
-	h5cc test_python_vol.o python_vol.o $(LDFLAGS) -o python_vol
+	h5cc -g test_python_vol.o python_vol.o $(LDFLAGS) -o python_vol
 
 test_python_vol.o: test_python_vol.c
 	h5cc -g $(CFLAGS) test_python_vol.c -o test_python_vol.o

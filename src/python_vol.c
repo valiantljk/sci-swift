@@ -147,8 +147,10 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
     const char class_name[ ] = "H5PVol";
     char method_name[]= "H5VL_python_file_create";
     pModule = PyImport_ImportModule(module_name);
+    PyErr_Print();
     pClass = PyObject_GetAttrString(pModule, class_name); // get file class 
     // Initianiate an object
+    PyErr_Print();
     if(pClass !=NULL){
        pInstance = PyInstance_New(pClass, NULL, NULL); // file object
     }
