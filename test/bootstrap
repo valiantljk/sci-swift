@@ -6,3 +6,6 @@ docker run -d -p 12345:8080 --volumes-from SWIFT_DATA -t valiantljk/sciswift:v3
 CID=$(docker ps --latest --quiet)
 docker exec -it $CID bash -c "./usr/local/bin/startmain.sh &"
 docker exec -it $CID bash
+cd /build/sci-swift
+git pull 
+

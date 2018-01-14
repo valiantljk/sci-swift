@@ -11,7 +11,7 @@ Scientific Object Store based on Openstack Swift
 
 ![sciswift2](https://user-images.githubusercontent.com/1396867/33396383-2f32fdd0-d4fd-11e7-9038-a87dcc501d2d.png)
 
-## QuickStart 
+## QuickStart (May skip step 1-3, with ./test/bootstrap) 
 (Step 1-3 building time ~ 2mins 35 sec)
 
 Python 2.7.13 :: Anaconda 2.3.0 (64-bit)
