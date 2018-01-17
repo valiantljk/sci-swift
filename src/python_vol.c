@@ -150,7 +150,7 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
     PyErr_Print();
     pClass = PyObject_GetAttrString(pModule, class_name); // get file class 
     // Initianiate an object
-    PyErr_Print();
+    //PyErr_Print();
     if(pClass !=NULL){
        pInstance = PyInstance_New(pClass, NULL, NULL); // file object
     }
@@ -160,15 +160,13 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
     if(pInstance == NULL)
        printf("New File instance failed\n");
     else{
-       printf("parameters:\nname:%s\nflags:%u\nfcpl_id:%ld\nfapl_id:%ld\ndxpl_id:%ld\nipvol:%d\n",name, flags, fcpl_id, fapl_id, dxpl_id, ipvol);
-       pValue = PyObject_CallMethod(pInstance, method_name, "(suldldlddd)", name, flags, fcpl_id, fapl_id, dxpl_id, 0, 0);
-       //pValue = PyObject_CallMethod(pInstance, method_name, "(suldldldldld)", name, 0,0,0,0, 0, 0);
-       PyErr_Print();
-       printf("Calling method Done\n");
+       pValue = PyObject_CallMethod(pInstance, method_name, "sllllll", name, flags, fcpl_id, fapl_id, dxpl_id, 0, 0);
+       //PyErr_Print();
        if (pValue != NULL) {
-	     printf("Going to return pValue\n");
-             void * rt_py = PyLong_AsVoidPtr(pValue);
-             if (rt_py==NULL) fprintf(stderr, "File create, returned pointer from python is NULL\n");
+	     printf("------- Result of H5Fcreate from python: %ld\n", PyLong_AsLong(pValue));
+             PyObject * rt=PyLong_AsVoidPtr(pValue);
+             void * rt_py = rt;
+	     if (rt_py==NULL) fprintf(stderr, "File create, returned pointer from python is NULL\n");
              file->under_object = rt_py;
  	     return (void *) file;
         }
@@ -251,47 +249,19 @@ static herr_t
 H5VL_python_file_close(void *file, hid_t dxpl_id, void **req)
 {
     H5VL_python_t *f = (H5VL_python_t *)file;
-    PyObject * plong = PyLong_FromVoidPtr(f->under_object);
-    PyObject *pModule, *pFunc;
-    PyObject *pArgs, *pValue=NULL;
-    char * args [] ={"python_vol","H5VL_python_file_close"};
-    pModule = PyImport_ImportModule(args[0]);
-    if (pModule != NULL) {
-     pFunc = PyObject_GetAttrString(pModule, args[1]);
-     if (pFunc && PyCallable_Check(pFunc)) {
-        pArgs = PyTuple_New(3);
-        PyTuple_SetItem(pArgs, 0,plong);
-        PyTuple_SetItem(pArgs, 1, PyLong_FromLong(dxpl_id));
-	if(req!=NULL)
-         PyTuple_SetItem(pArgs, 2, Py_BuildValue("O",PyCapsule_New(req, "req", NULL)));
-        else
-         PyTuple_SetItem(pArgs, 2, PyString_FromString("None"));
-        pValue = PyObject_CallObject(pFunc, pArgs);
-        if (pValue != NULL) {
-		//printf("------- Result of H5Fclose from python: %ld\n", PyLong_AsLong(pValue));
-		printf ("------- PYTHON H5Fclose\n");	
-        }
-        else {
-                Py_DECREF(pFunc);
-                Py_DECREF(pModule);
-                Py_XDECREF(pArgs);
-                PyErr_Print();
-                fprintf(stderr,"Call failed\n");
-                return -1;
-        }
-        Py_XDECREF(pArgs);
-	Py_XDECREF(pValue);
-	Py_XDECREF(pModule);
-	Py_XDECREF(pFunc);
-     }
-     else {
-      	fprintf(stderr, "------- PYTHON H5Fclose failed\n");
-      	return -1;
-     }
-    }
-    else {
-	fprintf(stderr, "------- Python module :%s is not available\n",args[0]);
-	return -1;
+    PyObject * plong_under = PyLong_FromVoidPtr(f->under_object);
+    PyObject *pValue=NULL;
+    char method_name[]= "H5VL_python_file_close";
+    if(pInstance==NULL){
+      printf("pInstance is NULL in group create\n");
+      exit(0);
+    }else{
+      pValue = PyObject_CallMethod(pInstance, method_name, "lll", PyLong_AsLong(plong_under), dxpl_id, 0);
+      PyErr_Print();
+      if(pValue !=NULL){
+        printf("------- Result of H5Fclose from python: %ld\n", PyLong_AsLong(pValue));
+        return 1;
+      }
     }
     free(f);
     return 1;
@@ -306,57 +276,22 @@ H5VL_python_group_create(void *obj, H5VL_loc_params_t loc_params, const char *na
     PyObject * plong = PyLong_FromVoidPtr(o); // get the id of py object, and pass into python layer to form a py obj
     PyObject * plong_under = PyLong_FromVoidPtr(o->under_object);
     group = (H5VL_python_t *)calloc(1, sizeof(H5VL_python_t));
-    PyObject *pModule, *pFunc;
     PyObject *pArgs, *pValue=NULL;
-    char * args [] ={"python_vol","H5VL_python_group_create"};
-    pModule = PyImport_ImportModule(args[0]);
-    if (pModule != NULL) {
-     pFunc = PyObject_GetAttrString(pModule, args[1]);
-     if (pFunc && PyCallable_Check(pFunc)) {
-        pArgs = PyTuple_New(7);
-	//TODO: struct pointer
-	//PyTuple_SetItem(pArgs, 0, PyCapsule_New(obj, "obj", NULL));
-	PyTuple_SetItem(pArgs, 0,plong_under);
-        //TODO: struct
-	PyTuple_SetItem(pArgs, 1, PyCapsule_New(&loc_params, "loc", NULL));
-        PyTuple_SetItem(pArgs, 2, PyString_FromString(name));
-        PyTuple_SetItem(pArgs, 3, PyLong_FromLong(gcpl_id));
-        PyTuple_SetItem(pArgs, 4, PyLong_FromLong(gapl_id));
-        PyTuple_SetItem(pArgs, 5, PyLong_FromLong(dxpl_id)); 
-        if(req!=NULL)
-         PyTuple_SetItem(pArgs, 6, Py_BuildValue("O",PyCapsule_New(req, "req", NULL)));
-        else
-         PyTuple_SetItem(pArgs, 6, PyString_FromString("None"));
-        pValue = PyObject_CallObject(pFunc, pArgs);
-        if (pValue != NULL) {
-//                printf("------- Result of H5Gcreate from python: %ld\n", PyInt_AsLong(pValue));
-                void * rt_py = PyLong_AsVoidPtr(pValue);
-                if (rt_py==NULL) printf("Group create, returned pointer from python is NULL\n");
-		Py_INCREF(pValue);
-                group->under_object = rt_py;
-                return (void *) group;		
-        }
-        else {
-                Py_DECREF(pFunc);
-                Py_DECREF(pModule);
-                Py_XDECREF(pArgs);
-                PyErr_Print();
-                fprintf(stderr,"Call failed\n");
-                return NULL;
-        }
-        Py_XDECREF(pArgs);
-     }
-     else {
-	PyErr_Print();
-     	fprintf(stderr, "------- PYTHON H5Gcreate failed\n");
-	return NULL;
-     }
-    }
-    else {
-	PyErr_Print();
-        fprintf(stderr, "------- Python module :%s is not available\n",args[0]);
-    }
-    //printf ("------- PYTHON H5Gcreate\n");
+    char method_name[]= "H5VL_python_group_create";
+    if(pInstance==NULL){
+      printf("pInstance is NULL in group create\n");
+      exit(0); 
+    }else{
+      pValue = PyObject_CallMethod(pInstance, method_name, "llsllll", PyLong_AsLong(plong_under), 0, name, gcpl_id, gapl_id, dxpl_id, 0);
+      if(pValue !=NULL){
+	printf("------- Result of H5Fcreate from python: %ld\n", PyLong_AsLong(pValue));	
+	void * rt_py = PyLong_AsVoidPtr(pValue);
+        if (rt_py==NULL) fprintf(stderr, "File create, returned pointer from python is NULL\n");
+	group->under_object = rt_py;
+	return (void *) group;
+      }	      
+    } 
+    printf ("------- PYTHON H5Gcreate\n");
     return (void *) group;
 }
 

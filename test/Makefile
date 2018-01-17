@@ -5,7 +5,7 @@ CC = gcc
 CFLAGS = -c -g -fno-strict-aliasing -Wmissing-include-dirs -O2 -DNDEBUG -fwrapv -O3 -Wall -Wstrict-prototypes -I/root/anaconda/include/python2.7 -Wno-unused-variable -Wno-strict-prototypes
 LDFLAGS = -L/root/anaconda/lib -lpython2.7 -lpthread -ldl -lutil -lm -Xlinker -export-dynamic #-Wl,--verbose
 
-ALL: swift python_vol
+ALL: swift python_vol test_pylong
 
 swift: swift.o test_swift.o
 	$(CC) swift.o test_swift.o  $(LDFLAGS) -o swift
@@ -22,5 +22,9 @@ test_python_vol.o: test_python_vol.c
 
 python_vol.o: ${dir}/python_vol.c
 	h5cc -g $(CFLAGS) ${dir}python_vol.c -o python_vol.o
+test_pylong: test_pylong.o
+	$(CC) test_pylong.o  $(LDFLAGS) -o test_pylong
+test_pylong.o: test_pylong.c
+	$(CC) $(CFLAGS) test_pylong.c -o test_pylong.o        
 clean:
-	rm *.o *.pyc swift python_vol *.h5 
+	rm *.o *.pyc swift python_vol test_pylong *.h5 

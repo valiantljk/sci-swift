@@ -18,7 +18,7 @@
 #print ('gc is enabled? ',gc.isenabled())
 #class PyVol
 class H5PVol:
-    obj_curid = 0
+    obj_curid = 1  # PyLong_AsVoidPtr can not convert 0 correctly
     obj_list  = {} # dictionary for various h5py objects, e.g., groups, datasets, links, etc. 
 	           # starting obj is reserved for HDF5 file handle, with index 0 as its key
                    # {0:hdf5_handle, ...}
@@ -48,7 +48,7 @@ class H5PVol:
            else:
    	     file_obj.close()
 	     self.obj_list={} # empty all ojects 
-	     self.obj_curid=0 # reset index to 0
+	     self.obj_curid=1 # reset index to 0, (1 for now, due to bug of PyLong_AsVoidPtr can not take 0)
         except Exception as e:
            print ('file close failed in python with error:',e)
 	   return -1
