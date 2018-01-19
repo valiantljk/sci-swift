@@ -253,7 +253,7 @@ H5VL_python_file_close(void *file, hid_t dxpl_id, void **req)
     PyObject *pValue=NULL;
     char method_name[]= "H5VL_python_file_close";
     if(pInstance==NULL){
-      printf("pInstance is NULL in group create\n");
+      printf("pInstance is NULL in file close\n");
       exit(0);
     }else{
       pValue = PyObject_CallMethod(pInstance, method_name, "lll", PyLong_AsLong(plong_under), dxpl_id, 0);
@@ -661,48 +661,23 @@ static herr_t
 H5VL_python_dataset_close(void *dset, hid_t dxpl_id, void **req)
 {
     H5VL_python_t *d = (H5VL_python_t *)dset;
-
-    H5VLdataset_close(d->under_object, native_plugin_id, dxpl_id, req);
+    PyObject * plong_under = PyLong_FromVoidPtr(d->under_object);    
+    PyObject *pValue=NULL;
+    char method_name [] ="H5VL_python_dataset_close";
+    if(pInstance==NULL){
+      printf("pInstance is NULL in dataset close\n");
+      exit(0);
+    }else{
+      printf("in C, dataset id is %ld\n",PyLong_AsLong(plong_under));
+      pValue = PyObject_CallMethod(pInstance, method_name, "lll", PyLong_AsLong(plong_under), dxpl_id, 0);
+      PyErr_Print(); 
+      if(pValue !=NULL){
+        printf("------- Result of H5Dclose from python: %ld\n", PyLong_AsLong(pValue));
+        return 1;
+      }
+    }
+    printf ("------- PYTHON H5Dclose\n");
     free(d);
-    PyObject *pModule, *pFunc;
-    PyObject *pArgs, *pValue=NULL;
-    char * args [] ={"python_vol","H5VL_python_dataset_close"};
-    pModule = PyImport_ImportModule(args[0]);
-    if (pModule != NULL) {
-     pFunc = PyObject_GetAttrString(pModule, args[1]);
-     if (pFunc && PyCallable_Check(pFunc)) {
-        pArgs = PyTuple_New(3);
-        //TODO: struct pointer
-        PyTuple_SetItem(pArgs, 0, PyCapsule_New(dset, "dset", NULL));
-        PyTuple_SetItem(pArgs, 1, PyLong_FromLong(dxpl_id));
-        //req can be NULL
-        if(req!=NULL)
-         PyTuple_SetItem(pArgs, 2, Py_BuildValue("O",PyCapsule_New(req, "req", NULL)));
-        else
-         PyTuple_SetItem(pArgs, 2, PyString_FromString("None"));
-        pValue = PyObject_CallObject(pFunc, pArgs);
-        if (pValue != NULL) {
-                printf("------- Result of H5Dclose from python: %ld\n", PyInt_AsLong(pValue));
-	}
-        else {
-                Py_DECREF(pFunc);
-                Py_DECREF(pModule);
-                Py_XDECREF(pArgs);
-                PyErr_Print();
-                fprintf(stderr,"Call failed\n");
-                return -1;
-        }
-        Py_XDECREF(pArgs);
-     }
-     else {
-        fprintf(stderr, "------- PYTHON H5Dclose failed\n");
-        return -1;
-     }
-    }
-    else {
-        fprintf(stderr, "------- Python module :%s is not available\n",args[0]);
-    }
-    //printf ("------- PYTHON H5Dclose\n");
     return 1;
 }
 #if 0
