@@ -429,13 +429,26 @@ H5VL_python_dataset_create(void *obj, H5VL_loc_params_t loc_params, const char *
 {
     H5VL_python_t *dset;
     H5VL_python_t *o = (H5VL_python_t *)obj;
-
+    PyObject * plong_under = PyLong_FromVoidPtr(o->under_object);
     dset = (H5VL_python_t *)calloc(1, sizeof(H5VL_python_t));
-
-    dset->under_object = H5VLdataset_create(o->under_object, loc_params, native_plugin_id, name, dcpl_id,  dapl_id, dxpl_id, req);
-    PyObject *pModule, *pFunc;
-    PyObject *pArgs, *pValue=NULL;
-    char * args [] ={"python_vol","H5VL_python_dataset_create"};
+    
+    //dset->under_object = H5VLdataset_create(o->under_object, loc_params, native_plugin_id, name, dcpl_id,  dapl_id, dxpl_id, req);
+    PyObject *pValue=NULL;
+    char method_name[] = "H5VL_python_dataset_create";
+    if(pInstance==NULL){
+      printf("pInstance is NULL in group create\n");
+      exit(0);
+    }else{
+      pValue = PyObject_CallMethod(pInstance, method_name, "llsllll", PyLong_AsLong(plong_under), 0, name, dcpl_id, dapl_id, dxpl_id, 0);
+      if(pValue !=NULL){
+        printf("------- Result of H5Dcreate from python: %ld\n", PyLong_AsLong(pValue));
+        void * rt_py = PyLong_AsVoidPtr(pValue);
+        if (rt_py==NULL) fprintf(stderr, "Dataset create, returned pointer from python is NULL\n");
+        dset->under_object = rt_py;
+        return (void *) dset;
+      }      
+    } 
+   /*
     pModule = PyImport_ImportModule(args[0]);
     if (pModule != NULL) {
      pFunc = PyObject_GetAttrString(pModule, args[1]);
@@ -475,8 +488,8 @@ H5VL_python_dataset_create(void *obj, H5VL_loc_params_t loc_params, const char *
     else {
         fprintf(stderr, "------- Python module :%s is not available\n",args[0]);
     }
-    //printf ("------- PYTHON H5Dcreate\n");
-    //TODO: figureout the file object
+    */
+    printf ("------- PYTHON H5Dcreate\n");
     return (void *) dset;
 }
 

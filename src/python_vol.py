@@ -69,7 +69,23 @@ class H5PVol:
         except Exception as e:
            print ('retrieve obj failed in python group create')
         return -1 
-
+    def H5VL_python_dataset_create(self, obj_id, loc_params, name, dcpl_id, dapl_id, dxpl_id, req):    
+	print ("------- PYTHON H5Dcreate:%s"%name) 
+	try:
+	   print ('in python dataset create, obj is ',obj_id)  
+	   dst_parent_obj=self.obj_list[obj_id] 
+	   try:
+		#TODO: figure out shape,dtype from loc_params
+		dst_obj=dst_parent_obj.create_dataset(name,(10,10),dtype='f8')  
+		curid = self.obj_curid
+		self.obj_list[curid] = dst_obj # insert new object 
+		self.obj_curid = curid+1       # update current index
+		return curid
+	   except Exception as e:
+		print ('dataset create in python failed with error: ',e)
+	except Exception as e:
+	   print ('retrieve obj failed in python dataset create')
+	   return -1   
 def objects_by_id(id_):
     print ('need to find obj id:',id_)
     print ("Total number of objs:%d"%(len(gc.get_objects())))

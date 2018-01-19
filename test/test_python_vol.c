@@ -27,7 +27,7 @@ visit_cb(hid_t oid, const char *name,
 int main(int argc, char **argv) {
         const char file_name[]="large_dataset.h5";
 	const char group_name[]="/bowling";
-	const char dataset_name[]="Data";
+	const char dataset_name[]="scale";
 	/*if(argc !=2){
 		printf("Input: plugin name, e.g., python\n");
 		return 0;
@@ -116,7 +116,7 @@ int main(int argc, char **argv) {
 
 //        len = H5Fget_name(file_id, name, 50);
 //        printf("name = %ld  %s\n", len, name);
-/*
+
 	data = malloc (sizeof(int)*nelem);
         data_in = malloc (sizeof(int)*nelem);
 	for(i=0;i<nelem;++i)
@@ -125,13 +125,13 @@ int main(int argc, char **argv) {
 	dims [0] = 60;
 	dataspaceId = H5Screate_simple(1, dims, NULL); 
         space = H5Screate_simple (2, ds_size, ds_size);
-	printf("H5Dcreate2 starts:\n");
 	sprintf(fullpath,"%s/%s",group_name,dataset_name);
-//	datasetId = H5Dcreate2(file_id,fullpath,H5T_NATIVE_INT,dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
+	printf("H5Dcreate2 starts:\n");
+	datasetId = H5Dcreate2(file_id,fullpath,H5T_NATIVE_INT,dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
 	H5Sclose(dataspaceId);
 
         len = H5VLget_plugin_name(datasetId, name, 50);
-*/
+
 //        printf ("DSET name = %s  %ld\n", name, len);
 /*
 	H5Dwrite(datasetId, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
