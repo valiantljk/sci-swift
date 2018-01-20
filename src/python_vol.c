@@ -430,7 +430,16 @@ H5VL_python_dataset_create(void *obj, H5VL_loc_params_t loc_params, const char *
     H5VL_python_t *dset;
     H5VL_python_t *o = (H5VL_python_t *)obj;
     PyObject * plong_under = PyLong_FromVoidPtr(o->under_object);
+    //Determine the dataset size and type, pass to python layer
     dset = (H5VL_python_t *)calloc(1, sizeof(H5VL_python_t));
+    hid_t space_id;
+    H5Pget ( dcpl_id , " dataset_space_id " , & space_id ) ;
+    int ndims = H5Sget_simple_extent_ndims ( space_id ) ;
+    hsize_t maxdims [ ndims ];
+    hsize_t dims [ ndims ];
+    hid_t type_id;
+    H5Pget ( dcpl_id , " dataset_type_id " , & type_id);
+    size_t type_size = H5Tget_size ( type_id ); // in bytes
     
     //dset->under_object = H5VLdataset_create(o->under_object, loc_params, native_plugin_id, name, dcpl_id,  dapl_id, dxpl_id, req);
     PyObject *pValue=NULL;
@@ -448,47 +457,6 @@ H5VL_python_dataset_create(void *obj, H5VL_loc_params_t loc_params, const char *
         return (void *) dset;
       }      
     } 
-   /*
-    pModule = PyImport_ImportModule(args[0]);
-    if (pModule != NULL) {
-     pFunc = PyObject_GetAttrString(pModule, args[1]);
-     if (pFunc && PyCallable_Check(pFunc)) {
-        pArgs = PyTuple_New(7);
-	//TODO: struct pointer
-	PyTuple_SetItem(pArgs, 0, PyCapsule_New(obj, "obj", NULL));
-	//TODO: struct 
-	PyTuple_SetItem(pArgs, 1, PyCapsule_New(&loc_params, "loc", NULL));
-	PyTuple_SetItem(pArgs, 2, PyString_FromString(name));
-        PyTuple_SetItem(pArgs, 3, PyLong_FromLong(dcpl_id));
-        PyTuple_SetItem(pArgs, 4, PyLong_FromLong(dapl_id));
-        PyTuple_SetItem(pArgs, 5, PyLong_FromLong(dxpl_id));
-	if(req!=NULL)
-         PyTuple_SetItem(pArgs, 6, Py_BuildValue("O",PyCapsule_New(req, "req", NULL)));
-        else
-         PyTuple_SetItem(pArgs, 6, PyString_FromString("None"));
-        pValue = PyObject_CallObject(pFunc, pArgs);
-        if (pValue != NULL) {
-                printf("------- Result of H5Dcreate from python: %ld\n", PyInt_AsLong(pValue));
-        }
-        else {
-                Py_DECREF(pFunc);
-                Py_DECREF(pModule);
-                Py_XDECREF(pArgs);
-                PyErr_Print();
-                fprintf(stderr,"Call failed\n");
-                return NULL;
-        }
-        Py_XDECREF(pArgs);
-     }
-     else {
-        fprintf(stderr, "------- PYTHON H5Dcreate failed\n");
-        return NULL;
-     }
-    }
-    else {
-        fprintf(stderr, "------- Python module :%s is not available\n",args[0]);
-    }
-    */
     printf ("------- PYTHON H5Dcreate\n");
     return (void *) dset;
 }

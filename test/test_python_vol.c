@@ -124,7 +124,7 @@ int main(int argc, char **argv) {
 
 	dims [0] = 60;
 	dataspaceId = H5Screate_simple(1, dims, NULL); 
-        space = H5Screate_simple (2, ds_size, ds_size);
+        //space = H5Screate_simple (2, ds_size, ds_size);
 	sprintf(fullpath,"%s/%s",group_name,dataset_name);
 	printf("H5Dcreate2 starts:\n");
 	datasetId = H5Dcreate2(file_id,fullpath,H5T_NATIVE_INT,dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
@@ -132,10 +132,10 @@ int main(int argc, char **argv) {
 
         len = H5VLget_plugin_name(datasetId, name, 50);
 
-//        printf ("DSET name = %s  %ld\n", name, len);
-/*
+        printf ("DSET name = %s  %ld\n", name, len);
+
 	H5Dwrite(datasetId, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
-        H5Dread (datasetId, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_in);
+/*        H5Dread (datasetId, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_in);
 	H5Dclose(datasetId);
 
         H5Ovisit(file_id, H5_INDEX_NAME, H5_ITER_NATIVE, visit_cb, NULL);

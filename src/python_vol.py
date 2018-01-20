@@ -104,6 +104,9 @@ class H5PVol:
 	except Exception as e:
 	   print ('retrieve obj failed in python dataset create')
 	   return -1   
+    def H5VL_python_dataset_write(dset, mem_type_id, mem_space_id, file_space_id, plist_id, buf, req):
+	print ("------- PYTHON H5Dwrite") 
+	
 def objects_by_id(id_):
     print ('need to find obj id:',id_)
     print ("Total number of objs:%d"%(len(gc.get_objects())))
