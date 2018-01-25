@@ -22,7 +22,7 @@ Python 2.7.13 :: Anaconda 2.3.0 (64-bit)
 ```
 **Step 2**. Create a openstack object store (with volume from the existing data container, binding host port 12345 with container port 8080)
 ```
-  docker run -d -p 12345:8080 --volumes-from SWIFT_DATA -t valiantljk/sciswift:v3 # need 'docker login' first
+  docker run -d --security-opt seccomp=unconfined -p 12345:8080 --volumes-from SWIFT_DATA -t valiantljk/sciswift:v3 # need 'docker login' first
 ```
 
 **Step 3**. Start openstack swift
