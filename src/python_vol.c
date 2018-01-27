@@ -585,8 +585,9 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
     //Fail if selection type is not 'H5S_ALL'-->H5S_SEL_ALL (returned value)
     //First, get the dataset_space_id
     hid_t space_id;
-    space_id = H5Dget_space(mem_space_id);
+    space_id = H5Dget_space(dset); //TODO: NEED TO FIGUREOUT DATASET ID
     if (H5Sget_select_type(space_id)!=H5S_SEL_ALL) {
+       printf("Selection type %d\n",H5Sget_select_type(space_id));
        fprintf(stderr, "Selection type only supports ALL for now, Jan 26 2018\n");
        exit(-1);
     }

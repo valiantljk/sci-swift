@@ -42,7 +42,9 @@ class H5PVol:
     	print ("------- PYTHON H5Fclose OK")
 	# check if file obj is available in file_NO
         try:
+           print ("file_id,",file_id)
 	   file_obj = self.obj_list[file_id] # retrive the file handle/obj based on id 'file_id'
+
 	   if file_obj == None:
 	     print ("Python File Obj is none")
            else:
