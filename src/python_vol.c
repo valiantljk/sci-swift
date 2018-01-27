@@ -434,14 +434,20 @@ H5VL_python_dataset_create(void *obj, H5VL_loc_params_t loc_params, const char *
     //Determine the dataset size and type, pass to python layer
     dset = (H5VL_python_t *)calloc(1, sizeof(H5VL_python_t));
     hid_t space_id;
+    printf("python vol c. CHECK: dcpl_id:%ld\n",dcpl_id);
     H5Pget ( dcpl_id , " dataset_space_id " , & space_id ) ;
+    printf("python vol c. CHECK: dataset space id:%ld\n",space_id);
     int ndims = H5Sget_simple_extent_ndims ( space_id ) ;
     hsize_t maxdims [ ndims ];
     hsize_t dims [ ndims ];
     hid_t type_id;
     H5Pget ( dcpl_id , " dataset_type_id " , & type_id);
     size_t type_size = H5Tget_size ( type_id ); // in bytes
-    
+    printf("in Python_VOL.c, ndims:%d\n",ndims);
+    int x;
+    for (x=0;x<ndims;x++){
+      printf("%d dim size is %d\n",x,dims[x]); 
+    } 
     //dset->under_object = H5VLdataset_create(o->under_object, loc_params, native_plugin_id, name, dcpl_id,  dapl_id, dxpl_id, req);
     PyObject *pValue=NULL;
     char method_name[] = "H5VL_python_dataset_create";
@@ -584,8 +590,10 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
     //Convert C buffer into Python Object
     //Fail if selection type is not 'H5S_ALL'-->H5S_SEL_ALL (returned value)
     //First, get the dataset_space_id
-    hid_t space_id;
-    space_id = H5Dget_space(dset); //TODO: NEED TO FIGUREOUT DATASET ID
+    //printf("CHECK: dataset underobject:%ld\n",PyLong_AsLong(plong_under));
+    //printf("CHECK:file_space_id:%ld\n",file_space_id);
+    hid_t space_id=file_space_id;
+    //space_id = H5Dget_space(dset); //TODO: NEED TO FIGUREOUT DATASET ID
     if (H5Sget_select_type(space_id)!=H5S_SEL_ALL) {
        printf("Selection type %d\n",H5Sget_select_type(space_id));
        fprintf(stderr, "Selection type only supports ALL for now, Jan 26 2018\n");
@@ -599,13 +607,13 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
     size_t type_size = H5Tget_size ( mem_type_id ); // in bytes
     PyObject * pydata;
     if (type_size == 8){ 
-      pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_INT ,buf );
+      pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_INT ,(void *)buf );
     }
     else if (type_size == 32){
-      pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_FLOAT,buf);
+      pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_FLOAT,(void *)buf);
     }
     else if (type_size == 64) {
-      pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_DOUBLE,buf );
+      pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_DOUBLE,(void *)buf );
     }
     else {
       fprintf(stderr, "Type is not supported for now Jan 26 2018\n");	

@@ -128,12 +128,23 @@ int main(int argc, char **argv) {
 	sprintf(fullpath,"%s/%s",group_name,dataset_name);
 	printf("H5Dcreate2 starts:\n");
 	datasetId = H5Dcreate2(file_id,fullpath,H5T_NATIVE_INT,dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
+        printf("In test python vol: CHECK: Dataset ID: %ld\n",datasetId);
+        //test the dataset space id
+        printf("In test python vol: CHECK: Data Space ID: %ld\n", dataspaceId);
+        hid_t temp_spaceid;
+        H5Pget ( H5P_DEFAULT , " dataset_space_id " , & temp_spaceid);
+        printf("In test python vol: CHECK: Temp Data Space ID: %ld\n", temp_spaceid);
+        if(H5Sget_select_type(dataspaceId)==H5S_SEL_ALL){
+          printf("In test python vol: select type is H5S_SEL_ALL\n");
+        }else {
+          printf("In test python vol: select type is not ALL");
+        }
 	H5Sclose(dataspaceId);
 
         len = H5VLget_plugin_name(datasetId, name, 50);
 
         printf ("DSET name = %s  %ld\n", dataset_name, len);
-
+        printf("In test python vol: CHECK: H5S_ALL:%ld\n",H5S_ALL);	
 	H5Dwrite(datasetId, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
 /*        H5Dread (datasetId, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_in);
 	H5Dclose(datasetId);
