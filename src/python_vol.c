@@ -1,6 +1,7 @@
 //#ifndef H5_VOL_H
 //#define H5_VOL_H
 #include <Python.h>
+#include <numpy/arrayobject.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -260,11 +261,11 @@ H5VL_python_file_close(void *file, hid_t dxpl_id, void **req)
       PyErr_Print();
       if(pValue !=NULL){
         printf("------- Result of H5Fclose from python: %ld\n", PyLong_AsLong(pValue));
+        free(f);
         return 1;
       }
     }
-    free(f);
-    return 1;
+   return -1;
 }
 /* Group callbacks Implementation*/
 static void *
@@ -459,8 +460,8 @@ H5VL_python_dataset_create(void *obj, H5VL_loc_params_t loc_params, const char *
     } 
     printf ("------- PYTHON H5Dcreate\n");
     return (void *) dset;
-}
 
+}
 static void *
 H5VL_python_dataset_open(void *obj, H5VL_loc_params_t loc_params, const char *name, hid_t dapl_id, hid_t dxpl_id, void **req)
 {
@@ -576,53 +577,53 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
 {
     H5VL_python_t *d = (H5VL_python_t *)dset;
 
-    H5VLdataset_write(d->under_object, native_plugin_id, mem_type_id, mem_space_id, file_space_id, 
-                     plist_id, buf, req);
+    //H5VLdataset_write(d->under_object, native_plugin_id, mem_type_id, mem_space_id, file_space_id, 
+    //                 plist_id, buf, req);
+    //Convert C buffer into Python Object
+    //Fail if selection type is not 'H5S_ALL'-->H5S_SEL_ALL (returned value)
+    //First, get the dataset_space_id
+    hid_t space_id;
+    space_id = H5Dget_space(mem_space_id);
+    if (H5Sget_select_type(space_id)!=H5S_SEL_ALL) {
+       fprintf(stderr, "Selection type only supports ALL for now, Jan 26 2018\n");
+       exit(-1);
+    }
+    //Second, get ndims and size of each dims
+    int ndims = H5Sget_simple_extent_ndims ( space_id ) ;
+    hsize_t maxdims [ ndims ];
+    hsize_t dims [ ndims ];
+    hid_t type_id;
+    size_t type_size = H5Tget_size ( mem_type_id ); // in bytes
+    if (type_size == 8){ 
+      PyObject * pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_INT ,buf );
+    }
+    else if (type_size == 32){
+      PyObject * pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_FLOAT,buf);
+    }
+    else if (type_size == 64) {
+      PyObject * pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_DOUBLE,buf );
+    }
+    else {
+      fprintf(stderr, "Type is not supported for now Jan 26 2018\n");	
+      exit(-1);
+    }
     PyObject *pModule, *pFunc;
     PyObject *pArgs, *pValue=NULL;
-    char * args [] ={"python_vol","H5VL_python_dataset_write"};
-    pModule = PyImport_ImportModule(args[0]);
-    if (pModule != NULL) {
-     pFunc = PyObject_GetAttrString(pModule, args[1]);
-     if (pFunc && PyCallable_Check(pFunc)) {
-        pArgs = PyTuple_New(7);
-        //TODO: struct pointer
-        PyTuple_SetItem(pArgs, 0, PyCapsule_New(dset, "dset", NULL));
-        PyTuple_SetItem(pArgs, 1, PyLong_FromLong(mem_type_id));
-        PyTuple_SetItem(pArgs, 2, PyLong_FromLong(mem_space_id));
-        PyTuple_SetItem(pArgs, 3, PyLong_FromLong(file_space_id));
-        PyTuple_SetItem(pArgs, 4, PyLong_FromLong(plist_id));
-        //TODO: buf must not be NULL, right?
-        PyTuple_SetItem(pArgs, 5, PyCapsule_New((void *)buf, "buf", NULL));
-        //req can be NULL
-        if(req!=NULL)
-         PyTuple_SetItem(pArgs, 6, Py_BuildValue("O",PyCapsule_New(req, "req", NULL)));
-        else
-         PyTuple_SetItem(pArgs, 6, PyString_FromString("None"));
-        pValue = PyObject_CallObject(pFunc, pArgs);
-        if (pValue != NULL) {
-                printf("------- Result of H5Dwrite from python: %ld\n", PyInt_AsLong(pValue));
-        }
-        else {
-                Py_DECREF(pFunc);
-                Py_DECREF(pModule);
-                Py_XDECREF(pArgs);
-                PyErr_Print();
-                fprintf(stderr,"Call failed\n");
-                return -1;
-        }
-        Py_XDECREF(pArgs);
-     } 
-     else {
-        fprintf(stderr, "------- PYTHON H5Dwrite failed\n");
-        return -1;
-     }  
+    char method_name[] = "H5VL_python_dataset_write";
+    if(pInstance==NULL){
+      printf("pInstance is NULL in group create\n");
+      exit(0);
+    }else{
+      pValue = PyObject_CallMethod(pInstance, method_name, "llllllOl", PyLong_AsLong(plong_under), 0,  mem_type_id, mem_space_id, file_space_id,plist_id, pydata , 0);
+      if(pValue !=NULL){
+        printf("------- Result of H5Dwrite from python: %ld\n", PyLong_AsLong(pValue));
+        free(dset);
+        return 1;
+      }
     }   
-    else {
-        fprintf(stderr, "------- Python module :%s is not available\n",args[0]);
-    }   
-    //printf ("------- PYTHON H5Dwrite\n");
-    return 1;     
+    
+    printf ("------- PYTHON H5Dwrite\n");
+    return -1;     
 
 }
 static herr_t 
