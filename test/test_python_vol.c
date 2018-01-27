@@ -132,7 +132,7 @@ int main(int argc, char **argv) {
 
         len = H5VLget_plugin_name(datasetId, name, 50);
 
-        printf ("DSET name = %s  %ld\n", name, len);
+        printf ("DSET name = %s  %ld\n", dataset_name, len);
 
 	H5Dwrite(datasetId, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
 /*        H5Dread (datasetId, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_in);

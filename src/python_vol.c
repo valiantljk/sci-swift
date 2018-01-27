@@ -575,7 +575,9 @@ static herr_t
 H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
                        hid_t file_space_id, hid_t plist_id, const void *buf, void **req)
 {
-    H5VL_python_t *d = (H5VL_python_t *)dset;
+    H5VL_python_t *o = (H5VL_python_t *)dset;
+    PyObject * plong_under = PyLong_FromVoidPtr(o->under_object);
+    //Determine the dataset size and type, pass to python layer
 
     //H5VLdataset_write(d->under_object, native_plugin_id, mem_type_id, mem_space_id, file_space_id, 
     //                 plist_id, buf, req);
@@ -591,33 +593,33 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
     //Second, get ndims and size of each dims
     int ndims = H5Sget_simple_extent_ndims ( space_id ) ;
     hsize_t maxdims [ ndims ];
-    hsize_t dims [ ndims ];
+    npy_intp dims [ ndims ];
     hid_t type_id;
     size_t type_size = H5Tget_size ( mem_type_id ); // in bytes
+    PyObject * pydata;
     if (type_size == 8){ 
-      PyObject * pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_INT ,buf );
+      pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_INT ,buf );
     }
     else if (type_size == 32){
-      PyObject * pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_FLOAT,buf);
+      pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_FLOAT,buf);
     }
     else if (type_size == 64) {
-      PyObject * pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_DOUBLE,buf );
+      pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_DOUBLE,buf );
     }
     else {
       fprintf(stderr, "Type is not supported for now Jan 26 2018\n");	
       exit(-1);
     }
-    PyObject *pModule, *pFunc;
+    PyObject *pModule;
     PyObject *pArgs, *pValue=NULL;
     char method_name[] = "H5VL_python_dataset_write";
     if(pInstance==NULL){
       printf("pInstance is NULL in group create\n");
       exit(0);
     }else{
-      pValue = PyObject_CallMethod(pInstance, method_name, "llllllOl", PyLong_AsLong(plong_under), 0,  mem_type_id, mem_space_id, file_space_id,plist_id, pydata , 0);
+      pValue = PyObject_CallMethod(pInstance, method_name, "llllllOl", PyLong_AsLong(plong_under), 0,  mem_type_id, mem_space_id, file_space_id,plist_id, pydata, 0);
       if(pValue !=NULL){
         printf("------- Result of H5Dwrite from python: %ld\n", PyLong_AsLong(pValue));
-        free(dset);
         return 1;
       }
     }   
