@@ -435,19 +435,29 @@ H5VL_python_dataset_create(void *obj, H5VL_loc_params_t loc_params, const char *
     dset = (H5VL_python_t *)calloc(1, sizeof(H5VL_python_t));
     hid_t space_id;
     printf("python vol c. CHECK: dcpl_id:%ld\n",dcpl_id);
-    H5Pget ( dcpl_id , " dataset_space_id " , & space_id ) ;
+    H5Pget ( dcpl_id , "dataset_space_id" , & space_id ) ;
     printf("python vol c. CHECK: dataset space id:%ld\n",space_id);
-    int ndims = H5Sget_simple_extent_ndims ( space_id ) ;
-    hsize_t maxdims [ ndims ];
-    hsize_t dims [ ndims ];
+    int ndims = H5Sget_simple_extent_ndims (space_id) ;
+    hsize_t maxdims [2];
+    hsize_t  dims [2];
+    H5Sget_simple_extent_dims(space_id,dims, maxdims) ;
     hid_t type_id;
-    H5Pget ( dcpl_id , " dataset_type_id " , & type_id);
-    size_t type_size = H5Tget_size ( type_id ); // in bytes
+    H5Pget (dcpl_id, "dataset_type_id" , &type_id);
+    size_t type_size = H5Tget_size (type_id); // in bytes
+    printf("in Python_VOL.c, type_size:%d\n",type_size);
     printf("in Python_VOL.c, ndims:%d\n",ndims);
+    size_t data_size = type_size;
     int x;
     for (x=0;x<ndims;x++){
-      printf("%d dim size is %d\n",x,dims[x]); 
-    } 
+      data_size *= dims[x];
+      printf("in Python_VOL.c %d dim size is %d, max dim is %d\n",x,dims[x], maxdims[x]); 
+    }
+    import_array();
+    npy_intp m[1];
+    m[0]= 2;
+    PyObject * py_dims = PyArray_SimpleNewFromData(1, &m, NPY_INT ,(void *)dims); 
+    PyObject * py_maxdims = PyArray_SimpleNewFromData(1, &m, NPY_INT ,(void *)maxdims );  
+    printf("in Python_VOL.c data_size:%d bytes\n",data_size);
     //dset->under_object = H5VLdataset_create(o->under_object, loc_params, native_plugin_id, name, dcpl_id,  dapl_id, dxpl_id, req);
     PyObject *pValue=NULL;
     char method_name[] = "H5VL_python_dataset_create";
@@ -455,7 +465,7 @@ H5VL_python_dataset_create(void *obj, H5VL_loc_params_t loc_params, const char *
       printf("pInstance is NULL in group create\n");
       exit(0);
     }else{
-      pValue = PyObject_CallMethod(pInstance, method_name, "llsllll", PyLong_AsLong(plong_under), 0, name, dcpl_id, dapl_id, dxpl_id, 0);
+      pValue = PyObject_CallMethod(pInstance, method_name, "llsllllllOO", PyLong_AsLong(plong_under), 0, name, dcpl_id, dapl_id, dxpl_id, 0,type_size,ndims,py_dims, py_maxdims);
       if(pValue !=NULL){
         printf("------- Result of H5Dcreate from python: %ld\n", PyLong_AsLong(pValue));
         void * rt_py = PyLong_AsVoidPtr(pValue);

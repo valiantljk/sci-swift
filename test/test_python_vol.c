@@ -1,4 +1,5 @@
 #include <Python.h>
+#include <numpy/arrayobject.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -49,11 +50,12 @@ int main(int argc, char **argv) {
 	const unsigned int nelem=60;
 	int *data, *data_in;
 	unsigned int i;
-	hsize_t dims[1];
+	hsize_t dims[2];
         ssize_t len;
         char name[25];
         static hsize_t      ds_size[2] = {10, 20};
 	Py_Initialize();
+	import_array();
         under_fapl = H5Pcreate (H5P_FILE_ACCESS);
         H5Pset_fapl_native(under_fapl);
         assert(H5VLis_registered("native") == 1);
@@ -122,18 +124,19 @@ int main(int argc, char **argv) {
 	for(i=0;i<nelem;++i)
 	  data[i]=i;
 
-	dims [0] = 60;
-	dataspaceId = H5Screate_simple(1, dims, NULL); 
+	dims [0] = 6;
+        dims [1] =1;
+	dataspaceId = H5Screate_simple(2, dims, NULL); 
         //space = H5Screate_simple (2, ds_size, ds_size);
 	sprintf(fullpath,"%s/%s",group_name,dataset_name);
 	printf("H5Dcreate2 starts:\n");
-	datasetId = H5Dcreate2(file_id,fullpath,H5T_NATIVE_INT,dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
-        printf("In test python vol: CHECK: Dataset ID: %ld\n",datasetId);
+	printf("In test python vol: CHECK: Dataset ID: %ld\n",datasetId);
         //test the dataset space id
         printf("In test python vol: CHECK: Data Space ID: %ld\n", dataspaceId);
-        hid_t temp_spaceid;
-        H5Pget ( H5P_DEFAULT , " dataset_space_id " , & temp_spaceid);
-        printf("In test python vol: CHECK: Temp Data Space ID: %ld\n", temp_spaceid);
+	datasetId = H5Dcreate2(file_id,fullpath,H5T_NATIVE_INT,dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
+        //hid_t temp_spaceid=0;
+        //H5Pget ( H5P_DEFAULT , " dataset_space_id " , & temp_spaceid);
+        //printf("In test python vol: CHECK: Temp Data Space ID: %ld\n", temp_spaceid);
         if(H5Sget_select_type(dataspaceId)==H5S_SEL_ALL){
           printf("In test python vol: select type is H5S_SEL_ALL\n");
         }else {
