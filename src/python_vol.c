@@ -462,9 +462,9 @@ H5VL_python_dataset_create(void *obj, H5VL_loc_params_t loc_params, const char *
     import_array();
     npy_intp m[1]={2};
    
-    PyObject * py_dims = PyArray_SimpleNewFromData(1, m, NPY_INT,dims);//TODO: 64 bits, vs 32 bit 
+    PyObject * py_dims = PyArray_SimpleNewFromData(1, m, NPY_INTP,dims);//TODO: 64 bits, vs 32 bit 
     //PyObject *  py_dims=PyCapsule_New(dims,"dims",NULL);
-    PyObject * py_maxdims = PyArray_SimpleNewFromData(1, m, NPY_INT ,np_maxdims );  
+    PyObject * py_maxdims = PyArray_SimpleNewFromData(1, m, NPY_INTP,np_maxdims );  
     printf("in Python_VOL.c data_size:%zd bytes\n",data_size);
     //dset->under_object = H5VLdataset_create(o->under_object, loc_params, native_plugin_id, name, dcpl_id,  dapl_id, dxpl_id, req);
     PyObject *pValue=NULL;

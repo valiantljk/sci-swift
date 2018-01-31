@@ -91,18 +91,8 @@ class H5PVol:
     def H5VL_python_dataset_create(self, obj_id, loc_params, name, dcpl_id, dapl_id, dxpl_id, req,type_size, ndims,dims,maxdims):    
 	print ("------- PYTHON H5Dcreate:%s"%name)
 	try:
-	   #print ('in python dataset create, obj is ',obj_id) 
-           #print ('in python dataset create, ndims is ',ndims) 
-	   #print ('in python dataset create, dims shape is ', dims.shape)
-	   #print ('in python dataset create, maxdims shape is ', maxdims.shape)
- 	   import sys
-           #print ('in python dataset create, dims:%d,%d ,maxdims:%d,%d'%(dims[0],dims[1],maxdims[0],maxdims[1]))
-           #print ('size of dims array:%d,len:%d'%(sys.getsizeof(dims),len(dims)))
-	   test_i=0
-           #print ('size test_i:%d,size type_size:%d, size dims[0]:%d, dims[1]:%d'%(sys.getsizeof(test_i),sys.getsizeof(type_size),sys.getsizeof(dims[0]),sys.getsizeof(dims[1])))
-	   #print ('nbytes test_i:%d, nbytes dims[0]:%d, dims[1]:%d'%(test_i.nbytes,dims[0].nbytes, dims[1].nbytes))
-           print ('dims nbytes %d'%(dims.nbytes))
-   
+	   import sys
+           print ("hi, in python:",dims)
            print(dims)
 	   import numpy as np
 	   axx=np.array(dims)
