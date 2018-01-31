@@ -7,7 +7,9 @@
 #include <assert.h>
 #include "hdf5.h"
 #include "python_vol.h"
+#include "inttypes.h"
 #define PYTHON 502
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 //static herr_t H5VL_python_init(hid_t vipl_id);
 //static herr_t H5VL_python_term(hid_t vtpl_id);
 /* Datatype callbacks */
@@ -438,26 +440,32 @@ H5VL_python_dataset_create(void *obj, H5VL_loc_params_t loc_params, const char *
     H5Pget ( dcpl_id , "dataset_space_id" , & space_id ) ;
     printf("python vol c. CHECK: dataset space id:%ld\n",space_id);
     int ndims = H5Sget_simple_extent_ndims (space_id) ;
-    hsize_t maxdims [2];
-    hsize_t  dims [2];
+    hsize_t maxdims [ndims];
+    hsize_t  dims [ndims];
     H5Sget_simple_extent_dims(space_id,dims, maxdims) ;
+    npy_intp np_dims[ndims];
+    npy_intp np_maxdims[ndims];
+    //cast hsize_t to npy_intp
+    int x;
     hid_t type_id;
     H5Pget (dcpl_id, "dataset_type_id" , &type_id);
     size_t type_size = H5Tget_size (type_id); // in bytes
-    printf("in Python_VOL.c, type_size:%d\n",type_size);
+    printf("in Python_VOL.c, type_size:%ld\n",type_size);
     printf("in Python_VOL.c, ndims:%d\n",ndims);
     size_t data_size = type_size;
-    int x;
     for (x=0;x<ndims;x++){
       data_size *= dims[x];
-      printf("in Python_VOL.c %d dim size is %d, max dim is %d\n",x,dims[x], maxdims[x]); 
+      np_dims[x] = (npy_intp) dims[x];
+      np_maxdims[x] = (npy_intp) maxdims[x];
+      printf("in Python_VOL.c %d dim size is %lu, npdim:%lu, max dim is %lu, np_maxdim:%lu\n",x,(unsigned long)dims[x],(unsigned long)np_dims[x], (unsigned long)maxdims[x],(unsigned long)np_maxdims[x]); 
     }
     import_array();
-    npy_intp m[1];
-    m[0]= 2;
-    PyObject * py_dims = PyArray_SimpleNewFromData(1, &m, NPY_INT ,(void *)dims); 
-    PyObject * py_maxdims = PyArray_SimpleNewFromData(1, &m, NPY_INT ,(void *)maxdims );  
-    printf("in Python_VOL.c data_size:%d bytes\n",data_size);
+    npy_intp m[1]={2};
+   
+    PyObject * py_dims = PyArray_SimpleNewFromData(1, m, NPY_INT,dims);//TODO: 64 bits, vs 32 bit 
+    //PyObject *  py_dims=PyCapsule_New(dims,"dims",NULL);
+    PyObject * py_maxdims = PyArray_SimpleNewFromData(1, m, NPY_INT ,np_maxdims );  
+    printf("in Python_VOL.c data_size:%zd bytes\n",data_size);
     //dset->under_object = H5VLdataset_create(o->under_object, loc_params, native_plugin_id, name, dcpl_id,  dapl_id, dxpl_id, req);
     PyObject *pValue=NULL;
     char method_name[] = "H5VL_python_dataset_create";
@@ -618,7 +626,7 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
     PyObject * pydata;
     if (type_size == 8){ 
       pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_INT ,(void *)buf );
-    }
+    }//TODO: DATASET CLASS, SIZE, REJECT OTHERS. 
     else if (type_size == 32){
       pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_FLOAT,(void *)buf);
     }

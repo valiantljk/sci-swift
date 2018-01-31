@@ -6,15 +6,14 @@
 #include <assert.h>
 #include "hdf5.h"
 #include "../src/python_vol.h"
-static herr_t
+#define NPY_NO_DEPRECATED_API NPY_1_9_API_VERSION
+/*static herr_t
 visit_cb(hid_t oid, const char *name,
          const H5O_info_t *oinfo, void *udata)
 {
-    ssize_t len;
     char n[25];
-
     if(H5Iget_type(oid) == H5I_GROUP) {
-        len = H5VLget_plugin_name(oid, n, 50);
+        size_t len = H5VLget_plugin_name(oid, n, 50);
         //printf ("Visiting GROUP VOL name = %s  %ld\n", n, len);
     }
     if(H5Iget_type(oid) == H5I_DATASET) 
@@ -23,7 +22,8 @@ visit_cb(hid_t oid, const char *name,
         //printf("visiting datatype\n");
 
     return 1;
-} /* end h5_verify_cached_stabs_cb() */
+}*/
+ /* end h5_verify_cached_stabs_cb() */
 
 int main(int argc, char **argv) {
         const char file_name[]="large_dataset.h5";
@@ -48,7 +48,7 @@ int main(int argc, char **argv) {
         hid_t attr;
         hid_t space;
 	const unsigned int nelem=60;
-	int *data, *data_in;
+	int *data;//, *data_in;
 	unsigned int i;
 	hsize_t dims[2];
         ssize_t len;
@@ -120,12 +120,12 @@ int main(int argc, char **argv) {
 //        printf("name = %ld  %s\n", len, name);
 
 	data = malloc (sizeof(int)*nelem);
-        data_in = malloc (sizeof(int)*nelem);
+        int * data_in = malloc (sizeof(int)*nelem);
 	for(i=0;i<nelem;++i)
 	  data[i]=i;
 
-	dims [0] = 6;
-        dims [1] =1;
+	dims [0] =60;
+        dims [1] =2;
 	dataspaceId = H5Screate_simple(2, dims, NULL); 
         //space = H5Screate_simple (2, ds_size, ds_size);
 	sprintf(fullpath,"%s/%s",group_name,dataset_name);

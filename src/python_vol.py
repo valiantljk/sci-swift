@@ -89,13 +89,25 @@ class H5PVol:
            print ('retrieve obj failed in python group create')
         return -1 
     def H5VL_python_dataset_create(self, obj_id, loc_params, name, dcpl_id, dapl_id, dxpl_id, req,type_size, ndims,dims,maxdims):    
-	print ("------- PYTHON H5Dcreate:%s"%name) 
+	print ("------- PYTHON H5Dcreate:%s"%name)
 	try:
-	   print ('in python dataset create, obj is ',obj_id) 
-           print ('in python dataset create, ndims is ',ndims) 
-	   print ('in python dataset create, dims sp is ', dims.shape)
-           print ('in python dataset create, dims:%d,%d ,maxdims:%d,%d'%(dims[0],dims[1],maxdims[0],maxdims[1]))
-	   dst_parent_obj=self.obj_list[obj_id] 
+	   #print ('in python dataset create, obj is ',obj_id) 
+           #print ('in python dataset create, ndims is ',ndims) 
+	   #print ('in python dataset create, dims shape is ', dims.shape)
+	   #print ('in python dataset create, maxdims shape is ', maxdims.shape)
+ 	   import sys
+           #print ('in python dataset create, dims:%d,%d ,maxdims:%d,%d'%(dims[0],dims[1],maxdims[0],maxdims[1]))
+           #print ('size of dims array:%d,len:%d'%(sys.getsizeof(dims),len(dims)))
+	   test_i=0
+           #print ('size test_i:%d,size type_size:%d, size dims[0]:%d, dims[1]:%d'%(sys.getsizeof(test_i),sys.getsizeof(type_size),sys.getsizeof(dims[0]),sys.getsizeof(dims[1])))
+	   #print ('nbytes test_i:%d, nbytes dims[0]:%d, dims[1]:%d'%(test_i.nbytes,dims[0].nbytes, dims[1].nbytes))
+           print ('dims nbytes %d'%(dims.nbytes))
+   
+           print(dims)
+	   import numpy as np
+	   axx=np.array(dims)
+	   print ("np array:%d,%d"%(axx[0],axx[1]))
+   	   dst_parent_obj=self.obj_list[obj_id] 
 	   try:
 		#TODO: figure out shape,dtype from loc_params
 		dst_obj=dst_parent_obj.create_dataset(name,(10,10),dtype='f8')  
@@ -107,7 +119,7 @@ class H5PVol:
 	   except Exception as e:
 		print ('dataset create in python failed with error: ',e)
 	except Exception as e:
-	   print ('retrieve obj failed in python dataset create')
+	   print ('retrieve obj failed in python dataset create:',e)
 	   return -1   
     def H5VL_python_dataset_write(self, obj_id, mem_type_id, mem_space_id, file_space_id, plist_id, buf, req):
 	print ("------- PYTHON H5Dwrite") 
