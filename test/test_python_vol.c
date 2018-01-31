@@ -124,21 +124,32 @@ int main(int argc, char **argv) {
 	for(i=0;i<nelem;++i)
 	  data[i]=i;
 
-	dims [0] =60;
-        dims [1] =2;
+	dims [0] =6;
+        dims [1] =10;
 	dataspaceId = H5Screate_simple(2, dims, NULL); 
         //space = H5Screate_simple (2, ds_size, ds_size);
 	sprintf(fullpath,"%s/%s",group_name,dataset_name);
 	printf("H5Dcreate2 starts:\n");
-	printf("In test python vol: CHECK: Dataset ID: %ld\n",datasetId);
+	//printf("In test python vol: CHECK: Dataset ID: %ld\n",datasetId);
         //test the dataset space id
-        printf("In test python vol: CHECK: Data Space ID: %ld\n", dataspaceId);
-	datasetId = H5Dcreate2(file_id,fullpath,H5T_NATIVE_INT,dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
-        //hid_t temp_spaceid=0;
+        //printf("In test python vol: CHECK: Data Space ID: %ld\n", dataspaceId);
+        
+	hid_t datasetId_int32 = H5Dcreate2(file_id,fullpath,H5T_NATIVE_INT,dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
+        datasetId=datasetId_int32;
+        char fullpath_int16[500];
+        char fullpath_float32[500];
+        char fullpath_float64[500];
+        sprintf(fullpath_int16,"%s/%s",group_name,"dt_int16");
+        sprintf(fullpath_float32,"%s/%s",group_name,"dt_float32");
+        sprintf(fullpath_float64,"%s/%s",group_name,"dt_float64");
+        hid_t datasetId_int16 = H5Dcreate2(file_id,fullpath_int16,H5T_NATIVE_SHORT,dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
+        hid_t datasetId_float32 = H5Dcreate2(file_id,fullpath_float32,H5T_NATIVE_FLOAT,dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
+	hid_t datasetId_float64 = H5Dcreate2(file_id,fullpath_float64,H5T_NATIVE_DOUBLE,dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT); 
+       //hid_t temp_spaceid=0;
         //H5Pget ( H5P_DEFAULT , " dataset_space_id " , & temp_spaceid);
         //printf("In test python vol: CHECK: Temp Data Space ID: %ld\n", temp_spaceid);
         if(H5Sget_select_type(dataspaceId)==H5S_SEL_ALL){
-          printf("In test python vol: select type is H5S_SEL_ALL\n");
+          printf("In test python vol: select type is H5S_SEL_ALL, OK:\n");
         }else {
           printf("In test python vol: select type is not ALL");
         }

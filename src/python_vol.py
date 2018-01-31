@@ -18,6 +18,7 @@
 #print ('gc is enabled? ',gc.isenabled())
 #class PyVol
 class H5PVol:
+    dt_types={ 0:"int16", 1:"int32",2:"float32",3:"float64"}    
     obj_curid = 1  # PyLong_AsVoidPtr can not convert 0 correctly
     obj_list  = {} # dictionary for various h5py objects, e.g., groups, datasets, links, etc. 
 	           # starting obj is reserved for HDF5 file handle, with index 0 as its key
@@ -88,19 +89,13 @@ class H5PVol:
         except Exception as e:
            print ('retrieve obj failed in python group create')
         return -1 
-    def H5VL_python_dataset_create(self, obj_id, loc_params, name, dcpl_id, dapl_id, dxpl_id, req,type_size, ndims,dims,maxdims):    
+    def H5VL_python_dataset_create(self, obj_id, loc_params, name, dcpl_id, dapl_id, dxpl_id, req, ndims,pytype,dims,maxdims):    
 	print ("------- PYTHON H5Dcreate:%s"%name)
 	try:
-	   import sys
-           print ("hi, in python:",dims)
-           print(dims)
-	   import numpy as np
-	   axx=np.array(dims)
-	   print ("np array:%d,%d"%(axx[0],axx[1]))
-   	   dst_parent_obj=self.obj_list[obj_id] 
+	   dst_parent_obj=self.obj_list[obj_id] 
 	   try:
 		#TODO: figure out shape,dtype from loc_params
-		dst_obj=dst_parent_obj.create_dataset(name,(10,10),dtype='f8')  
+		dst_obj=dst_parent_obj.create_dataset(name,dims,dtype=self.dt_types[pytype])  
 		curid = self.obj_curid
 		self.obj_list[curid] = dst_obj # insert new object 
 		self.obj_curid = curid+1       # update current index
@@ -120,7 +115,7 @@ class H5PVol:
                 #convert buf into numpy array, then assign to dst_parent_obj
                 dst_parent_obj[:] = np_buf
                 curid = self.obj_curid
-                print ('dataset id is %d'%curid)
+                #print ('dataset id is %d'%curid)
                 return curid
            except Exception as e:
                 print ('dataset write in python failed with error: ',e)

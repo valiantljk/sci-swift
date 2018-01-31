@@ -125,6 +125,14 @@ typedef struct H5VL_python_t {
     void   *under_object;
 } H5VL_python_t;
 
+typedef struct H5VL_DT {
+    int  ndims;	  // Acquired with H5Sget_simple_extent_ndims
+    hsize_t * dims;      // Acquired with H5Sget_simple_extent_dims 
+    hsize_t * maxdims;   // Acquired with H5Sget_simple_extent_dims
+    int  py_type;        // Acquired with H5T_get_class, Support H5T_INTEGER, 16/32, FLOAT 32/64 for now. 
+} H5VL_DT;
+
+
 PyObject * pInstance=NULL;
 
 /* File callbacks Implementation*/
@@ -427,53 +435,53 @@ H5VL_python_object_specific(void *obj, H5VL_loc_params_t loc_params, H5VL_object
     return 1;
 }
 /* Dataset callbacks Implementation*/
+
+
+void helper_dt (hid_t dcpl_id, H5VL_DT * dt){
+     hid_t space_id, type_id;
+     H5Pget (dcpl_id, "dataset_space_id", &space_id); 
+     H5Pget (dcpl_id, "dataset_type_id", &type_id);
+     dt->ndims = H5Sget_simple_extent_ndims (space_id);
+     dt->dims = malloc(sizeof(unsigned long long int )* dt->ndims);
+     dt->maxdims = malloc(sizeof(unsigned long long int)* dt->ndims);
+     H5Sget_simple_extent_dims(space_id,dt->dims, dt->maxdims);
+     hid_t atomic_type = H5Tget_class(type_id); // return type, see H5Tpublic.h
+     size_t type_size = H5Tget_size(type_id); // return number of bytes, e.g., if int, it could be 4, 8, 16, 32, etc
+     int py_type=0; // default is int16 
+
+     if(atomic_type==0||atomic_type==1){
+       int nbits = type_size*8; 
+       if(nbits==16&&(int)atomic_type==0)      py_type=0; // int16
+       else if(nbits==32&&(int)atomic_type==0) py_type=1; // int32
+       else if(nbits==32&&(int)atomic_type==1) py_type=2; // float32
+       else if(nbits==64&&(int)atomic_type==1) py_type=3; // float64
+       else{fprintf(stderr, "type is not supported, only support int16, int32, float32, double\n");}
+     }
+     else fprintf(stderr, "type is not supported, only support int and float\n");
+     dt->py_type=py_type;
+}
+
 static void *
 H5VL_python_dataset_create(void *obj, H5VL_loc_params_t loc_params, const char *name, hid_t dcpl_id, hid_t dapl_id, hid_t dxpl_id, void **req) 
 {
     H5VL_python_t *dset;
     H5VL_python_t *o = (H5VL_python_t *)obj;
     PyObject * plong_under = PyLong_FromVoidPtr(o->under_object);
-    //Determine the dataset size and type, pass to python layer
     dset = (H5VL_python_t *)calloc(1, sizeof(H5VL_python_t));
-    hid_t space_id;
-    printf("python vol c. CHECK: dcpl_id:%ld\n",dcpl_id);
-    H5Pget ( dcpl_id , "dataset_space_id" , & space_id ) ;
-    printf("python vol c. CHECK: dataset space id:%ld\n",space_id);
-    int ndims = H5Sget_simple_extent_ndims (space_id) ;
-    hsize_t maxdims [ndims];
-    hsize_t  dims [ndims];
-    H5Sget_simple_extent_dims(space_id,dims, maxdims) ;
-    npy_intp np_dims[ndims];
-    npy_intp np_maxdims[ndims];
-    //cast hsize_t to npy_intp
-    int x;
-    hid_t type_id;
-    H5Pget (dcpl_id, "dataset_type_id" , &type_id);
-    size_t type_size = H5Tget_size (type_id); // in bytes
-    printf("in Python_VOL.c, type_size:%ld\n",type_size);
-    printf("in Python_VOL.c, ndims:%d\n",ndims);
-    size_t data_size = type_size;
-    for (x=0;x<ndims;x++){
-      data_size *= dims[x];
-      np_dims[x] = (npy_intp) dims[x];
-      np_maxdims[x] = (npy_intp) maxdims[x];
-      printf("in Python_VOL.c %d dim size is %lu, npdim:%lu, max dim is %lu, np_maxdim:%lu\n",x,(unsigned long)dims[x],(unsigned long)np_dims[x], (unsigned long)maxdims[x],(unsigned long)np_maxdims[x]); 
-    }
     import_array();
-    npy_intp m[1]={2};
-   
-    PyObject * py_dims = PyArray_SimpleNewFromData(1, m, NPY_INTP,dims);//TODO: 64 bits, vs 32 bit 
-    //PyObject *  py_dims=PyCapsule_New(dims,"dims",NULL);
-    PyObject * py_maxdims = PyArray_SimpleNewFromData(1, m, NPY_INTP,np_maxdims );  
-    printf("in Python_VOL.c data_size:%zd bytes\n",data_size);
-    //dset->under_object = H5VLdataset_create(o->under_object, loc_params, native_plugin_id, name, dcpl_id,  dapl_id, dxpl_id, req);
+    H5VL_DT * dt= malloc(sizeof(H5VL_DT)); //get the dataset size, type
+    helper_dt (dcpl_id, dt);
+    //printf("Testing H5VL_DT,%d\n",dt->py_type); 
+    npy_intp dtm=dt->ndims;  
+    PyObject * py_dims = PyArray_SimpleNewFromData(1, &dtm, NPY_INTP,dt->dims);//TODO: 64 bits, vs 32 bit 
+    PyObject * py_maxdims = PyArray_SimpleNewFromData(1, &dtm, NPY_INTP,dt->maxdims );  
     PyObject *pValue=NULL;
     char method_name[] = "H5VL_python_dataset_create";
     if(pInstance==NULL){
       printf("pInstance is NULL in group create\n");
       exit(0);
     }else{
-      pValue = PyObject_CallMethod(pInstance, method_name, "llsllllllOO", PyLong_AsLong(plong_under), 0, name, dcpl_id, dapl_id, dxpl_id, 0,type_size,ndims,py_dims, py_maxdims);
+      pValue = PyObject_CallMethod(pInstance, method_name, "llsllllllOO", PyLong_AsLong(plong_under), 0, name, dcpl_id, dapl_id, dxpl_id, 0,dt->ndims,dt->py_type,py_dims, py_maxdims);
       if(pValue !=NULL){
         printf("------- Result of H5Dcreate from python: %ld\n", PyLong_AsLong(pValue));
         void * rt_py = PyLong_AsVoidPtr(pValue);
@@ -601,23 +609,7 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
 {
     H5VL_python_t *o = (H5VL_python_t *)dset;
     PyObject * plong_under = PyLong_FromVoidPtr(o->under_object);
-    //Determine the dataset size and type, pass to python layer
-
-    //H5VLdataset_write(d->under_object, native_plugin_id, mem_type_id, mem_space_id, file_space_id, 
-    //                 plist_id, buf, req);
-    //Convert C buffer into Python Object
-    //Fail if selection type is not 'H5S_ALL'-->H5S_SEL_ALL (returned value)
-    //First, get the dataset_space_id
-    //printf("CHECK: dataset underobject:%ld\n",PyLong_AsLong(plong_under));
-    //printf("CHECK:file_space_id:%ld\n",file_space_id);
-    hid_t space_id=file_space_id;
-    //space_id = H5Dget_space(dset); //TODO: NEED TO FIGUREOUT DATASET ID
-    if (H5Sget_select_type(space_id)!=H5S_SEL_ALL) {
-       printf("Selection type %d\n",H5Sget_select_type(space_id));
-       fprintf(stderr, "Selection type only supports ALL for now, Jan 26 2018\n");
-       exit(-1);
-    }
-    //Second, get ndims and size of each dims
+    hid_t space_id=file_space_id; 
     int ndims = H5Sget_simple_extent_ndims ( space_id ) ;
     hsize_t maxdims [ ndims ];
     npy_intp dims [ ndims ];
