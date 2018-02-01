@@ -107,18 +107,25 @@ class H5PVol:
 	   print ('retrieve obj failed in python dataset create:',e)
 	   return -1   
     def H5VL_python_dt_info(self, obj_id):
+        print ('in python dt info', obj_id)
         #return numpy array
-        dims=self.obj_list[obj_id].shape
-        ndims=len(dims)
-        for k,v in dt_types.items():
+        try:
+         dims=self.obj_list[obj_id].shape
+         ndims=len(dims)
+         for k,v in self.dt_types.items():
             if v ==self.obj_list[obj_id].dtype:
 	       dt=k
-        axx=list()
-        axx.append(ndims)
-        axx.append(dt)
-        axx.append(list(dims))
-        import numpy as np
-        return np.array(axx)
+         axx=list()
+         axx.append(ndims)
+         axx.append(dt)
+         axx.append(list(dims))
+         import numpy as np
+	 print ('in python dt info, ndims:%d,dtype:%d'%(ndims,dt))
+	 print ('in python dt info,dims: ',dims)
+         return np.array(axx)
+        except Exception as e:
+         print (e)
+         pass
     def H5VL_python_dataset_write(self, obj_id, mem_type_id, mem_space_id, file_space_id, plist_id, buf, req):
 	print ("------- PYTHON H5Dwrite") 
         try:

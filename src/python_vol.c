@@ -612,22 +612,29 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
     // retrieve the DT infor from python layer, 
     char dt_name[] = "H5VL_python_dt_info";
     int ndims,dtype,*dims;
+    import_array();
     if(pInstance!=NULL){
        PyObject * dt_obj= PyObject_CallMethod(pInstance, dt_name, "l", PyLong_AsLong(plong_under));
+       if(dt_obj==NULL) printf("dt_Obj is null\n");
        if(!PyArray_Check(dt_obj)){
-	fprintf(stderr, "checking dataset info failed");
-        exit(0);
+        PyErr_Print();
+	fprintf(stderr, "checking dataset info failed\n");
+        //exit(0);
        }
        PyArrayObject * dt_arr=(PyArrayObject *)dt_obj;
        //convert back to c array
        if(dt_arr->descr->type_num==PyArray_INT){
+         printf("in Python_VOL c, dt_arr is int\n");
          int * dt_if = dt_arr->data;
 	 ndims=dt_if[0];
 	 dtype=dt_if[1];
 	 dims=dt_if+2; //pointer starts from 3rd element
+       }else{
+        printf("dt_arr is not PyArray_INT\n");
        } 
       
     }
+    printf("In Python_VOL C, ndims:%d,dtype:%d\n",ndims,dtype);
     PyObject * pydata;
     if (dtype == 0){ 
       pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_INT16, (void *)buf );
