@@ -609,24 +609,40 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
 {
     H5VL_python_t *o = (H5VL_python_t *)dset;
     PyObject * plong_under = PyLong_FromVoidPtr(o->under_object);
-    hid_t space_id=file_space_id; 
-    int ndims = H5Sget_simple_extent_ndims ( space_id ) ;
-    hsize_t maxdims [ ndims ];
-    npy_intp dims [ ndims ];
-    hid_t type_id;
-    size_t type_size = H5Tget_size ( mem_type_id ); // in bytes
-    PyObject * pydata;
-    if (type_size == 8){ 
-      pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_INT ,(void *)buf );
-    }//TODO: DATASET CLASS, SIZE, REJECT OTHERS. 
-    else if (type_size == 32){
-      pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_FLOAT,(void *)buf);
+    // retrieve the DT infor from python layer, 
+    char dt_name[] = "H5VL_python_dt_info";
+    int ndims,dtype,*dims;
+    if(pInstance!=NULL){
+       PyObject * dt_obj= PyObject_CallMethod(pInstance, dt_name, "l", PyLong_AsLong(plong_under));
+       if(!PyArray_Check(dt_obj)){
+	fprintf(stderr, "checking dataset info failed");
+        exit(0);
+       }
+       PyArrayObject * dt_arr=(PyArrayObject *)dt_obj;
+       //convert back to c array
+       if(dt_arr->descr->type_num==PyArray_INT){
+         int * dt_if = dt_arr->data;
+	 ndims=dt_if[0];
+	 dtype=dt_if[1];
+	 dims=dt_if+2; //pointer starts from 3rd element
+       } 
+      
     }
-    else if (type_size == 64) {
-      pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_DOUBLE,(void *)buf );
+    PyObject * pydata;
+    if (dtype == 0){ 
+      pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_INT16, (void *)buf );
+    }//TODO: DATASET CLASS, SIZE, REJECT OTHERS. 
+    else if (dtype == 1){
+      pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_INT32, (void *)buf );
+    }
+    else if (dtype == 2) {
+      pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_FLOAT, (void *)buf );
+    }
+    else if (dtype == 3) {
+      pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_DOUBLE, (void *)buf );
     }
     else {
-      fprintf(stderr, "Type is not supported for now Jan 26 2018\n");	
+      fprintf(stderr, "Type is not supported for now Jan 31 2018\n");	
       exit(-1);
     }
     PyObject *pModule;
