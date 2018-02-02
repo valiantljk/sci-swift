@@ -118,22 +118,25 @@ class H5PVol:
          axx=list()
          axx.append(ndims)
          axx.append(dt)
-         axx.append(list(dims))
+         axx=axx+list(dims)
          import numpy as np
-	 print ('in python dt info, ndims:%d,dtype:%d'%(ndims,dt))
-	 print ('in python dt info,dims: ',dims)
-         return np.array(axx)
+         axx=np.asarray(axx,dtype='int32')
+         print('in python dt info:',axx)
+         print('in python dt info type:',axx.dtype)
+         return axx
         except Exception as e:
          print (e)
          pass
     def H5VL_python_dataset_write(self, obj_id, mem_type_id, mem_space_id, file_space_id, plist_id, buf, req):
-	print ("------- PYTHON H5Dwrite") 
+	print ("-------* PYTHON H5Dwrite") 
         try:
            print ('in python dataset write, obj is ',obj_id)
            dst_parent_obj=self.obj_list[obj_id]
            try:
                 #convert buf into numpy array, then assign to dst_parent_obj
-                dst_parent_obj[:] = np_buf
+	        print ("buffer in python:",buf)
+                dst_parent_obj[:] = buf
+                print("buf in python:",buf)
                 curid = self.obj_curid
                 #print ('dataset id is %d'%curid)
                 return curid

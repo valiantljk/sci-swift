@@ -623,24 +623,29 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
        }
        PyArrayObject * dt_arr=(PyArrayObject *)dt_obj;
        //convert back to c array
-       if(dt_arr->descr->type_num==PyArray_INT){
-         printf("in Python_VOL c, dt_arr is int\n");
+       if(dt_arr->descr->type_num>=0){
+         printf("in Python_VOL c, dt_arr type_num is:%d\n",dt_arr->descr->type_num);
          int * dt_if = dt_arr->data;
 	 ndims=dt_if[0];
 	 dtype=dt_if[1];
 	 dims=dt_if+2; //pointer starts from 3rd element
        }else{
-        printf("dt_arr is not PyArray_INT\n");
+        printf("dt_arr.type_num:%d is not PyArray_LONG\n",dt_arr->descr->type_num);
        } 
       
     }
-    printf("In Python_VOL C, ndims:%d,dtype:%d\n",ndims,dtype);
+    printf("In Python_VOL C, ndims:%ld,dtype:%ld\n",ndims,dtype);
+    int idim=0;
+    for(idim=0;idim<ndims;idim++){
+      printf("In Python_VOL C %d dims size %d\n",idim,dims[idim]);
+    }
     PyObject * pydata;
     if (dtype == 0){ 
-      pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_INT16, (void *)buf );
+      pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_INTP, (void *)buf );
     }//TODO: DATASET CLASS, SIZE, REJECT OTHERS. 
     else if (dtype == 1){
-      pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_INT32, (void *)buf );
+      printf("Python VOL C: Preparing array from buffer\n");
+      pydata = PyArray_SimpleNewFromData(1, dims, NPY_INTP, (void *)buf );
     }
     else if (dtype == 2) {
       pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_FLOAT, (void *)buf );
@@ -659,14 +664,15 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
       printf("pInstance is NULL in group create\n");
       exit(0);
     }else{
-      pValue = PyObject_CallMethod(pInstance, method_name, "llllllOl", PyLong_AsLong(plong_under), 0,  mem_type_id, mem_space_id, file_space_id,plist_id, pydata, 0);
+      pValue = PyObject_CallMethod(pInstance, method_name, "lllllOl", PyLong_AsLong(plong_under),  mem_type_id, mem_space_id, file_space_id,plist_id, pydata, 0);
+      PyErr_Print();
       if(pValue !=NULL){
         printf("------- Result of H5Dwrite from python: %ld\n", PyLong_AsLong(pValue));
         return 1;
       }
     }   
     
-    printf ("------- PYTHON H5Dwrite\n");
+    printf ("-------! PYTHON H5Dwrite\n");
     return -1;     
 
 }
