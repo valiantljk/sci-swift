@@ -121,8 +121,8 @@ class H5PVol:
          axx=axx+list(dims)
          import numpy as np
          axx=np.asarray(axx,dtype='int64')
-         print('in python dt info:',axx)
-         print('in python dt info type:',axx.dtype)
+         #print('in python dt info:',axx)
+         #print('in python dt info type:',axx.dtype)
          return axx
         except Exception as e:
          print (e)
@@ -134,9 +134,8 @@ class H5PVol:
            dst_parent_obj=self.obj_list[obj_id]
            try:
                 #convert buf into numpy array, then assign to dst_parent_obj
-	        print ("buffer in python:",buf)
-                dst_parent_obj[:] = buf
-                print("buf in python:",buf)
+	        dst_parent_obj[:] = buf
+                print(buf)
                 curid = self.obj_curid
                 #print ('dataset id is %d'%curid)
                 return curid
