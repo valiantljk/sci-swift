@@ -120,7 +120,7 @@ class H5PVol:
          axx.append(dt)
          axx=axx+list(dims)
          import numpy as np
-         axx=np.asarray(axx,dtype='int32')
+         axx=np.asarray(axx,dtype='int64')
          print('in python dt info:',axx)
          print('in python dt info type:',axx.dtype)
          return axx

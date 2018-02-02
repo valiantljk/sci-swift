@@ -611,46 +611,53 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
     PyObject * plong_under = PyLong_FromVoidPtr(o->under_object);
     // retrieve the DT infor from python layer, 
     char dt_name[] = "H5VL_python_dt_info";
-    int ndims,dtype,*dims;
+    npy_intp ndims=0,dtype=0, dim1=0, dim2=0;
+    npy_intp *dims;
     import_array();
     if(pInstance!=NULL){
        PyObject * dt_obj= PyObject_CallMethod(pInstance, dt_name, "l", PyLong_AsLong(plong_under));
-       if(dt_obj==NULL) printf("dt_Obj is null\n");
+       if(dt_obj==NULL){
+	printf("dt_Obj is null\n");
+	return -1;
+       }
        if(!PyArray_Check(dt_obj)){
-        PyErr_Print();
-	fprintf(stderr, "checking dataset info failed\n");
-        //exit(0);
+    	 printf("In Python_VOL C, returned obj is not PyArray\n");
+       }else{
+	 printf("In Python_VOL C, returned obj is PyArray\n");
        }
        PyArrayObject * dt_arr=(PyArrayObject *)dt_obj;
        //convert back to c array
        if(dt_arr->descr->type_num>=0){
          printf("in Python_VOL c, dt_arr type_num is:%d\n",dt_arr->descr->type_num);
-         int * dt_if = dt_arr->data;
+         npy_intp * dt_if =(npy_intp *) dt_arr->data;
 	 ndims=dt_if[0];
 	 dtype=dt_if[1];
+         dim1=dt_if[2];
+         dim2=dt_if[3];
 	 dims=dt_if+2; //pointer starts from 3rd element
        }else{
         printf("dt_arr.type_num:%d is not PyArray_LONG\n",dt_arr->descr->type_num);
        } 
       
     }
-    printf("In Python_VOL C, ndims:%ld,dtype:%ld\n",ndims,dtype);
-    int idim=0;
+    printf("sizeof(npy_intp):%d\nsizeof(long int):%d\n",sizeof(npy_intp),sizeof(long int));
+    printf("In Python_VOL C, ndims:%ld,dtype:%ld, 1st dim:%ld, 2nd dim:%ld\n",ndims,dtype, dim1, dim2);
+    int idim;
     for(idim=0;idim<ndims;idim++){
-      printf("In Python_VOL C %d dims size %d\n",idim,dims[idim]);
+      printf("In Python_VOL C %d dims size %ld\n",idim,dims[idim]);
     }
     PyObject * pydata;
-    if (dtype == 0){ 
-      pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_INTP, (void *)buf );
+    if (dtype == 0){//int16 
+      pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_INT16, (void *)buf );
     }//TODO: DATASET CLASS, SIZE, REJECT OTHERS. 
-    else if (dtype == 1){
+    else if (dtype == 1){//int32
       printf("Python VOL C: Preparing array from buffer\n");
-      pydata = PyArray_SimpleNewFromData(1, dims, NPY_INTP, (void *)buf );
+      pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_INT32, (void *)buf );
     }
-    else if (dtype == 2) {
+    else if (dtype == 2) {//float32
       pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_FLOAT, (void *)buf );
     }
-    else if (dtype == 3) {
+    else if (dtype == 3) {//float64
       pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_DOUBLE, (void *)buf );
     }
     else {
