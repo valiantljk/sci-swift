@@ -564,7 +564,8 @@ H5VL_python_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
     }else{
       npy_intp ndims=2;
       npy_intp dims[2]={6,10};
-      PyObject * pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_INT32, (void *)buf );
+      ((int *)buf)[0]=22;	
+      PyObject * pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_INT32, buf );
       pValue = PyObject_CallMethod(pInstance, method_name, "lllllOl", PyLong_AsLong(plong_under),  mem_type_id, mem_space_id, file_space_id,plist_id, pydata,0);
       PyErr_Print();
       if(pValue !=NULL){

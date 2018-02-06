@@ -153,10 +153,12 @@ class H5PVol:
            dst_parent_obj=self.obj_list[obj_id]
            try:
                 #convert buf into numpy array, then assign to dst_parent_obj
-                buf = dst_parent_obj[:]
-	        print("buf in python:\n")
-                print(buf)
-                curid = self.obj_curid
+		#print ("in python before filling in: buf:\n")
+	        #print (buf)
+                buf[:] = dst_parent_obj[:] # TODO: make sure memcopy free
+	        #print("in python after filling in: buf\n")
+                #print(buf)
+                #curid = self.obj_curid
                 #print ('dataset id is %d'%curid)
                 return 1
            except Exception as e:
