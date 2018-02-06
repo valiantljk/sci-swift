@@ -146,6 +146,24 @@ class H5PVol:
         except Exception as e:
            print ('retrieve obj failed in python dataset write')
            return -1
+    def H5VL_python_dataset_read(self, obj_id, mem_type_id, mem_space_id, file_space_id, plist_id, buf, req):
+        print ("-------* PYTHON H5Dread")
+        try:
+           print ('in python dataset read, obj is ',obj_id)
+           dst_parent_obj=self.obj_list[obj_id]
+           try:
+                #convert buf into numpy array, then assign to dst_parent_obj
+                buf = dst_parent_obj[:]
+	        print("buf in python:\n")
+                print(buf)
+                curid = self.obj_curid
+                #print ('dataset id is %d'%curid)
+                return 1
+           except Exception as e:
+                print ('dataset write in python failed with error: ',e)
+        except Exception as e:
+           print ('retrieve obj failed in python dataset write')
+           return -1
 	
 def objects_by_id(id_):
     print ('need to find obj id:',id_)

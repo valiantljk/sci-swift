@@ -89,14 +89,23 @@ int main(int argc, char **argv) {
 
 
         //Test HDF5 Dataset Read
-	//int * data_in = malloc(sizeof(int)*nelem);
-        //H5Dread (datasetId_int32, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_in);
-
+	printf("Start H5Dread Test:\n");
+	int check = 0;
+	int       * data_int32_in   = malloc(sizeof(int)      *nelem);
+	H5Dread (datasetId_int32, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_int32_in);
+	printf("Data read in:\n");
+	for(i=0; i<nelem; i++){
+	   printf("%d ",data_int32_in[i]);
+	   if(data_int32_in[i]!=data_int32[i]){
+	      check+=1;
+	   }
+	}
+	printf("\nNumber of wrong elements:%d\n",check);
 	free (data_int16);
       	free (data_int32);
 	free (data_float32);
 	free (data_float64);
-
+	free (data_int32_in);
 
 	//Test HDF5 Dataset Close
 	H5Dclose(datasetId_int16);

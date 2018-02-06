@@ -553,54 +553,35 @@ static herr_t
 H5VL_python_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
                       hid_t file_space_id, hid_t plist_id, void *buf, void **req)
 {
-    H5VL_python_t *d = (H5VL_python_t *)dset;
+    H5VL_python_t *o = (H5VL_python_t *)dset;
+    PyObject * plong_under = PyLong_FromVoidPtr(o->under_object);
 
-    H5VLdataset_read(d->under_object, native_plugin_id, mem_type_id, mem_space_id, file_space_id, 
-                     plist_id, buf, req);
-    PyObject *pModule, *pFunc;
     PyObject *pArgs, *pValue=NULL;
-    char * args [] ={"python_vol","H5VL_python_dataset_read"};
-    pModule = PyImport_ImportModule(args[0]);
-    if (pModule != NULL) {
-     pFunc = PyObject_GetAttrString(pModule, args[1]);
-     if (pFunc && PyCallable_Check(pFunc)) {
-        pArgs = PyTuple_New(7);
-	//TODO: struct pointer
-        PyTuple_SetItem(pArgs, 0, PyCapsule_New(dset, "dset", NULL));
-        PyTuple_SetItem(pArgs, 1, PyLong_FromLong(mem_type_id));
-        PyTuple_SetItem(pArgs, 2, PyLong_FromLong(mem_space_id));
-        PyTuple_SetItem(pArgs, 3, PyLong_FromLong(file_space_id));
-        PyTuple_SetItem(pArgs, 4, PyLong_FromLong(plist_id));
-	//TODO: buf must not be NULL, right?
-        PyTuple_SetItem(pArgs, 5, PyCapsule_New(buf, "buf", NULL));
-        //req can be NULL
-        if(req!=NULL)
-         PyTuple_SetItem(pArgs, 6, Py_BuildValue("O",PyCapsule_New(req, "req", NULL)));
-        else
-         PyTuple_SetItem(pArgs, 6, PyString_FromString("None"));
-        pValue = PyObject_CallObject(pFunc, pArgs);
-        if (pValue != NULL) {
-                printf("------- Result of H5Dread from python: %ld\n", PyInt_AsLong(pValue));
-        }
-        else {
-                Py_DECREF(pFunc);
-                Py_DECREF(pModule);
-                Py_XDECREF(pArgs);
-                PyErr_Print();
-                fprintf(stderr,"Call failed\n");
-                return -1;
-        }
-        Py_XDECREF(pArgs);
-     } 
-     else {
-        fprintf(stderr, "------- PYTHON H5Dread failed\n");
-        return -1;
-     }
+    char method_name[] = "H5VL_python_dataset_read";
+    if(pInstance==NULL){
+      printf("pInstance is NULL in dataset read\n");
+      exit(0);
+    }else{
+      npy_intp ndims=2;
+      npy_intp dims[2]={6,10};
+      PyObject * pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_INT32, (void *)buf );
+      pValue = PyObject_CallMethod(pInstance, method_name, "lllllOl", PyLong_AsLong(plong_under),  mem_type_id, mem_space_id, file_space_id,plist_id, pydata,0);
+      PyErr_Print();
+      if(pValue !=NULL){
+	printf("------- Result of H5Dread from python is not NULL\n");
+	PyArrayObject * dt_arr=(PyArrayObject *) pydata;
+        int * data_in = (int *)dt_arr->data; 
+        int xx;
+        for(xx=0; xx<60; xx++) {
+	 printf("%d ",data_in[xx]);
+	}
+	printf("\n");
+	buf=(void *) data_in;
+        //printf("------- Result of H5Dread from python: %ld\n", PyLong_AsLong(pValue));
+        return 1;
+      }
     }
-    else {
-        fprintf(stderr, "------- Python module :%s is not available\n",args[0]);
-    }
-    //printf ("------- PYTHON H5Dread\n");
+   //printf ("------- PYTHON H5Dread\n");
     return 1;     
 }
 static herr_t 
@@ -670,7 +651,7 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
     PyObject *pArgs, *pValue=NULL;
     char method_name[] = "H5VL_python_dataset_write";
     if(pInstance==NULL){
-      printf("pInstance is NULL in group create\n");
+      printf("pInstance is NULL in dataset write\n");
       exit(0);
     }else{
       pValue = PyObject_CallMethod(pInstance, method_name, "lllllOl", PyLong_AsLong(plong_under),  mem_type_id, mem_space_id, file_space_id,plist_id, pydata, 0);
