@@ -140,6 +140,7 @@ int main(int argc, char **argv) {
 	free (data_int32_in);
 	free (data_float32_in);
 	free (data_float64_in);
+
 	//Test HDF5 Dataset Close
 	H5Dclose(datasetId_int16);
 	H5Dclose(datasetId_int32);
@@ -152,7 +153,14 @@ int main(int argc, char **argv) {
 
 
 	//Test HDF5 File Close
-	H5Fclose(file_id);
+	//H5Fclose(file_id);
+
+        //Test HDF5 File Open
+	//printf("HDF5 File Open:\n");
+	//file_id = H5Fopen(file_name, H5F_ACC_RDONLY, H5P_DEFAULT);
+ 		
+	//Test HDF5 Dataset Open
+	
 
         Py_Finalize();
 	return 0;
