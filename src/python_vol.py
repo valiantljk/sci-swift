@@ -41,7 +41,7 @@ class H5PVol:
             return -1
         else:
           print ("%d py vol is not implemented"%ipvol)
-    def H5VL_python_file_open(self, name, flags, fapl_id, dxpl_id, req,ipvol):
+    def H5VL_python_file_open(self, name, flags, fapl_id, dxpl_id, req, ipvol):
         print ("------- PYTHON H5Fopen:%s"%name)
         print ("------- PYTHON Vol: %d"%ipvol)
         if(ipvol==0):
@@ -60,6 +60,26 @@ class H5PVol:
             return -1
         else:
           print ("%d py vol is not implemented"%ipvol)
+
+    def H5VL_python_dataset_open(self, obj_id, loc_params, name, dapl_id, dxpl_id, req):#iself, name, flags, fapl_id, dxpl_id, req, ipvol):
+        print ("------- PYTHON H5Dopen:%s"%name)
+        try:
+           dst_parent_obj=self.obj_list[obj_id]
+           try:
+                dst_obj=dst_parent_obj[name]#,dims,dtype=self.dt_types[pytype])
+                curid = self.obj_curid
+                self.obj_list[curid] = dst_obj # insert new object 
+                self.obj_curid = curid+1       # update current index
+                print ("------- PYTHON H5Dopen OK")
+                print ('dataset id is %d'%curid)
+                return curid
+           except Exception as e:
+                print ('dataset open in python failed with error: ',e)
+        except Exception as e:
+           print ('retrieve obj failed in python dataset open:',e)
+           return -1
+
+
 
     def H5VL_python_file_close(self, file_id, dxpl_id, req):
 	try:
@@ -192,22 +212,3 @@ class H5PVol:
            print ('dataset close failed in python with error:',e)
            return -1
      
-     #H5VL_python_file_open
-     # const char *name, unsigned flags, hid_t fapl_id, hid_t dxpl_id, void **req
-    def H5VL_python_file_open(name, flags, fapl_id, dxpl_id, req):
-        print ("------- PYTHON H5Fopen:%s"%name)
- 	return 1
-
-#static void *
-#H5VL_python_dataset_open(void *obj, H5VL_loc_params_t loc_params, const char *name, hid_t dapl_id, hid_t dxpl_id, void **req)
-def H5VL_python_dataset_open(obj, loc_params, name, dapl_id, dxpl_id, req):
-    print ("------- PYTHON H5Dopen:%s"%name)
-
-    return 12
-
-#static herr_t
-#H5VL_python_dataset_close(void *dset, hid_t dxpl_id, void **req)
-def H5VL_python_dataset_close(dset, dxpl_id, req):
-    print ("------- PYTHON H5Dclose OK")
-
-    return 12
