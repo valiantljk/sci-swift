@@ -549,123 +549,104 @@ H5VL_python_dataset_open(void *obj, H5VL_loc_params_t loc_params, const char *na
     return (void *) dset;
 }
 
+PyObject * Data_CPY(long dsetId, void * buf)
+{
+    char dt_name[] = "H5VL_python_dt_info";
+    npy_intp ndims=0,dtype=0;
+    npy_intp *dims=NULL;
+    import_array();
+    //retrieve the dataset information based dataset id in python vol layer. 
+    if(pInstance!=NULL){
+       PyObject * dt_obj= PyObject_CallMethod(pInstance, dt_name, "l",dsetId);
+       if(dt_obj==NULL){
+        fprintf(stderr, "dt_Obj is null\n");
+        exit(-1);
+       }
+       PyArrayObject * dt_arr=(PyArrayObject *)dt_obj;
+       //convert back to c array
+       if(dt_arr->descr->type_num>=0){
+         npy_intp * dt_if =(npy_intp *) dt_arr->data;
+         ndims=dt_if[0];
+         dtype=dt_if[1];
+         dims=dt_if+2; //pointer starts from 3rd element
+       }else{
+        printf("dt_arr.type_num:%d is not PyArray_LONG\n",dt_arr->descr->type_num);
+       }
+
+    }
+    else{
+       fprintf(stderr, "pInstance is NULL\n");
+       exit(-1);
+    }
+    //Create pyobject reference to c buffer
+    PyObject * pydata;
+    if (dtype == 0){//int16 
+      pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_INT16, buf );
+    }
+    else if (dtype == 1){//int32
+      pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_INT32, buf );
+    }
+    else if (dtype == 2) {//float32
+      pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_FLOAT, buf );
+    }
+    else if (dtype == 3) {//float64
+      pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_DOUBLE, buf );
+    }
+    else {
+      fprintf(stderr, "Type is not supported for now Jan 31 2018\n");
+      exit(-1);
+    }
+    return pydata;
+}
+
 static herr_t 
 H5VL_python_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
                       hid_t file_space_id, hid_t plist_id, void *buf, void **req)
 {
     H5VL_python_t *o = (H5VL_python_t *)dset;
     PyObject * plong_under = PyLong_FromVoidPtr(o->under_object);
-
-    PyObject *pArgs, *pValue=NULL;
+    //create py reference to c buffer
+    PyObject * pydata = Data_CPY(PyLong_AsLong(plong_under), buf);
+    PyObject *pValue=NULL;
     char method_name[] = "H5VL_python_dataset_read";
     if(pInstance==NULL){
       printf("pInstance is NULL in dataset read\n");
       exit(0);
     }else{
-      npy_intp ndims=2;
-      npy_intp dims[2]={6,10};
-      ((int *)buf)[0]=22;	
-      PyObject * pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_INT32, buf );
       pValue = PyObject_CallMethod(pInstance, method_name, "lllllOl", PyLong_AsLong(plong_under),  mem_type_id, mem_space_id, file_space_id,plist_id, pydata,0);
-      PyErr_Print();
       if(pValue !=NULL){
 	printf("------- Result of H5Dread from python is not NULL\n");
-	PyArrayObject * dt_arr=(PyArrayObject *) pydata;
-        int * data_in = (int *)dt_arr->data; 
-        int xx;
-        for(xx=0; xx<60; xx++) {
-	 printf("%d ",data_in[xx]);
-	}
-	printf("\n");
-	buf=(void *) data_in;
-        //printf("------- Result of H5Dread from python: %ld\n", PyLong_AsLong(pValue));
+	PyArrayObject * dt_arr=(PyArrayObject *) pydata; 
+	buf=(void *) (((PyArrayObject *) dt_arr)->data);
         return 1;
       }
     }
    //printf ("------- PYTHON H5Dread\n");
     return 1;     
 }
+
 static herr_t 
 H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
                        hid_t file_space_id, hid_t plist_id, const void *buf, void **req)
 {
     H5VL_python_t *o = (H5VL_python_t *)dset;
     PyObject * plong_under = PyLong_FromVoidPtr(o->under_object);
-    // retrieve the DT infor from python layer, 
-    char dt_name[] = "H5VL_python_dt_info";
-    npy_intp ndims=0,dtype=0;
-    //npy_intp  dim1=0, dim2=0;
-    npy_intp *dims=NULL;
-    import_array();
-    if(pInstance!=NULL){
-       PyObject * dt_obj= PyObject_CallMethod(pInstance, dt_name, "l", PyLong_AsLong(plong_under));
-       if(dt_obj==NULL){
-	fprintf(stderr, "dt_Obj is null\n");
-	return -1;
-       }
-       /*if(!PyArray_Check(dt_obj)){
-    	 printf("In Python_VOL C, returned obj is not PyArray\n");
-       }else{
-	 printf("In Python_VOL C, returned obj is PyArray\n");
-       }
-       */
-       PyArrayObject * dt_arr=(PyArrayObject *)dt_obj;
-       //convert back to c array
-       if(dt_arr->descr->type_num>=0){
-         //printf("in Python_VOL c, dt_arr type_num is:%d\n",dt_arr->descr->type_num);
-         npy_intp * dt_if =(npy_intp *) dt_arr->data;
-	 ndims=dt_if[0];
-	 dtype=dt_if[1];
-         //dim1=dt_if[2];
-         //dim2=dt_if[3];
-	 dims=dt_if+2; //pointer starts from 3rd element
-       }else{
-        printf("dt_arr.type_num:%d is not PyArray_LONG\n",dt_arr->descr->type_num);
-       } 
-      
-    }
-    //printf("sizeof(npy_intp):%d\nsizeof(long int):%d\n",sizeof(npy_intp),sizeof(long int));
-    //printf("In Python_VOL C, ndims:%ld,dtype:%ld, 1st dim:%ld, 2nd dim:%ld\n",ndims,dtype, dim1, dim2);
-    int idim;
-    //for(idim=0;idim<ndims;idim++){
-    //  printf("In Python_VOL C %d dims size %ld\n",idim,dims[idim]);
-    //}
-    PyObject * pydata;
-    if (dtype == 0){//int16 
-      pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_INT16, (void *)buf );
-    }//TODO: DATASET CLASS, SIZE, REJECT OTHERS. 
-    else if (dtype == 1){//int32
-      //printf("Python VOL C: Preparing array from buffer\n");
-      pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_INT32, (void *)buf );
-    }
-    else if (dtype == 2) {//float32
-      pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_FLOAT, (void *)buf );
-    }
-    else if (dtype == 3) {//float64
-      pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_DOUBLE, (void *)buf );
-    }
-    else {
-      fprintf(stderr, "Type is not supported for now Jan 31 2018\n");	
-      exit(-1);
-    }
-    PyObject *pModule;
-    PyObject *pArgs, *pValue=NULL;
+    PyObject * pydata= Data_CPY(PyLong_AsLong(plong_under), (void *)buf);
+    PyObject *pValue=NULL;
     char method_name[] = "H5VL_python_dataset_write";
+    //Call dataset write method
     if(pInstance==NULL){
       printf("pInstance is NULL in dataset write\n");
       exit(0);
     }else{
       pValue = PyObject_CallMethod(pInstance, method_name, "lllllOl", PyLong_AsLong(plong_under),  mem_type_id, mem_space_id, file_space_id,plist_id, pydata, 0);
-      PyErr_Print();
       if(pValue !=NULL){
         printf("------- Result of H5Dwrite from python: %ld\n", PyLong_AsLong(pValue));
         return 1;
       }
     }   
-    
     printf ("-------! PYTHON H5Dwrite\n");
     return -1;     
-
 }
 static herr_t 
 H5VL_python_dataset_close(void *dset, hid_t dxpl_id, void **req)
@@ -678,7 +659,7 @@ H5VL_python_dataset_close(void *dset, hid_t dxpl_id, void **req)
       printf("pInstance is NULL in dataset close\n");
       exit(0);
     }else{
-      printf("in C, dataset id is %ld\n",PyLong_AsLong(plong_under));
+      //printf("in C, dataset id is %ld\n",PyLong_AsLong(plong_under));
       pValue = PyObject_CallMethod(pInstance, method_name, "lll", PyLong_AsLong(plong_under), dxpl_id, 0);
       PyErr_Print(); 
       if(pValue !=NULL){

@@ -9,39 +9,58 @@
 #define NPY_NO_DEPRECATED_API NPY_1_9_API_VERSION
 
 int main(int argc, char **argv) {
-        const char file_name[]="large_dataset.h5";
-	const char group_name[]="/bowling";
 	const char plugin_name[7]="python";
-	char fullpath_int32[100];
-        char fullpath_int16[100];
-        char fullpath_float32[100];
-        char fullpath_float64[100];
-        sprintf(fullpath_int32,  "%s/%s",group_name,"dt_int32");
-        sprintf(fullpath_int16,  "%s/%s",group_name,"dt_int16");
-        sprintf(fullpath_float32,"%s/%s",group_name,"dt_float32");
-        sprintf(fullpath_float64,"%s/%s",group_name,"dt_float64");
+        char file_name[100]="large_dataset.h5";
+	char group_name[100]="bowling";
+        char dset_name[100]="falcon";
 	hid_t file_id, group_id, dataspaceId, datasetId, acc_tpl, under_fapl, vol_id, vol_id2, int_id, attr, space;
 	int i;
-	hsize_t dims[2]={6,10};
-        if(argc==3){
-            dims[0] = strtol(argv[1], NULL, 10);
-            dims[1] = strtol(argv[2], NULL, 10);
+	hsize_t ndims=0, *dims=NULL,nelem=1;
+        if(argc<6)//at least 5 parameters: python_vol fname dname ndims dim0
+	{
+           printf("./python_vol filename groupname datasetname ndims dims0 dims1 ...\n");
+	   printf("Example:\n./python_vol rocket.h5 spacex falcon 3 100 20 30\n");
+	   return 0;
         }
-	hsize_t nelem = dims[0] * dims[1];
-
-        //Create Data
+        else{
+	   strcpy(file_name,argv[1]);
+	   strcpy(group_name, argv[2]);
+	   strcpy(dset_name,argv[3]);
+	   ndims = strtol(argv[4], NULL, 10);
+	   dims = malloc(sizeof(hsize_t)*ndims);
+	   if(argc!=ndims+5){
+		printf("ndims is:%d, but number of dims provided is only %d\n",(int)ndims,argc-(int)ndims);
+		return 0;
+	   }
+	   for(i=0;i<ndims;i++){
+	     dims[i]=strtol(argv[5+i], NULL, 10);
+	     nelem*=dims[i];
+	   }
+        }
+        printf("Creating four types of data\n");
+        //Create Data with 4 different types
         int       * data_int32   = malloc(sizeof(int)      *nelem);
         short int * data_int16   = malloc(sizeof(short int)*nelem);
         float     * data_float32 = malloc(sizeof(float)    *nelem);
         double    * data_float64 = malloc(sizeof(double)   *nelem);
+        char fullpath_int32[100];
+        char fullpath_int16[100];
+        char fullpath_float32[100];
+        char fullpath_float64[100];
+        sprintf(fullpath_int32,  "%s/%s%s",group_name, dset_name,"_int32");
+        sprintf(fullpath_int16,  "%s/%s%s",group_name, dset_name,"_int16");
+        sprintf(fullpath_float32,"%s/%s%s",group_name, dset_name,"_float32");
+        sprintf(fullpath_float64,"%s/%s%s",group_name, dset_name,"_float64");
+        //Fill in fake data
         for(i=0;i<nelem;++i){
           data_int32[i]   = i;
           data_int16[i]   = 1;
           data_float32[i] = 2.0;
           data_float64[i] = 3.14;
         }
+        printf("Data is ready\n");
         //Create Data Space
-        dataspaceId = H5Screate_simple(2, dims, NULL);
+        dataspaceId = H5Screate_simple(ndims, dims, NULL);
 
 	//Initialize Python and Numpy Routine
 	Py_Initialize();
@@ -89,24 +108,38 @@ int main(int argc, char **argv) {
 
 
         //Test HDF5 Dataset Read
-	printf("Start H5Dread Test:\n");
-	int check = 0;
+	int check = 0, check1=0, check2=0, check3=0;
 	int       * data_int32_in   = malloc(sizeof(int)      *nelem);
+	short int * data_int16_in   = malloc(sizeof(short int)*nelem);
+        float     * data_float32_in = malloc(sizeof(float)    *nelem);
+        double    * data_float64_in = malloc(sizeof(double)   *nelem);
 	H5Dread (datasetId_int32, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_int32_in);
-	printf("Data read in:\n");
+	H5Dread (datasetId_int16, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_int16_in);
+	H5Dread (datasetId_float32, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_float32_in);
+	H5Dread (datasetId_float64, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_float64_in);
 	for(i=0; i<nelem; i++){
-	   printf("%d ",data_int32_in[i]);
 	   if(data_int32_in[i]!=data_int32[i]){
 	      check+=1;
 	   }
+	   if(data_int32_in[i]!=data_int32[i]){
+              check1+=1;
+           }
+	   if(data_int32_in[i]!=data_int32[i]){
+              check2+=1;
+           }
+	   if(data_int32_in[i]!=data_int32[i]){
+              check3+=1;
+           }
 	}
-	printf("\nNumber of wrong elements:%d\n",check);
+	printf("\nNumber of wrong elements:int %d,short:%d, float:%d, double:%d\n",check,check1,check2,check3);
 	free (data_int16);
       	free (data_int32);
 	free (data_float32);
 	free (data_float64);
+	free (data_int16_in);
 	free (data_int32_in);
-
+	free (data_float32_in);
+	free (data_float64_in);
 	//Test HDF5 Dataset Close
 	H5Dclose(datasetId_int16);
 	H5Dclose(datasetId_int32);
@@ -121,7 +154,7 @@ int main(int argc, char **argv) {
 	//Test HDF5 File Close
 	H5Fclose(file_id);
 
-        //Py_Finalize();
+        Py_Finalize();
 	return 0;
 }
 
