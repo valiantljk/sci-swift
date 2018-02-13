@@ -19,7 +19,7 @@ int main(int argc, char **argv) {
         if(argc!=4)//4 parameters: python_vol fname groupname dname 
 	{
            printf("./python_vol filename groupname datasetname\n");
-	   printf("Example:\n./python_vol rocket.h5 spacex falcon\n");
+	   printf("Example:\n./python_vol rocket.h5 spacex falcon_type (replacing type with int32/float32/int16/float64)\n");
 	   return 0;
         }
         else{
@@ -63,7 +63,7 @@ int main(int argc, char **argv) {
         //Test HDF5 Dataset Open
 
         datasetId = H5Dopen(file_id, dset_name,H5P_DEFAULT);
-        printf("datasetid:%ld\n",datasetId);
+        /*printf("datasetid:%ld\n",datasetId);
         dataspaceId = H5Dget_space(datasetId); 
         printf("dataspaceId:%ld\n",dataspaceId);
         ndims = H5Sget_simple_extent_ndims(dataspaceId);
@@ -72,8 +72,9 @@ int main(int argc, char **argv) {
         for(i=0;i<ndims;i++){
             nelem*=dims[i];
         }	 
+        */
        //Test HDF5 Dataset Read
-	int       * data_in   = malloc(sizeof(int)      *nelem);
+	int       * data_in=NULL;//   = malloc(sizeof(int)      *nelem);
 	H5Dread (datasetId, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_in);
 	free (data_in);
 

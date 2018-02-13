@@ -98,7 +98,10 @@ int main(int argc, char **argv) {
         hid_t datasetId_int16   = H5Dcreate2(file_id,fullpath_int16,  H5T_NATIVE_SHORT, dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
         hid_t datasetId_float32 = H5Dcreate2(file_id,fullpath_float32,H5T_NATIVE_FLOAT, dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
 	hid_t datasetId_float64 = H5Dcreate2(file_id,fullpath_float64,H5T_NATIVE_DOUBLE,dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT); 
+	printf("Before: dataspaceId:%ld\n",dataspaceId);
 	H5Sclose(dataspaceId);
+	dataspaceId = H5Dget_space(datasetId_int32);
+        printf("After: dataspaceId:%ld\n",dataspaceId);
 
 	//Test HDF5 Dataset Write
 	H5Dwrite(datasetId_int32,   H5T_NATIVE_INT,    H5S_ALL, H5S_ALL, H5P_DEFAULT, data_int32);
@@ -109,14 +112,15 @@ int main(int argc, char **argv) {
 
         //Test HDF5 Dataset Read
 	int check = 0, check1=0, check2=0, check3=0;
-	int       * data_int32_in   = malloc(sizeof(int)      *nelem);
-	short int * data_int16_in   = malloc(sizeof(short int)*nelem);
-        float     * data_float32_in = malloc(sizeof(float)    *nelem);
-        double    * data_float64_in = malloc(sizeof(double)   *nelem);
+	int       * data_int32_in=NULL ;//  = malloc(sizeof(int)      *nelem);
+	short int * data_int16_in=NULL ;//  = malloc(sizeof(short int)*nelem);
+        float     * data_float32_in=NULL;// = malloc(sizeof(float)    *nelem);
+        double    * data_float64_in=NULL;// = malloc(sizeof(double)   *nelem);
 	H5Dread (datasetId_int32, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_int32_in);
 	H5Dread (datasetId_int16, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_int16_in);
 	H5Dread (datasetId_float32, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_float32_in);
 	H5Dread (datasetId_float64, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_float64_in);
+	if(data_int32_in==NULL) {printf("data_int32_in is NULL\n");return 0;}
 	for(i=0; i<nelem; i++){
 	   if(data_int32_in[i]!=data_int32[i]){
 	      check+=1;
