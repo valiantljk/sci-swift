@@ -33,4 +33,4 @@ test_pylong: test_pylong.o
 test_pylong.o: test_pylong.c
 	$(CC) $(CFLAGS) test_pylong.c -o test_pylong.o        
 clean:
-	rm *.o *.pyc swift python_vol test_pylong *.h5 2>> /dev/null 
+	rm *.o *.pyc swift python_vol test_pylong *.h5 python_vol_file_open python_vol_file_create 2>> /dev/null 

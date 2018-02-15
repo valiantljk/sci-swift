@@ -190,7 +190,11 @@ class H5PVol:
                 #buf[:] = dst_parent_obj[:] # TODO: make sure memcopy free
 	        print ("passed in buffer has shape:,",buf.shape)
 	        print ("data to be returned has shape:,",dst_parent_obj)
-		buf[:] = dst_parent_obj[:]
+		#buf[:] = dst_parent_obj[:]
+		#Direct read from HDF5 file into numpy array
+		print (buf)
+		print (buf.flags)
+		dst_parent_obj.read_direct(buf)
 	        print (buf)
 		print ("------- PYTHON H5Dread OK")
                 return 1

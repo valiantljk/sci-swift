@@ -544,7 +544,9 @@ PyObject * Data_CPY(long dsetId, void * buf)
       fprintf(stderr, "Type is not supported for now Jan 31 2018\n");
       return NULL; 
     }
-    return pydata;
+    //convert to C-contiguous array
+    PyObject * pydata_c = PyArray_FROM_OF(pydata, NPY_ARRAY_C_CONTIGUOUS);
+    return pydata_c;
 }
 
 static herr_t 
