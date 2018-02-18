@@ -1,6 +1,10 @@
 #https://docs.openstack.org/python-swiftclient/latest/service-api.html
 #Modified by Jialin Liu
 #Date Oct 5 2017
+# This script can test the write performance on lustre and openstack-swift
+# It first generates a HDF5 file in memory with a 2D float dataset, 
+# then writes that directly to targeted storage
+
 import tables,io,os
 import logging
 from sys import argv
@@ -89,9 +93,9 @@ def test_write_swift(_opts,path,fname,dname,dimx,dimy):
  swift_file_commit(_opts, container, h5fname, fobj)
  end = time.time()
 
- print('Swift writing cost %.2f second'%(end-start))
- print('File image/array creating cost %.2f second'%(start2-start))
- print('Actual swift uploading cost %.2f second'%(end-start2))
+ print('[Swift] Writing cost %.2f second'%(end-start))
+ print('[Swift] 1. File image/array creating cost %.2f second'%(start2-start))
+ print('[Swift] 2. Uploading cost %.2f second'%(end-start2))
  try:
   fx.close()
  except Exception as e:
@@ -100,7 +104,13 @@ def test_write_swift(_opts,path,fname,dname,dimx,dimy):
 
 def test_write_lustre(path,fname,dname,dimx,dimy):
   if path=='scratch':
-   fname='/global/cscratch1/sd/jialin/swift-lustre-test/'+fname
+   fdir=os.environ['SCRATCH']
+   ftestdir=fdir+'/swift-lustre-test/'
+   try:
+     os.mkdirs(ftestdir)
+   except:
+     pass
+   fname=ftestdir+fname
   if os.path.exists(fname):
    print ("%s exists in lustre write test\n"%fname)
    exit()
@@ -116,11 +126,11 @@ def test_write_lustre(path,fname,dname,dimx,dimy):
    print (e)
    exit()
   end = time.time()
-  print('Lustre writing cost %.2f second'%(end-start))
+  print('[Lustre] Writing cost %.2f second'%(end-start))
 if __name__=='__main__':
    _opts = {'object_uu_threads': 10, 'segment_size': 1048576}
    if(len(argv)<6):
-     print ("container/path name, filename, dname, dimx, dimy")
+     print ("Parameters: container/path name, filename, dname, dimx, dimy")
      exit()
    h5fname = argv[2]
    container = argv[1]
