@@ -9,8 +9,8 @@ except Exception as e:
     print ("Python Swift Vol is not implemented")
     pass
 
-class h5py:
-    return H5PVol
+def h5py():
+    return H5PVol()
 
-class swift:
-    return H5PVol
+def swift():
+    return H5PVol()
