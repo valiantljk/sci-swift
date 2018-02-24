@@ -2,21 +2,7 @@
 #Nov 28 2017
 #Jialin Liu
 #LBNL/NERSC
-#class H5VL_class_g:
-    #call python vol 
-     #import h5py 
-     #f= h5py.File('test.h5','a') 
-    #TODO:  
-    # Inatialize an python generic object, 
-    # Select the swift vol, return that swift file object 
-    # and cast to a generic python object
-    #print ("creating hdf5 file with h5py\n")    
- 
-#H5VL_python_file_create
-#import gc
-#gc.disable()
-#print ('gc is enabled? ',gc.isenabled())
-#class PyVol
+
 class H5PVol:
     dt_types={ 0:"int16", 1:"int32",2:"float32",3:"float64"}    
     obj_curid = 1  # PyLong_AsVoidPtr can not convert 0 correctly
@@ -219,4 +205,15 @@ class H5PVol:
         except Exception as e:
            print ('dataset close failed in python with error:',e)
            return -1
-     
+
+
+
+#class H5VL_class_g:
+    #call python vol 
+     #import h5py 
+     #f= h5py.File('test.h5','a') 
+    #TODO:  
+    # Inatialize an python generic object, 
+    # Select the swift vol, return that swift file object 
+    # and cast to a generic python object
+    #print ("creating hdf5 file with h5py\n")        

@@ -154,7 +154,8 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
     PyObject *pModule, *pClass;
     PyObject *pValue=NULL; 
     const char module_name[ ] = "python_vol";
-    const char class_name[ ] = "H5PVol";
+    //const char class_name[ ] = "H5PVol";
+    const char class_name[] = "H5SVol";
     char method_name[]= "H5VL_python_file_create";
     pModule = PyImport_ImportModule(module_name); 
     pClass = PyObject_GetAttrString(pModule, class_name); // get file class 
