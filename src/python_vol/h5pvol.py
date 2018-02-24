@@ -33,7 +33,7 @@ class H5PVol:
         if(ipvol==0):
           try:
             import h5py
-	    print ('flags:%d'%flags)
+	    #print ('flags:%d'%flags)
 	    self.obj_curid=1 #reset
 	    self.obj_list={} #reset
             f = h5py.File(name,'r')
@@ -156,7 +156,7 @@ class H5PVol:
          pass
     def H5VL_python_dataset_write(self, obj_id, mem_type_id, mem_space_id, file_space_id, plist_id, buf, req):
 	try:
-           print ('in python dataset write, obj is ',obj_id)
+           #print ('in python dataset write, obj is ',obj_id)
            dst_parent_obj=self.obj_list[obj_id]
            try:
 	        dst_parent_obj[:] = buf
@@ -170,16 +170,16 @@ class H5PVol:
            return -1
     def H5VL_python_dataset_read(self, obj_id, mem_type_id, mem_space_id, file_space_id, plist_id, buf, req):
         try:
-           print ('in python dataset read, obj is ',obj_id)
+           #print ('in python dataset read, obj is ',obj_id)
            dst_parent_obj=self.obj_list[obj_id]
            try:
                 #buf[:] = dst_parent_obj[:] # TODO: make sure memcopy free
-	        print ("passed in buffer has shape:,",buf.shape)
-	        print ("data to be returned has shape:,",dst_parent_obj)
+	        #print ("passed in buffer has shape:,",buf.shape)
+	        #print ("data to be returned has shape:,",dst_parent_obj)
 		#buf[:] = dst_parent_obj[:]
 		#Direct read from HDF5 file into numpy array
 		#print (buf)
-		print (buf.flags)
+		#print (buf.flags)
 		dst_parent_obj.read_direct(buf)
 	        #print (buf)
 		print ("------- PYTHON H5Dread OK")

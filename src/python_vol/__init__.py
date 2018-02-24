@@ -10,7 +10,7 @@ except Exception as e:
     pass
 
 def h5py():
-    return H5PVol()
+    return H5PVol() #return an instantiated object   
 
 def swift():
     return H5PVol()

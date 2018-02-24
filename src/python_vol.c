@@ -155,19 +155,23 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
     PyObject *pValue=NULL; 
     const char module_name[ ] = "python_vol";
     //const char class_name[ ] = "H5PVol";
-    const char class_name[] = "h5py";
+    char class_name[] = "h5py";
     char method_name[]= "H5VL_python_file_create";
     pModule = PyImport_ImportModule(module_name); 
-    pClass = PyObject_GetAttrString(pModule, class_name); // get file class 
+    //pClass = PyObject_GetAttrString(pModule, class_name); // get file class 
     // Instantiate an object
-    if(pClass !=NULL){
+    
+    // if(pClass !=NULL){
+    if(pModule != NULL){
        if(pInstance!=NULL){
           printf("Supporting one file operation only, please close existing files before opening/creating new file\n");
           //call file close and free file instance
           Py_DECREF(pInstance);
           return NULL;
        }
-       pInstance = PyInstance_New(pClass, NULL, NULL); // file object
+       //pInstance = PyInstance_New(pClass, NULL, NULL); // file object
+       pInstance = PyObject_CallMethod(pModule, class_name,NULL,NULL);
+       PyErr_Print();
     }
     else{
        printf("Failed to get non-null file class\n");
@@ -176,7 +180,7 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
        printf("New File instance failed\n");
     else{
        pValue = PyObject_CallMethod(pInstance, method_name, "sllllll", name, flags, fcpl_id, fapl_id, dxpl_id, 0, 0);
-       //PyErr_Print();
+       PyErr_Print();
        if (pValue != NULL) {
 	     printf("------- Result of H5Fopen from python: %ld\n", PyLong_AsLong(pValue));
              PyObject * rt=PyLong_AsVoidPtr(pValue);
@@ -206,13 +210,15 @@ H5VL_python_file_open(const char *name, unsigned flags, hid_t fapl_id, hid_t dxp
     PyObject *pValue=NULL;
     printf("Testing H5VL file open\n");
     //const char class_name[ ] = "H5PVol";
-    const char class_name [ ] = "h5py";
+    char class_name [ ] = "h5py";
     const char module_name[ ] = "python_vol";
     pModule = PyImport_ImportModule(module_name);
-    pClass = PyObject_GetAttrString(pModule, class_name); // get file class 
-    PyErr_Print();
-   // Instantiate an object
-    if(pClass !=NULL){
+    //pClass = PyObject_GetAttrString(pModule, class_name); // get file class 
+    //PyErr_Print();
+    //Instantiate an object
+  
+    //if(pClass !=NULL){
+    if(pModule != NULL){
        if(pInstance!=NULL){
 	  printf("Supporting one file only, please close existing files before opening/creating new file\n");	
 	  //call file close and free file instance
@@ -220,11 +226,13 @@ H5VL_python_file_open(const char *name, unsigned flags, hid_t fapl_id, hid_t dxp
 	  return NULL; 
        }
        printf("New file object\n");
-       pInstance = PyInstance_New(pClass, NULL, NULL); // file object
+       //pInstance = PyInstance_New(pClass, NULL, NULL); // file object
+       pInstance = PyObject_CallMethod(pModule, class_name,NULL,NULL);
     }
     else{
        printf("Failed to get non-null file class\n");
     }
+     
     //file->under_object = H5VLfile_open(name, flags, under_fapl, dxpl_id, req);
     char method_name[]= "H5VL_python_file_open";
     if(pInstance == NULL)
