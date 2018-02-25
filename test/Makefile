@@ -1,8 +1,6 @@
 dir=../src/
-#export PYTHONHOME=/root/anaconda
-#export LD_LIBRARY_PATH=/root/anaconda/lib:$LD_LIBRARY_PATH
 CC = gcc 
-CFLAGS = -c -g -fno-strict-aliasing -Wmissing-include-dirs -O2 -DNDEBUG -fwrapv -O3 -Wall -Wstrict-prototypes -I/root/anaconda/include/python2.7 -isystem/root/anaconda/lib/python2.7/site-packages/numpy/core/include  -Wno-unused-variable  -Wno-strict-prototypes -Wno-cpp
+CFLAGS = -c -fno-strict-aliasing -Wmissing-include-dirs -O2 -DNDEBUG -fwrapv -O3 -Wall -Wstrict-prototypes -I/root/anaconda/include/python2.7 -isystem/root/anaconda/lib/python2.7/site-packages/numpy/core/include  -Wno-unused-variable  -Wno-strict-prototypes -Wno-cpp
 LDFLAGS = -L/root/anaconda/lib -lpython2.7 -lpthread -ldl -lutil -lm -Xlinker -export-dynamic #-Wl,--verbose
 
 ALL: swift python_vol_file_create python_vol_file_open test_pylong
@@ -33,4 +31,4 @@ test_pylong: test_pylong.o
 test_pylong.o: test_pylong.c
 	$(CC) $(CFLAGS) test_pylong.c -o test_pylong.o        
 clean:
-	rm *.o *.pyc swift python_vol test_pylong *.h5 python_vol_file_open python_vol_file_create 2>> /dev/null 
+	rm *.o ../src/*.pyc *.pyc swift python_vol test_pylong *.h5 python_vol_file_open python_vol_file_create 2>> /dev/null 

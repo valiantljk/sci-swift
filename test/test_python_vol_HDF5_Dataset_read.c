@@ -37,12 +37,6 @@ int main(int argc, char **argv) {
 	     nelem*=dims[i];
 	   }
         }
-        printf("Creating four types of data\n");
-        //Create Data with 4 different types
-        int       * data_int32   = malloc(sizeof(int)      *nelem);
-        short int * data_int16   = malloc(sizeof(short int)*nelem);
-        float     * data_float32 = malloc(sizeof(float)    *nelem);
-        double    * data_float64 = malloc(sizeof(double)   *nelem);
         char fullpath_int32[100];
         char fullpath_int16[100];
         char fullpath_float32[100];
@@ -51,14 +45,6 @@ int main(int argc, char **argv) {
         sprintf(fullpath_int16,  "%s/%s%s",group_name, dset_name,"_int16");
         sprintf(fullpath_float32,"%s/%s%s",group_name, dset_name,"_float32");
         sprintf(fullpath_float64,"%s/%s%s",group_name, dset_name,"_float64");
-        //Fill in fake data
-        for(i=0;i<nelem;++i){
-          data_int32[i]   = i;
-          data_int16[i]   = 1;
-          data_float32[i] = 2.0;
-          data_float64[i] = 3.14;
-        }
-        printf("Data is ready\n");
         //Create Data Space
         dataspaceId = H5Screate_simple(ndims, dims, NULL);
 
@@ -86,60 +72,20 @@ int main(int argc, char **argv) {
 	int prop_def_value=0;
 	H5Pinsert2(acc_tpl, pyplugin_name, prop_size, &prop_def_value, NULL, NULL, NULL, NULL, NULL, NULL);
         H5Pset_vol(acc_tpl, vol_id, &under_fapl);
+	//TODO:HDF5 File Open
 
-	//Test HDF5 File Create
-	file_id = H5Fcreate(file_name, H5F_ACC_TRUNC, H5P_DEFAULT, acc_tpl);
-
-        //Test HDF5 Group Create
-	group_id = H5Gcreate2(file_id, group_name, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-
- 	//Test HDF5 Dataset Create
-	hid_t datasetId_int32   = H5Dcreate2(file_id,fullpath_int32,  H5T_NATIVE_INT,   dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
-        hid_t datasetId_int16   = H5Dcreate2(file_id,fullpath_int16,  H5T_NATIVE_SHORT, dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
-        hid_t datasetId_float32 = H5Dcreate2(file_id,fullpath_float32,H5T_NATIVE_FLOAT, dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
-	hid_t datasetId_float64 = H5Dcreate2(file_id,fullpath_float64,H5T_NATIVE_DOUBLE,dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT); 
-	printf("Before: dataspaceId:%ld\n",dataspaceId);
-	H5Sclose(dataspaceId);
-	dataspaceId = H5Dget_space(datasetId_int32);
-        printf("After: dataspaceId:%ld\n",dataspaceId);
-
-	//Test HDF5 Dataset Write
-	H5Dwrite(datasetId_int32,   H5T_NATIVE_INT,    H5S_ALL, H5S_ALL, H5P_DEFAULT, data_int32);
-        H5Dwrite(datasetId_int16,   H5T_NATIVE_SHORT,  H5S_ALL, H5S_ALL, H5P_DEFAULT, data_int16);
-	H5Dwrite(datasetId_float32, H5T_NATIVE_FLOAT,  H5S_ALL, H5S_ALL, H5P_DEFAULT, data_float32);
-	H5Dwrite(datasetId_float64, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_float64);
-
+	//TODO:HDF5 Dataset Open
 
         //Test HDF5 Dataset Read
 	int check = 0, check1=0, check2=0, check3=0;
-	int       * data_int32_in=NULL ;//  = malloc(sizeof(int)      *nelem);
-	short int * data_int16_in=NULL ;//  = malloc(sizeof(short int)*nelem);
-        float     * data_float32_in=NULL;// = malloc(sizeof(float)    *nelem);
-        double    * data_float64_in=NULL;// = malloc(sizeof(double)   *nelem);
+	int       * data_int32_in   = malloc(sizeof(int)      *nelem);
+	short int * data_int16_in   = malloc(sizeof(short int)*nelem);
+        float     * data_float32_in = malloc(sizeof(float)    *nelem);
+        double    * data_float64_in = malloc(sizeof(double)   *nelem);
 	H5Dread (datasetId_int32, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_int32_in);
 	H5Dread (datasetId_int16, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_int16_in);
 	H5Dread (datasetId_float32, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_float32_in);
 	H5Dread (datasetId_float64, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_float64_in);
-	if(data_int32_in==NULL) {printf("data_int32_in is NULL\n");return 0;}
-	for(i=0; i<nelem; i++){
-	   if(data_int32_in[i]!=data_int32[i]){
-	      check+=1;
-	   }
-	   if(data_int32_in[i]!=data_int32[i]){
-              check1+=1;
-           }
-	   if(data_int32_in[i]!=data_int32[i]){
-              check2+=1;
-           }
-	   if(data_int32_in[i]!=data_int32[i]){
-              check3+=1;
-           }
-	}
-	printf("\nNumber of wrong elements:int %d,short:%d, float:%d, double:%d\n\n",check,check1,check2,check3);
-	free (data_int16);
-      	free (data_int32);
-	free (data_float32);
-	free (data_float64);
 	free (data_int16_in);
 	free (data_int32_in);
 	free (data_float32_in);

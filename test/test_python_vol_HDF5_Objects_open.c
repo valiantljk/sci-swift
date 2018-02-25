@@ -18,8 +18,8 @@ int main(int argc, char **argv) {
 	hsize_t ndims=0, *dims=NULL,nelem=1;
         if(argc!=4)//4 parameters: python_vol fname groupname dname 
 	{
-           printf("./python_vol filename groupname datasetname\n");
-	   printf("Example:\n./python_vol rocket.h5 spacex falcon_type (replacing type with int32/float32/int16/float64)\n");
+           printf("./python_vol_HDF5_File_open filename groupname datasetname\n");
+	   printf("Example:\n./python_vol_HDF5_File_open rocket.h5 spacex falcon_type (replacing type with int32/float32/int16/float64)\n");
 	   return 0;
         }
         else{
@@ -29,9 +29,6 @@ int main(int argc, char **argv) {
 	}
         char dset_name[100];
         sprintf(dset_name,  "%s/%s",group_name, dataset_name); 
-        //Create Data Space
-        //dataspaceId = H5Screate_simple(ndims, dims, NULL);
-
 	//Initialize Python and Numpy Routine
 	Py_Initialize();
 	import_array();
@@ -59,35 +56,21 @@ int main(int argc, char **argv) {
 
 	//Test HDF5 File Open 
 	file_id = H5Fopen(file_name, H5F_ACC_RDONLY,acc_tpl);
-        printf("file_id:%ld\n",file_id);
-        //Test HDF5 Dataset Open
 
+	//Test HDF5 Group Open
+
+        //Test HDF5 Dataset Open
         datasetId = H5Dopen(file_id, dset_name,H5P_DEFAULT);
-        /*printf("datasetid:%ld\n",datasetId);
-        dataspaceId = H5Dget_space(datasetId); 
-        printf("dataspaceId:%ld\n",dataspaceId);
-        ndims = H5Sget_simple_extent_ndims(dataspaceId);
-        H5Sget_simple_extent_dims(dataspaceId, dims, NULL); 	
-        printf("ndims:%d\n",ndims);
-        for(i=0;i<ndims;i++){
-            nelem*=dims[i];
-        }	 
-        */
-       //Test HDF5 Dataset Read
-	int       * data_in=NULL;//   = malloc(sizeof(int)      *nelem);
-	H5Dread (datasetId, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_in);
-	free (data_in);
 
 	//Test HDF5 Dataset Close
 	H5Dclose(datasetId);
+ 	//Test HDF5 Group Close
+
 	//Test HDF5 File Close
 	H5Fclose(file_id);
         //Py_Finalize();
 	return 0;
 }
-
-
-
 
 
 

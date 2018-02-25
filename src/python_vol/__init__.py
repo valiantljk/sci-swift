@@ -1,16 +1,15 @@
-try:
-    from h5pvol import H5PVol
-except Exception as e:
-    print ("Python HDF5 Vol is not implemented")
-
-try:
-    from h5svol import H5PVol
-except Exception as e:
-    print ("Python Swift Vol is not implemented")
-    pass
-
 def h5py():
-    return H5PVol() #return an instantiated object   
+    try:
+       from _h5py import H5PVol
+       return H5PVol() #return an instantiated object
+    except Exception as e:
+       print ("Python HDF5 Vol is not implemented")
+       pass
 
 def swift():
-    return H5PVol()
+    try:
+       from _swift import H5PVol
+       return H5PVol() #return an instantiated object
+    except Exception as e:
+       print ("Python Swift Vol is not implemented")
+       pass
