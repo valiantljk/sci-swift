@@ -98,11 +98,6 @@ int main(int argc, char **argv) {
         hid_t datasetId_int16   = H5Dcreate2(file_id,fullpath_int16,  H5T_NATIVE_SHORT, dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
         hid_t datasetId_float32 = H5Dcreate2(file_id,fullpath_float32,H5T_NATIVE_FLOAT, dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
 	hid_t datasetId_float64 = H5Dcreate2(file_id,fullpath_float64,H5T_NATIVE_DOUBLE,dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT); 
-	printf("Before: dataspaceId:%ld\n",dataspaceId);
-	H5Sclose(dataspaceId);
-	dataspaceId = H5Dget_space(datasetId_int32);
-        printf("After: dataspaceId:%ld\n",dataspaceId);
-
 	//Test HDF5 Dataset Write
 	H5Dwrite(datasetId_int32,   H5T_NATIVE_INT,    H5S_ALL, H5S_ALL, H5P_DEFAULT, data_int32);
         H5Dwrite(datasetId_int16,   H5T_NATIVE_SHORT,  H5S_ALL, H5S_ALL, H5P_DEFAULT, data_int16);

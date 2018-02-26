@@ -13,7 +13,7 @@ int main(int argc, char **argv) {
         char file_name[100]="large_dataset.h5";
 	char group_name[100]="bowling";
         char dset_name[100]="falcon";
-	hid_t file_id, group_id, dataspaceId, datasetId, acc_tpl, under_fapl, vol_id, vol_id2, int_id, attr, space;
+	hid_t file_id, group_id, datasetId, acc_tpl, under_fapl, vol_id, vol_id2, int_id, attr, space;
 	int i;
 	hsize_t ndims=0, *dims=NULL,nelem=1;
         if(argc<6)//at least 5 parameters: python_vol fname dname ndims dim0
@@ -45,10 +45,7 @@ int main(int argc, char **argv) {
         sprintf(fullpath_int16,  "%s/%s%s",group_name, dset_name,"_int16");
         sprintf(fullpath_float32,"%s/%s%s",group_name, dset_name,"_float32");
         sprintf(fullpath_float64,"%s/%s%s",group_name, dset_name,"_float64");
-        //Create Data Space
-        dataspaceId = H5Screate_simple(ndims, dims, NULL);
-
-	//Initialize Python and Numpy Routine
+       	//Initialize Python and Numpy Routine
 	Py_Initialize();
 	import_array();
 
@@ -72,34 +69,46 @@ int main(int argc, char **argv) {
 	int prop_def_value=0;
 	H5Pinsert2(acc_tpl, pyplugin_name, prop_size, &prop_def_value, NULL, NULL, NULL, NULL, NULL, NULL);
         H5Pset_vol(acc_tpl, vol_id, &under_fapl);
-	//TODO:HDF5 File Open
-
-	//TODO:HDF5 Dataset Open
-
+	//HDF5 File Open
+	
+	file_id = H5Fopen(file_name, H5F_ACC_RDONLY,acc_tpl);
+	//HDF5 Dataset Open
+	
+	datasetId = H5Dopen(file_id, dset_name,H5P_DEFAULT);	
         //Test HDF5 Dataset Read
-	int check = 0, check1=0, check2=0, check3=0;
-	int       * data_int32_in   = malloc(sizeof(int)      *nelem);
-	short int * data_int16_in   = malloc(sizeof(short int)*nelem);
-        float     * data_float32_in = malloc(sizeof(float)    *nelem);
-        double    * data_float64_in = malloc(sizeof(double)   *nelem);
-	H5Dread (datasetId_int32, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_int32_in);
-	H5Dread (datasetId_int16, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_int16_in);
-	H5Dread (datasetId_float32, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_float32_in);
-	H5Dread (datasetId_float64, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_float64_in);
-	free (data_int16_in);
-	free (data_int32_in);
-	free (data_float32_in);
-	free (data_float64_in);
-
+	int check = 0;
+	void *data_in = NULL;
+	if(strstr(dset_name, "int32")!=NULL){
+		data_in   = malloc(sizeof(int)      *nelem);
+		H5Dread (datasetId, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_in);
+		for(check=0; check<10; check++) 
+		    printf("%d ",((int *)data_in)[check]);
+	}else if(strstr(dset_name, "int16")!=NULL){
+		data_in   =  malloc(sizeof(short int)*nelem);
+		H5Dread (datasetId, H5T_NATIVE_SHORT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_in);
+		for(check=0; check<10; check++) 
+		    printf("%u ",((short int *) data_in)[check]);
+	}else if(strstr(dset_name, "float32")!=NULL){
+		data_in   = malloc(sizeof(float)    *nelem);
+		H5Dread (datasetId, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_in);
+		for(check=0; check<10; check++) 
+		    printf("%f ",((float *)data_in)[check]);
+	}else if(strstr(dset_name, "float64")!=NULL){
+		data_in   = malloc(sizeof(double)   *nelem);
+		H5Dread (datasetId, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_in);
+		for(check=0; check<10; check++) 
+		    printf("%lf ",((double *)data_in)[check]);
+	}
+	else {
+		printf("dataset specified error\n");
+	}
+	if(data_in!=NULL ) free (data_in);
+	
 	//Test HDF5 Dataset Close
-	H5Dclose(datasetId_int16);
-	H5Dclose(datasetId_int32);
-	H5Dclose(datasetId_float32);
-	H5Dclose(datasetId_float64);
-
+	H5Dclose(datasetId);
 
 	//Test HDF5 Group Close
-	H5Gclose(group_id);
+	//H5Gclose(group_id);
 
 
 	//Test HDF5 File Close
