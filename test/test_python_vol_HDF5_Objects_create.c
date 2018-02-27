@@ -99,6 +99,7 @@ int main(int argc, char **argv) {
 	H5Fclose(file_id);
 
         Py_Finalize();
+	printf("Testing Complete\n");
 	return 0;
 }
 

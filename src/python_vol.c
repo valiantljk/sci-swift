@@ -182,7 +182,7 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
        pValue = PyObject_CallMethod(pInstance, method_name, "sllllll", name, flags, fcpl_id, fapl_id, dxpl_id, 0, 0);
        PyErr_Print();
        if (pValue != NULL) {
-	     printf("------- Result of H5Fopen from python: %ld\n", PyLong_AsLong(pValue));
+	     //printf("------- Result of H5Fopen from python: %ld\n", PyLong_AsLong(pValue));
              PyObject * rt=PyLong_AsVoidPtr(pValue);
              void * rt_py = rt;
 	     if (rt_py==NULL) fprintf(stderr, "File create, returned pointer from python is NULL\n");
@@ -194,22 +194,29 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
              return NULL;
         }	
     }
-    printf("------- PYTHON H5Fcreate\n");
+    //printf("------- PYTHON H5Fcreate\n");
     return NULL;
 }
 
 static void *
 H5VL_python_file_open(const char *name, unsigned flags, hid_t fapl_id, hid_t dxpl_id, void **req)
 {
-    printf("in H5VL file open\n");
+    //printf("in H5VL file open\n");
     hid_t under_fapl;
     H5VL_python_t *file;
     file = (H5VL_python_t *)calloc(1, sizeof(H5VL_python_t));
     //under_fapl = *((hid_t *)H5Pget_vol_info(fapl_id));
     PyObject *pModule=NULL, *pClass=NULL;
     PyObject *pValue=NULL;
-    printf("Testing H5VL file open\n");
+    //printf("Testing H5VL file open\n");
     //const char class_name[ ] = "H5PVol";
+    int ipvol=0; //default is using h5py for python vol
+    char pvol_name[3]="py";
+    if( H5Pexist(fapl_id, pvol_name)>0){
+      H5Pget(fapl_id, pvol_name, &ipvol);
+    }
+
+
     char class_name [ ] = "h5py";
     const char module_name[ ] = "python_vol";
     pModule = PyImport_ImportModule(module_name);
@@ -225,7 +232,7 @@ H5VL_python_file_open(const char *name, unsigned flags, hid_t fapl_id, hid_t dxp
 	  Py_DECREF(pInstance);
 	  return NULL; 
        }
-       printf("New file object\n");
+       //printf("New file object\n");
        //pInstance = PyInstance_New(pClass, NULL, NULL); // file object
        pInstance = PyObject_CallMethod(pModule, class_name,NULL,NULL);
     }
@@ -241,7 +248,7 @@ H5VL_python_file_open(const char *name, unsigned flags, hid_t fapl_id, hid_t dxp
        pValue = PyObject_CallMethod(pInstance, method_name, "slllll", name, flags, fapl_id, dxpl_id, 0, 0);
        //PyErr_Print();
        if (pValue != NULL) {
-             printf("------- Result of H5Fopen from python: %ld\n", PyLong_AsLong(pValue));
+             //printf("------- Result of H5Fopen from python: %ld\n", PyLong_AsLong(pValue));
              PyObject * rt=PyLong_AsVoidPtr(pValue);
              void * rt_py = rt;
              if (rt_py==NULL) fprintf(stderr, "File open, returned pointer from python is NULL\n");
@@ -253,7 +260,7 @@ H5VL_python_file_open(const char *name, unsigned flags, hid_t fapl_id, hid_t dxp
              return NULL;
         }
     }
-    printf("------- PYTHON H5Fopen\n");
+    //printf("------- PYTHON H5Fopen\n");
     return (void *)file;	
 }
 
@@ -284,10 +291,10 @@ H5VL_python_file_close(void *file, hid_t dxpl_id, void **req)
       pValue = PyObject_CallMethod(pInstance, method_name, "lll", PyLong_AsLong(plong_under), dxpl_id, 0);
       PyErr_Print();
       if(pValue !=NULL){
-        printf("------- Result of H5Fclose from python: %ld\n", PyLong_AsLong(pValue));
+        //printf("------- Result of H5Fclose from python: %ld\n", PyLong_AsLong(pValue));
         free(f);
 	Py_DECREF(pInstance);
-	printf("cleaning pInstance\n");
+	//printf("cleaning pInstance\n");
         return 1;
       }
     }
@@ -311,14 +318,14 @@ H5VL_python_group_create(void *obj, H5VL_loc_params_t loc_params, const char *na
     }else{
       pValue = PyObject_CallMethod(pInstance, method_name, "llsllll", PyLong_AsLong(plong_under), 0, name, gcpl_id, gapl_id, dxpl_id, 0);
       if(pValue !=NULL){
-	printf("------- Result of H5Fcreate from python: %ld\n", PyLong_AsLong(pValue));	
+	//printf("------- Result of H5Fcreate from python: %ld\n", PyLong_AsLong(pValue));	
 	void * rt_py = PyLong_AsVoidPtr(pValue);
         if (rt_py==NULL) fprintf(stderr, "File create, returned pointer from python is NULL\n");
 	group->under_object = rt_py;
 	return (void *) group;
       }	      
     } 
-    printf ("------- PYTHON H5Gcreate\n");
+    //printf ("------- PYTHON H5Gcreate\n");
     return (void *) group;
 }
 
@@ -336,7 +343,7 @@ H5VL_python_group_close(void *grp, hid_t dxpl_id, void **req)
       pValue = PyObject_CallMethod(pInstance, method_name, "lll", PyLong_AsLong(plong_under), dxpl_id, 0);
       PyErr_Print();
       if(pValue !=NULL){
-        printf("------- Result of H5Gclose from python: %ld\n", PyLong_AsLong(pValue));
+        //printf("------- Result of H5Gclose from python: %ld\n", PyLong_AsLong(pValue));
         free(g);
         return 1;
       }
@@ -356,7 +363,7 @@ H5VL_python_datatype_commit(void *obj, H5VL_loc_params_t loc_params, const char 
     dt->under_object = H5VLdatatype_commit(o->under_object, loc_params, native_plugin_id, name, 
                                            type_id, lcpl_id, tcpl_id, tapl_id, dxpl_id, req);
 
-    printf("------- PYTHON H5Tcommit\n");
+    //printf("------- PYTHON H5Tcommit\n");
     return dt;
 }
 static void *
@@ -472,7 +479,7 @@ H5VL_python_dataset_create(void *obj, H5VL_loc_params_t loc_params, const char *
     }else{
       pValue = PyObject_CallMethod(pInstance, method_name, "llsllllllOO", PyLong_AsLong(plong_under), 0, name, dcpl_id, dapl_id, dxpl_id, 0,dt->ndims,dt->py_type,py_dims, py_maxdims);
       if(pValue !=NULL){
-        printf("------- Result of H5Dcreate from python: %ld\n", PyLong_AsLong(pValue));
+        //printf("------- Result of H5Dcreate from python: %ld\n", PyLong_AsLong(pValue));
         void * rt_py = PyLong_AsVoidPtr(pValue);
         if (rt_py==NULL) fprintf(stderr, "Dataset create, returned pointer from python is NULL\n");
         dset->under_object = rt_py;
@@ -497,7 +504,7 @@ H5VL_python_dataset_open(void *obj, H5VL_loc_params_t loc_params, const char *na
     }else{
       pValue = PyObject_CallMethod(pInstance, method_name, "llslll", PyLong_AsLong(plong_under), 0, name, dapl_id, dxpl_id,0 );
       if(pValue !=NULL){
-        printf("------- Result of H5Dopen from python: %ld\n", PyLong_AsLong(pValue));
+        //printf("------- Result of H5Dopen from python: %ld\n", PyLong_AsLong(pValue));
         void * rt_py = PyLong_AsVoidPtr(pValue);
         if (rt_py==NULL) fprintf(stderr, "Dataset open, returned pointer from python is NULL\n");
         dset->under_object = rt_py;
@@ -577,7 +584,7 @@ H5VL_python_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
       pValue = PyObject_CallMethod(pInstance, method_name, "lllllOl", PyLong_AsLong(plong_under),  mem_type_id, mem_space_id, file_space_id,plist_id, pydata,0);
       PyErr_Print();
       if(pValue !=NULL){
-	printf("------- Result of H5Dread from python is not NULL\n");
+	//printf("------- Result of H5Dread from python is not NULL\n");
 	if(pydata != NULL){
 	 PyArrayObject * dt_arr=(PyArrayObject *) pydata; 
 	 buf=(void *) (((PyArrayObject *) dt_arr)->data);
@@ -608,11 +615,11 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
     }else{
       pValue = PyObject_CallMethod(pInstance, method_name, "lllllOl", PyLong_AsLong(plong_under),  mem_type_id, mem_space_id, file_space_id,plist_id, pydata, 0);
       if(pValue !=NULL){
-        printf("------- Result of H5Dwrite from python: %ld\n", PyLong_AsLong(pValue));
+        //printf("------- Result of H5Dwrite from python: %ld\n", PyLong_AsLong(pValue));
         return 1;
       }
     }   
-    printf ("-------! PYTHON H5Dwrite\n");
+    //printf ("-------! PYTHON H5Dwrite\n");
     return -1;     
 }
 static herr_t 
@@ -630,11 +637,11 @@ H5VL_python_dataset_close(void *dset, hid_t dxpl_id, void **req)
       pValue = PyObject_CallMethod(pInstance, method_name, "lll", PyLong_AsLong(plong_under), dxpl_id, 0);
       PyErr_Print(); 
       if(pValue !=NULL){
-        printf("------- Result of H5Dclose from python: %ld\n", PyLong_AsLong(pValue));
+        //printf("------- Result of H5Dclose from python: %ld\n", PyLong_AsLong(pValue));
         return 1;
       }
     }
-    printf ("------- PYTHON H5Dclose\n");
+    //printf ("------- PYTHON H5Dclose\n");
     free(d);
     return 1;
 }

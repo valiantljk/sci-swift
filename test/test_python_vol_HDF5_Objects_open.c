@@ -18,8 +18,8 @@ int main(int argc, char **argv) {
 	hsize_t ndims=0, *dims=NULL,nelem=1;
         if(argc!=4)//4 parameters: python_vol fname groupname dname 
 	{
-           printf("./python_vol_HDF5_File_open filename groupname datasetname\n");
-	   printf("Example:\n./python_vol_HDF5_File_open rocket.h5 spacex falcon_type (replacing type with int32/float32/int16/float64)\n");
+           printf("./python_vol_HDF5_Object_open filename groupname datasetname\n");
+	   printf("Example:\n./python_vol_HDF5_Object_open rocket.h5 spacex falcon_type (replacing type with int32/float32/int16/float64)\n");
 	   return 0;
         }
         else{
@@ -68,7 +68,8 @@ int main(int argc, char **argv) {
 
 	//Test HDF5 File Close
 	H5Fclose(file_id);
-        //Py_Finalize();
+        Py_Finalize();
+	printf("Testing Complete\n");
 	return 0;
 }
 

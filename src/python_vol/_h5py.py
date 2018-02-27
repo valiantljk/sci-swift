@@ -10,8 +10,8 @@ class H5PVol:
 	           # starting obj is reserved for HDF5 file handle, with index 0 as its key
                    # {0:hdf5_handle, ...}
     def H5VL_python_file_create(self, name, flags, fcpl_id, fapl_id, dxpl_id, req, ipvol):
-    	print ("------- PYTHON H5Fcreate:%s"%name)
-    	print ("------- PYTHON Vol: %d"%ipvol)
+    	#print ("------- PYTHON H5Fcreate:%s"%name)
+    	#print ("------- PYTHON Vol: %d"%ipvol)
 	if(ipvol==0):
           try:
      	    import h5py
@@ -28,8 +28,8 @@ class H5PVol:
         else:
           print ("%d py vol is not implemented"%ipvol)
     def H5VL_python_file_open(self, name, flags, fapl_id, dxpl_id, req, ipvol):
-        print ("------- PYTHON H5Fopen:%s"%name)
-        print ("------- PYTHON Vol: %d"%ipvol)
+        #print ("------- PYTHON H5Fopen:%s"%name)
+        #print ("------- PYTHON Vol: %d"%ipvol)
         if(ipvol==0):
           try:
             import h5py
@@ -48,7 +48,7 @@ class H5PVol:
           print ("%d py vol is not implemented"%ipvol)
 
     def H5VL_python_dataset_open(self, obj_id, loc_params, name, dapl_id, dxpl_id, req):#iself, name, flags, fapl_id, dxpl_id, req, ipvol):
-        print ("------- PYTHON H5Dopen:%s"%name)
+        #print ("------- PYTHON H5Dopen:%s"%name)
         try:
            dst_parent_obj=self.obj_list[obj_id]
            try:
@@ -56,8 +56,8 @@ class H5PVol:
                 curid = self.obj_curid
                 self.obj_list[curid] = dst_obj # insert new object 
                 self.obj_curid = curid+1       # update current index
-                print ("------- PYTHON H5Dopen OK")
-                print ('dataset id is %d'%curid)
+                #print ("------- PYTHON H5Dopen OK")
+                #print ('dataset id is %d'%curid)
                 return curid
            except Exception as e:
                 print ('dataset open in python failed with error: ',e)
@@ -70,17 +70,17 @@ class H5PVol:
     def H5VL_python_file_close(self, file_id, dxpl_id, req):
 	try:
 	   if(len(self.obj_list)==0):
-	      print ("------- PYTHON H5Fclose OK") 
+	      #print ("------- PYTHON H5Fclose OK") 
 	      return 1
 	   file_obj = self.obj_list[file_id] # retrive the file handle/obj based on id 'file_id'
 	   if file_obj == None:
-	     print ("Python File Obj is none")
+	     #print ("Python File Obj is none")
 	     return 1
            else:
    	     file_obj.close()
 	     self.obj_list={} # empty all ojects 
 	     self.obj_curid=1 # reset index to 0, (1 for now, due to bug of PyLong_AsVoidPtr can not take 0)
-	     print ("------- PYTHON H5Fclose OK")
+	     #print ("------- PYTHON H5Fclose OK")
 	     return 1
         except Exception as e:
            print ('file close failed in python with error:',e)
@@ -88,7 +88,7 @@ class H5PVol:
     def H5VL_python_dataset_close(self, dset_id, dxpl_id, req):                                        
         try:
            if (len(self.obj_list)==0): 
-	      print ("------- PYTHON H5Dclose OK")
+	      #print ("------- PYTHON H5Dclose OK")
 	      return 1 
            dset_obj = self.obj_list[dset_id] # retrive the file handle/obj based on id 'dataset_id'    
            if dset_obj == None:                                                                     
@@ -97,23 +97,23 @@ class H5PVol:
            else:                                                                                    
              #dset_obj.close()
 	     del(self.obj_list[dset_id])                                                                       
-	     print ("------- PYTHON H5Dclose OK")
+	     #print ("------- PYTHON H5Dclose OK")
 	     return 1     
         except Exception as e:                                                                      
            print ('dataset close failed in python with error:',e)
            return -1 
 
     def H5VL_python_group_create(self, obj_id, loc_params, name, gcpl_id, gapl_id, dxpl_id, req):
-    	print ("------- PYTHON H5Gcreate:%s"%name)
+    	#print ("------- PYTHON H5Gcreate:%s"%name)
 	try:
-	   print ('in python group create, obj is ',obj_id)
+	   #print ('in python group create, obj is ',obj_id)
 	   grp_parent_obj=self.obj_list[obj_id]
 	   try:
               grp_obj=grp_parent_obj.create_group(name)
 	      curid = self.obj_curid
 	      self.obj_list[curid] = grp_obj # insert new object
 	      self.obj_curid = curid+1       # update current index
-	      print ("------- PYTHON H5Gcreate OK")
+	      #print ("------- PYTHON H5Gcreate OK")
               return curid
            except Exception as e:
               print ('group create in python failed with error:',e)
@@ -121,7 +121,7 @@ class H5PVol:
            print ('retrieve obj failed in python group create')
         return -1 
     def H5VL_python_dataset_create(self, obj_id, loc_params, name, dcpl_id, dapl_id, dxpl_id, req, ndims,pytype,dims,maxdims):    
-	print ("------- PYTHON H5Dcreate:%s"%name)
+	#print ("------- PYTHON H5Dcreate:%s"%name)
 	try:
 	   dst_parent_obj=self.obj_list[obj_id] 
 	   try:
@@ -129,8 +129,8 @@ class H5PVol:
 		curid = self.obj_curid
 		self.obj_list[curid] = dst_obj # insert new object 
 		self.obj_curid = curid+1       # update current index
-		print ("------- PYTHON H5Dcreate OK")
-		print ('dataset id is %d'%curid)
+		#print ("------- PYTHON H5Dcreate OK")
+		#print ('dataset id is %d'%curid)
 		return curid
 	   except Exception as e:
 		print ('dataset create in python failed with error: ',e)
@@ -161,7 +161,7 @@ class H5PVol:
            try:
 	        dst_parent_obj[:] = buf
                 curid = self.obj_curid
-		print ("------- PYTHON H5Dwrite OK")
+		#print ("------- PYTHON H5Dwrite OK")
                 return curid
            except Exception as e:
                 print ('dataset write in python failed with error: ',e)
@@ -182,7 +182,7 @@ class H5PVol:
 		#print (buf.flags)
 		dst_parent_obj.read_direct(buf)
 	        #print (buf)
-		print ("------- PYTHON H5Dread OK")
+		#print ("------- PYTHON H5Dread OK")
                 return 1
            except Exception as e:
                 print ('dataset write in python failed with error: ',e)
@@ -192,7 +192,7 @@ class H5PVol:
     def H5VL_python_group_close(self, grp_id, dxpl_id, req):
 	try:
            if (len(self.obj_list)==0):
-              print ("------- PYTHON H5Gclose OK")
+              #print ("------- PYTHON H5Gclose OK")
               return 1
            grp_obj = self.obj_list[grp_id] # retrive the group handle/obj based on id 'grp_id'    
            if grp_obj == None:
@@ -200,7 +200,7 @@ class H5PVol:
 	     return 1
            else:
              del(self.obj_list[grp_id])                                                                      
-             print ("------- PYTHON H5Gclose OK")
+             #print ("------- PYTHON H5Gclose OK")
              return 1
         except Exception as e:
            print ('dataset close failed in python with error:',e)
