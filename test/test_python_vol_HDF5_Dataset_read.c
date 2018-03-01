@@ -16,16 +16,17 @@ int main(int argc, char **argv) {
 	hid_t file_id, group_id, datasetId, acc_tpl, under_fapl, vol_id, vol_id2, int_id, attr, space;
 	int i;
 	hsize_t ndims=0, *dims=NULL,nelem=1;
-        if(argc<4)//at least 5 parameters: python_vol fname dname ndims dim0
+        if(argc<5)//at least 5 parameters: python_vol fname dname len
 	{
-           printf("./python_vol filename groupname datasetname\n");
-	   printf("Example:\n./python_vol rocket.h5 spacex falcon\n");
+           printf("./python_vol filename groupname datasetname, size(h5dget_space not working, sorry)\n");
+	   printf("Example:\n./HDF5_Dataset_read rocket.h5 spacex falcon_int32 3000\n");
 	   return 0;
         }
         else{
 	   strcpy(file_name,argv[1]);
 	   strcpy(group_name, argv[2]);
 	   strcpy(dset_name,argv[3]);
+      	   nelem=strtol(argv[4], NULL, 10);
 	}	
         char dset_path[100];
         sprintf(dset_path,  "%s/%s",group_name, dset_name);
@@ -62,15 +63,16 @@ int main(int argc, char **argv) {
   	hid_t dataspace;
   	size_t      size;                  /* size of data*/    
   	int rank;
-  	dataspace = H5Dget_space(datasetId);    /* dataspace handle */
-  	rank      = H5Sget_simple_extent_ndims(dataspace);
-  	hsize_t     dims_out[rank];
-  	H5Sget_simple_extent_dims(dataspace, dims_out, NULL);
-	nelem=1;
-	for(i=0;i<rank;i++){
-	    nelem*=dims_out[i];
-	}
-	printf("number of elements:%ld,number of dims:%d, datasetId:%ld,dataspace:%ld\n",(long)nelem,rank,datasetId,dataspace);
+  	//dataspace = H5Dget_space(datasetId);    /* dataspace handle */
+  	//rank      = H5Sget_simple_extent_ndims(dataspace);
+  	//hsize_t     dims_out[rank];
+  	//H5Sget_simple_extent_dims(dataspace, dims_out, NULL);
+	//nelem=1;
+	//for(i=0;i<rank;i++){
+	//    nelem*=dims_out[i];
+	//}
+	//printf("number of elements:%ld,number of dims:%d, datasetId:%ld,dataspace:%ld\n",(long)nelem,rank,datasetId,dataspace);
+       
         //Test HDF5 Dataset Read
 	int check = 0;
 	void *data_in = NULL;
@@ -78,21 +80,25 @@ int main(int argc, char **argv) {
 		printf("datapath:%s, dataset name:%s\n",dset_path, dset_name);
 		data_in   = malloc(sizeof(int)      *nelem);
 		H5Dread (datasetId, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_in);
+		printf("Printing first 10 numbers\n");
 		for(check=0; check<10; check++) 
 		    printf("%d ",((int *)data_in)[check]);
 	}else if(strstr(dset_name, "int16")!=NULL){
 		data_in   =  malloc(sizeof(short int)*nelem);
 		H5Dread (datasetId, H5T_NATIVE_SHORT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_in);
+		printf("Printing first 10 numbers\n");
 		for(check=0; check<10; check++) 
 		    printf("%u ",((short int *) data_in)[check]);
 	}else if(strstr(dset_name, "float32")!=NULL){
 		data_in   = malloc(sizeof(float)    *nelem);
 		H5Dread (datasetId, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_in);
+		printf("Printing first 10 numbers\n");
 		for(check=0; check<10; check++) 
 		    printf("%f ",((float *)data_in)[check]);
 	}else if(strstr(dset_name, "float64")!=NULL){
 		data_in   = malloc(sizeof(double)   *nelem);
 		H5Dread (datasetId, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_in);
+		printf("Printing first 10 numbers\n");
 		for(check=0; check<10; check++) 
 		    printf("%lf ",((double *)data_in)[check]);
 	}
@@ -112,7 +118,7 @@ int main(int argc, char **argv) {
 	H5Fclose(file_id);
 
         Py_Finalize();
-	printf("Testing Complete\n");
+	printf("\nTesting Complete\n");
 	return 0;
 }
 

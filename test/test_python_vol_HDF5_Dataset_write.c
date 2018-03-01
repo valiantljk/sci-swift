@@ -16,10 +16,10 @@ int main(int argc, char **argv) {
 	hid_t file_id, group_id, dataspaceId, datasetId, acc_tpl, under_fapl, vol_id, vol_id2, int_id, attr, space;
 	int i;
 	hsize_t ndims=0, *dims=NULL,nelem=1;
-        if(argc<6)//at least 5 parameters: python_vol fname dname ndims dim0
+        if(argc<6)//at least 6 parameters: HDF5_Dataset_write fname dname ndims ndims dim0
 	{
-           printf("./python_vol filename groupname datasetname ndims dims0 dims1 ...\n");
-	   printf("Example:\n./python_vol rocket.h5 spacex falcon 3 100 20 30\n");
+           printf("./HDF5_Dataset_write filename groupname datasetname ndims dims0 dims1 ...\n");
+	   printf("Example:\n./HDF5_Dataset_write rocket.h5 spacex falcon 3 100 20 30\n");
 	   return 0;
         }
         else{
@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
 	     nelem*=dims[i];
 	   }
         }
-        printf("Creating four types of data\n");
+        printf("Writting four types of data\n");
         //Create Data with 4 different types
         int       * data_int32   = malloc(sizeof(int)      *nelem);
         short int * data_int16   = malloc(sizeof(short int)*nelem);

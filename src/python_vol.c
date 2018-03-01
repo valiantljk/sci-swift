@@ -26,7 +26,7 @@ static herr_t H5VL_python_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_
 static herr_t H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
                                      hid_t file_space_id, hid_t plist_id, const void *buf, void **req);
 static herr_t H5VL_python_dataset_close(void *dset, hid_t dxpl_id, void **req);
-
+//static herr_t H5VL_python_dataset_get(void * obj, H5VL_dataset_get_t get_type, hid_t dxpl_id, void H5_ATTR_UNUSED **req, va_list arguments);
 /* File callbacks */
 static void *H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t fapl_id, hid_t dxpl_id, void **req);
 static void *H5VL_python_file_open(const char *name, unsigned flags, hid_t fapl_id, hid_t dxpl_id, void **req);
@@ -489,6 +489,40 @@ H5VL_python_dataset_create(void *obj, H5VL_loc_params_t loc_params, const char *
     return NULL;
 
 }
+/*
+static void *                                                                                                                               
+H5VL_python_dataset_get(void *obj, H5VL_loc_params_t loc_params, const char *name, hid_t dcpl_id, hid_t dapl_id, hid_t dxpl_id, void **req)               
+{   
+    H5VL_python_t *dset;
+    H5VL_python_t *o = (H5VL_python_t *)obj;
+    PyObject * plong_under = PyLong_FromVoidPtr(o->under_object);                                                                           
+    dset = (H5VL_python_t *)calloc(1, sizeof(H5VL_python_t));
+    import_array();
+    H5VL_DT * dt= malloc(sizeof(H5VL_DT)); //get the dataset size, type                                                                     
+    helper_dt (dcpl_id, dt);                                                                                                                
+    //printf("Testing H5VL_DT,%d\n",dt->py_type); 
+    npy_intp dtm=dt->ndims;  
+    PyObject * py_dims = PyArray_SimpleNewFromData(1, &dtm, NPY_INTP,dt->dims);//TODO: 64 bits, vs 32 bit                                   
+    PyObject * py_maxdims = PyArray_SimpleNewFromData(1, &dtm, NPY_INTP,dt->maxdims );                                                      
+    PyObject *pValue=NULL;                                                                                                                  
+    char method_name[] = "H5VL_python_dataset_create";
+    if(pInstance==NULL){                                                                                                                    
+      fprintf(stderr, "pInstance is NULL in group create\n");                                                                               
+      return NULL; 
+    }else{
+      pValue = PyObject_CallMethod(pInstance, method_name, "llsllllllOO", PyLong_AsLong(plong_under), 0, name, dcpl_id, dapl_id, dxpl_id, 0,dt->ndims,dt->py_type,py_dims, py_maxdims);
+      if(pValue !=NULL){
+        //printf("------- Result of H5Dcreate from python: %ld\n", PyLong_AsLong(pValue));                                                  
+        void * rt_py = PyLong_AsVoidPtr(pValue);
+        if (rt_py==NULL) fprintf(stderr, "Dataset create, returned pointer from python is NULL\n");                                         
+        dset->under_object = rt_py;                                                                                                         
+        return (void *) dset;                                                                                                               
+      }                                                                                                                                     
+    } 
+    return NULL;                                                                                                                            
+
+}
+*/
 static void *
 H5VL_python_dataset_open(void *obj, H5VL_loc_params_t loc_params, const char *name, hid_t dapl_id, hid_t dxpl_id, void **req)
 {
