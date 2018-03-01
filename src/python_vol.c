@@ -145,7 +145,7 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
 
     //under_fapl = *((hid_t *)H5Pget_vol_info(fapl_id));
     //printf("under_fapl:%ld\n",under_fapl);
-    int ipvol=0; //default is using h5py for python vol
+    int ipvol=0; //default is using swift for python vol
     char pvol_name[3]="py"; 
     if( H5Pexist(fapl_id, pvol_name)>0){
       H5Pget(fapl_id, pvol_name, &ipvol);
@@ -155,7 +155,7 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
     PyObject *pValue=NULL; 
     const char module_name[ ] = "python_vol";
     //const char class_name[ ] = "H5PVol";
-    char class_name[] = "h5py";
+    char class_name[] = "swift";
     char method_name[]= "H5VL_python_file_create";
     pModule = PyImport_ImportModule(module_name); 
     //pClass = PyObject_GetAttrString(pModule, class_name); // get file class 
@@ -210,14 +210,14 @@ H5VL_python_file_open(const char *name, unsigned flags, hid_t fapl_id, hid_t dxp
     PyObject *pValue=NULL;
     //printf("Testing H5VL file open\n");
     //const char class_name[ ] = "H5PVol";
-    int ipvol=0; //default is using h5py for python vol
+    int ipvol=0; //default is using swift for python vol
     char pvol_name[3]="py";
     if( H5Pexist(fapl_id, pvol_name)>0){
       H5Pget(fapl_id, pvol_name, &ipvol);
     }
 
 
-    char class_name [ ] = "h5py";
+    char class_name [ ] = "swift";
     const char module_name[ ] = "python_vol";
     pModule = PyImport_ImportModule(module_name);
     //pClass = PyObject_GetAttrString(pModule, class_name); // get file class 
