@@ -5,7 +5,8 @@
 #How we start a new python vol?
 #First, copy the template _h5py.py
 #import h5py
-from __swift_file import swift_file_create, swift_file_open
+from __swift_file import swift_file_create
+from __swift_file import swift_file_open
 class H5PVol:
 	dt_types={ 0:"int16", 1:"int32",2:"float32",3:"float64"}
 	obj_curid = 1   # PyLong_AsVoidPtr can not convert 0 correctly
@@ -56,11 +57,13 @@ class H5PVol:
 				container_id = swift_file_open(container_name)
 				#f = h5py.File(name,'r')
 				if container_id ==1:
+					#print ("container_id:%d"%container_id)
 					self.obj_list[self.obj_curid]=container_name
 					curid=self.obj_curid
 					self.obj_curid=curid+1
 					return curid
 				else:
+					print("returned -1 in python file open")
 					return -1
 			except Exception as e:
 				print ('file create failed in python with error: ',e)

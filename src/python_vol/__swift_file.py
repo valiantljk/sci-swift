@@ -15,12 +15,14 @@ def swift_file_create(file_name):
 def swift_file_open(file_name):
 	try: 
 		conn= swift_connect()
-		container=file_name
+		container_name=file_name
 		resp_headers, containers = conn.get_account()
 		#print("Response headers: %s" % resp_headers)
-		if container not in containers:
-			return -1 # not found
-		return 1
+		#print (containers)
+		for icontainer in containers:
+			if (icontainer['name']==container_name):
+				return 1 # not found
+		return -1
 	except Exception as e:
 		print ("file open failed in swift")
 		print (e)

@@ -158,7 +158,7 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
     char method_name[]= "H5VL_python_file_create";
     pModule = PyImport_ImportModule(module_name); 
     // Instantiate an object
-    
+    PyErr_Print();    
     
     if(pModule != NULL){
        if(pInstance!=NULL){

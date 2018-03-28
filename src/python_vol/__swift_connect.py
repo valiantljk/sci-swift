@@ -1,5 +1,10 @@
-from swiftclient.client import Connection
-
+try: 
+	from swiftclient.client import Connection
+except Exception as e:	
+	print ("import swiftclient's Connection failed")
+	import sys
+	print(sys.executable)
+	print (e)
 default_authurl = 'http://127.0.0.1:8080/auth/v1.0'
 default_auth_version = '1'
 default_user = 'test:tester'
