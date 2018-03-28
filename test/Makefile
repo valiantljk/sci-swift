@@ -3,7 +3,8 @@ CC = gcc
 CFLAGS = -c -fno-strict-aliasing -Wmissing-include-dirs -O2 -DNDEBUG -fwrapv -O3 -Wall -Wstrict-prototypes -I/root/anaconda/include/python2.7 -isystem/root/anaconda/lib/python2.7/site-packages/numpy/core/include  -Wno-unused-variable  -Wno-strict-prototypes -Wno-cpp
 LDFLAGS = -L/root/anaconda/lib -lpython2.7 -lpthread -ldl -lutil -lm -Xlinker -export-dynamic #-Wl,--verbose
 
-ALL: swift test_pylong HDF5_Objects_create HDF5_Objects_open HDF5_Dataset_read HDF5_Dataset_write
+#ALL: swift test_pylong 
+ALL: HDF5_File_create HDF5_File_open HDF5_Objects_create HDF5_Objects_open HDF5_Dataset_read HDF5_Dataset_write
 
 swift: swift.o test_swift.o
 	$(CC) swift.o test_swift.o  $(LDFLAGS) -o swift
@@ -15,14 +16,27 @@ test_swift.o: test_swift.c
 HDF5_Objects_create: python_vol.o test_python_vol_HDF5_Objects_create.o
 	h5cc -g test_python_vol_HDF5_Objects_create.o python_vol.o $(LDFLAGS) -o HDF5_Objects_create
 
-test_python_vol_HDF5_Objects_create.o: test_python_vol_HDF5_Objects_create.c
-	h5cc -g $(CFLAGS) test_python_vol_HDF5_Objects_create.c -o test_python_vol_HDF5_Objects_create.o
-
 HDF5_Objects_open: python_vol.o test_python_vol_HDF5_Objects_open.o
 	h5cc -g test_python_vol_HDF5_Objects_open.o python_vol.o $(LDFLAGS) -o HDF5_Objects_open
 
+HDF5_File_create: python_vol.o test_python_vol_HDF5_File_create.o
+	h5cc -g test_python_vol_HDF5_File_create.o python_vol.o $(LDFLAGS) -o HDF5_File_create
+
+HDF5_File_open: python_vol.o test_python_vol_HDF5_File_open.o
+	h5cc -g test_python_vol_HDF5_File_open.o python_vol.o $(LDFLAGS) -o HDF5_File_open
+
+test_python_vol_HDF5_File_create.o: test_python_vol_HDF5_File_create.c 
+	h5cc -g $(CFLAGS) test_python_vol_HDF5_File_create.c -o test_python_vol_HDF5_File_create.o
+
+test_python_vol_HDF5_File_open.o: test_python_vol_HDF5_File_open.c
+	h5cc -g $(CFLAGS) test_python_vol_HDF5_File_open.c -o test_python_vol_HDF5_File_open.o
+
+test_python_vol_HDF5_Objects_create.o: test_python_vol_HDF5_Objects_create.c
+	h5cc -g $(CFLAGS) test_python_vol_HDF5_Objects_create.c -o test_python_vol_HDF5_Objects_create.o
+
 test_python_vol_HDF5_Objects_open.o: test_python_vol_HDF5_Objects_open.c
 	h5cc -g $(CFLAGS) test_python_vol_HDF5_Objects_open.c -o test_python_vol_HDF5_Objects_open.o
+
 
 HDF5_Dataset_read: python_vol.o test_python_vol_HDF5_Dataset_read.o
 	h5cc -g test_python_vol_HDF5_Dataset_read.o python_vol.o $(LDFLAGS) -o HDF5_Dataset_read

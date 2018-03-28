@@ -154,14 +154,12 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
     PyObject *pModule, *pClass;
     PyObject *pValue=NULL; 
     const char module_name[ ] = "python_vol";
-    //const char class_name[ ] = "H5PVol";
     char class_name[] = "swift";
     char method_name[]= "H5VL_python_file_create";
     pModule = PyImport_ImportModule(module_name); 
-    //pClass = PyObject_GetAttrString(pModule, class_name); // get file class 
     // Instantiate an object
     
-    // if(pClass !=NULL){
+    
     if(pModule != NULL){
        if(pInstance!=NULL){
           printf("Supporting one file operation only, please close existing files before opening/creating new file\n");
@@ -169,7 +167,6 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
           Py_DECREF(pInstance);
           return NULL;
        }
-       //pInstance = PyInstance_New(pClass, NULL, NULL); // file object
        pInstance = PyObject_CallMethod(pModule, class_name,NULL,NULL);
        PyErr_Print();
     }
@@ -220,20 +217,17 @@ H5VL_python_file_open(const char *name, unsigned flags, hid_t fapl_id, hid_t dxp
     char class_name [ ] = "swift";
     const char module_name[ ] = "python_vol";
     pModule = PyImport_ImportModule(module_name);
-    //pClass = PyObject_GetAttrString(pModule, class_name); // get file class 
     //PyErr_Print();
     //Instantiate an object
   
-    //if(pClass !=NULL){
     if(pModule != NULL){
-       if(pInstance!=NULL){
-	  printf("Supporting one file only, please close existing files before opening/creating new file\n");	
-	  //call file close and free file instance
-	  Py_DECREF(pInstance);
-	  return NULL; 
+      if(pInstance!=NULL){
+	     printf("Supporting one file only, please close existing files before opening/creating new file\n");	
+	     //call file close and free file instance
+	     Py_DECREF(pInstance);
+	     return NULL; 
        }
        //printf("New file object\n");
-       //pInstance = PyInstance_New(pClass, NULL, NULL); // file object
        pInstance = PyObject_CallMethod(pModule, class_name,NULL,NULL);
     }
     else{

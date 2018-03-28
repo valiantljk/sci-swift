@@ -5,6 +5,7 @@
 #How we start a new python vol?
 #First, copy the template _h5py.py
 #import h5py
+from __swift_file import swift_file_create, swift_file_open
 class H5PVol:
 	dt_types={ 0:"int16", 1:"int32",2:"float32",3:"float64"}
 	obj_curid = 1   # PyLong_AsVoidPtr can not convert 0 correctly
@@ -21,8 +22,16 @@ class H5PVol:
 			try:
 				self.obj_curid=1
 				self.obj_list={} #reset
-				f = h5py.File(name,'a')
-				self.obj_list[self.obj_curid]=f
+				#f = h5py.File(name,'a')
+				#import table,io,h5py,os
+			    #f = tables.open_file(name,'a',driver='H5FD_CORE',driver_core_backing_store=0)
+				#image = f.get_file_image()
+				#f_binary = io.BytesIO(image)
+				#swift_file_commit(_opts, container=name,name, )
+				#from __swift_file import swift_file_create
+				swift_file_create(name) # create a container for this file, container name = file name
+				#save container_name in the runtime dictionary, at user level, code can get back container by the returned id, 	
+				self.obj_list[self.obj_curid]=name
 				curid=self.obj_curid
 				self.obj_curid=curid+1
 				return curid
@@ -40,11 +49,19 @@ class H5PVol:
 				#print ('flags:%d'%flags)
 				self.obj_curid=1 #reset
 				self.obj_list={} #reset
-				f = h5py.File(name,'r')
-				self.obj_list[self.obj_curid]=f
-				curid=self.obj_curid
-				self.obj_curid=curid+1
-				return curid
+				#Probably just check if (metadata, container validation, file)
+				# save file name--> container name in the runtime dictionary. 
+				# at user level, dataset api, etc, can get back container name for read/write (get/put) 
+				container_name = name
+				container_id = swift_file_open(container_name)
+				#f = h5py.File(name,'r')
+				if container_id ==1:
+					self.obj_list[self.obj_curid]=container_name
+					curid=self.obj_curid
+					self.obj_curid=curid+1
+					return curid
+				else:
+					return -1
 			except Exception as e:
 				print ('file create failed in python with error: ',e)
 				return -1
@@ -79,7 +96,7 @@ class H5PVol:
 				#print ("Python File Obj is none")
 				return 1
 			else:
-				file_obj.close()
+				#file_obj.close()
 				self.obj_list={} # empty all ojects
 				self.obj_curid=1 # reset index to 0, (1 for now, due to bug of PyLong_AsVoidPtr can not take 0)
 				#print ("------- PYTHON H5Fclose OK")
