@@ -4,7 +4,7 @@ A HDF5 file is a container in the Swift world # we think this design is conceptu
 Authentication in swift is corresponding to the posix file's unix permission.
 
 '''
-def swift_file_create(file_name):
+def swift_container_create(file_name):
 	try: 
 		conn= swift_connect()
 		container=file_name
@@ -12,7 +12,7 @@ def swift_file_create(file_name):
 	except Exception as e:
 		print ("file create failed in swift")
 		print (e)
-def swift_file_open(file_name):
+def swift_container_open(file_name):
 	try: 
 		conn= swift_connect()
 		container_name=file_name

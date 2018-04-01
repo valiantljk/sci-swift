@@ -5,8 +5,10 @@
 #How we start a new python vol?
 #First, copy the template _h5py.py
 #import h5py
-from __swift_file import swift_file_create
-from __swift_file import swift_file_open
+from __swift_file import swift_container_create
+from __swift_file import swift_container_open
+from __swift_dataset import swift_object_create
+from __swift_dataset import swift_object_open
 class H5PVol:
 	dt_types={ 0:"int16", 1:"int32",2:"float32",3:"float64"}
 	obj_curid = 1   # PyLong_AsVoidPtr can not convert 0 correctly
@@ -23,14 +25,7 @@ class H5PVol:
 			try:
 				self.obj_curid=1
 				self.obj_list={} #reset
-				#f = h5py.File(name,'a')
-				#import table,io,h5py,os
-			    #f = tables.open_file(name,'a',driver='H5FD_CORE',driver_core_backing_store=0)
-				#image = f.get_file_image()
-				#f_binary = io.BytesIO(image)
-				#swift_file_commit(_opts, container=name,name, )
-				#from __swift_file import swift_file_create
-				swift_file_create(name) # create a container for this file, container name = file name
+				swift_container_create(name) # create a container for this file, container name = file name
 				#save container_name in the runtime dictionary, at user level, code can get back container by the returned id, 	
 				self.obj_list[self.obj_curid]=name
 				curid=self.obj_curid
@@ -41,23 +36,21 @@ class H5PVol:
 				return -1
 		else:
 			print ("%d py vol is not implemented"%ipvol)
+			return -1
 
 	def H5VL_python_file_open(self, name, flags, fapl_id, dxpl_id, req, ipvol):
 		#print ("------- PYTHON H5Fopen:%s"%name)
-        #print ("------- PYTHON Vol: %d"%ipvol)
+	        #print ("------- PYTHON Vol: %d"%ipvol)
 		if(ipvol==0):
 			try:
-				#print ('flags:%d'%flags)
 				self.obj_curid=1 #reset
 				self.obj_list={} #reset
 				#Probably just check if (metadata, container validation, file)
 				# save file name--> container name in the runtime dictionary. 
 				# at user level, dataset api, etc, can get back container name for read/write (get/put) 
 				container_name = name
-				container_id = swift_file_open(container_name)
-				#f = h5py.File(name,'r')
-				if container_id ==1:
-					#print ("container_id:%d"%container_id)
+				container_id = swift_container_open(container_name)
+				if container_id ==1: # file exists
 					self.obj_list[self.obj_curid]=container_name
 					curid=self.obj_curid
 					self.obj_curid=curid+1
@@ -70,21 +63,28 @@ class H5PVol:
 				return -1
 		else:
 			print ("%d py vol is not implemented"%ipvol)
+			return -1
 
 	def H5VL_python_dataset_open(self, obj_id, loc_params, name, dapl_id, dxpl_id, req):
 		#print ("------- PYTHON H5Dopen:%s"%name)
 		try:
-			dst_parent_obj=self.obj_list[obj_id]
+			container_name=self.obj_list[obj_id] #retrieve container name based on obj_id
 			try:
-				dst_obj=dst_parent_obj[name]#,dims,dtype=self.dt_types[pytype])
-				curid = self.obj_curid
-				self.obj_list[curid] = dst_obj # insert new object
-				self.obj_curid = curid+1       # update current index
-				# #print ("------- PYTHON H5Dopen OK")
-				#print ('dataset id is %d'%curid)
-				return curid
+				if(swift_object_open(container = container_name, sciobj_name=name)==1):
+					#object exists
+					curid = self.obj_curid
+					dset_obj={'name':name,'shape':(1,),'dtype':'float'} #TODO: retrieve from swift store (name,shape,type )
+					self.obj_list[curid] = dset_obj # insert object name 
+					self.obj_curid = curid+1       # update current index
+					# #print ("------- PYTHON H5Dopen OK")
+					#print ('dataset id is %d'%curid)
+					return curid
+				else:
+					print("dset obj not exists in container:%s"%container_name)
+					return -1
 			except Exception as e:
 				print ('dataset open in python failed with error: ',e)
+				return -1
 		except Exception as e:
 			print ('retrieve obj failed in python dataset open:',e)
 			return -1
@@ -128,18 +128,34 @@ class H5PVol:
 
 	def H5VL_python_group_create (self, obj_id, loc_params, name, gcpl_id, gapl_id, dxpl_id, req):
 		#print ("------- PYTHON H5Gcreate:%s"%name)
+		'''
+		HDF5 Group is mapped to a container in swift
+		The path to group is preserved as the container name
+		Parent group will create a object to track this sub_group
+		Example: create group '/coadd', (which is a subgroup under root group in HDF5)
+			 Step 1: swift will create a container named 'filename.h5/coadd', 
+			 Step 2: swift will also create a object named 'filename.h5/coadd' in the parent group (i.e., 'parent' container)
+		'''
 		try:
 			#print ('in python group create, obj is ',obj_id)
-			grp_parent_obj=self.obj_list[obj_id]
+			grp_parent_obj=self.obj_list[obj_id] # now the grp_parent_obj is the parent container's name
 			try:
-				grp_obj=grp_parent_obj.create_group(name)
+				#grp_obj=grp_parent_obj.create_group(name)
+				new_container_name = grp_parent_obj+'/'+name
+				swift_container_create(new_container_name)
 				curid = self.obj_curid
-				self.obj_list[curid] = grp_obj # insert new object
-				# self.obj_curid = curid+1       # update current index
+				self.obj_list[curid] = new_container_name # insert new object
+				#create an empty object with name = name
+				empty_sciobj_name = new_container_name
+				#put this object into parent container for tracking purpose. 
+				swift_object_create(container = grp_parent_obj,sciobj_name = empty_sciobj_name)
+				self.obj_list[curid+1] = grp_parent_obj+'/'+empty_sciobj_name
+				self.obj_curid = curid+2	# update current head, points to future object			
 				# #print ("------- PYTHON H5Gcreate OK")
-				return curid
+				return curid # return new obj's id
 			except Exception as e:
 				print ('group create in python failed with error:',e)
+				return -1
 		except Exception as e:
 			print ('retrieve obj failed in python group create')
 			return -1
@@ -149,15 +165,21 @@ class H5PVol:
 		try:
 			dst_parent_obj=self.obj_list[obj_id]
 			try:
-				dst_obj=dst_parent_obj.create_dataset(name,dims,dtype=self.dt_types[pytype])
+				#dst_obj=dst_parent_obj.create_dataset(name,dims,dtype=self.dt_types[pytype])
+				sci_obj_source = numpy.empty(dims, dtype=self.dt_types[pytype], order='C')
+				sci_obj_name = name
+				container_name = dst_parent_obj
+				swift_object_create(container = container_name, sciobj_name = sci_obj_name, sciobj_source = sci_obj_source) 
+				#swift_object_update()#TODO: append shape, type info into object's metadata
 				curid = self.obj_curid
-				self.obj_list[curid] = dst_obj # insert new object
+				self.obj_list[curid] = dst_parent_obj+'/'+name # insert new object#TODO: need full name or not? April Fool Day Puzzle
 				self.obj_curid = curid+1       # update current index
 				#print ("------- PYTHON H5Dcreate OK")
 				#print ('dataset id is %d'%curid)
 				return curid
 			except Exception as e:
 				print ('dataset create in python failed with error: ',e)
+				return -1
 		except Exception as e:
 			print ('retrieve obj failed in python dataset create:',e)
 			return -1
