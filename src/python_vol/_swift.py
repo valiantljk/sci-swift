@@ -5,6 +5,7 @@
 #How we start a new python vol?
 #First, copy the template _h5py.py
 #import h5py
+import numpy
 from __swift_file import swift_container_create
 from __swift_file import swift_container_open
 from __swift_dataset import swift_object_create
@@ -141,7 +142,8 @@ class H5PVol:
 			grp_parent_obj=self.obj_list[obj_id] # now the grp_parent_obj is the parent container's name
 			try:
 				#grp_obj=grp_parent_obj.create_group(name)
-				new_container_name = grp_parent_obj+'/'+name
+				new_container_name = grp_parent_obj+'_'+name
+				print ("new container name:%s"%new_container_name)
 				swift_container_create(new_container_name)
 				curid = self.obj_curid
 				self.obj_list[curid] = new_container_name # insert new object

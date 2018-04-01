@@ -1,6 +1,6 @@
 from __swift_connect import swift_connect 
 '''
-A HDF5 file is a container in the Swift world # we think this design is conceptually genius.
+A HDF5 file is a container in the Swift world
 Authentication in swift is corresponding to the posix file's unix permission.
 
 '''
@@ -8,6 +8,7 @@ def swift_container_create(file_name):
 	try: 
 		conn= swift_connect()
 		container=file_name
+		print("creating container %s"%container)
 		conn.put_container(container)
 	except Exception as e:
 		print ("file create failed in swift")
