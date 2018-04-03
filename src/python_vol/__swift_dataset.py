@@ -7,6 +7,7 @@
 try:
 	from __swift_connect import swift_connect
 	import numpy
+	from StringIO import StringIO
 	from swiftclient.service import SwiftError, SwiftService, SwiftUploadObject
 except Exception as e:
 	print ("connect error:",e)
@@ -25,27 +26,38 @@ def swift_object_create(container, sciobj_name, sciobj_source=None, options=None
 					#obj_name is container's name, or a tracking group's name,: file.h5/grp1
 					#the following step is to create a empty object in parent container when a sub-group is created, 
 					#so the sub-group is trackable in the parent group as a virtual object
-					print ("empty object")
-					objs = [SwiftUploadObject(
-						None, sciobj_name
-						)]
+					#print ("empty object")
+					try:	
+						objs = [SwiftUploadObject(
+							None, sciobj_name
+							)]
+					except Exception as e:
+						print ('construct object error: ',e)
 				else:
 					objs = sci_swift_object(sciobj_name, sciobj_source)
-				print ('in swift.upload:')
-				r=swift.upload(container, objs)
-				if not r['success']:
-					print ('object upload error')
-					print ('error:%s',r['error'])
-				else:
-					print ('object upload ok')
+				#print ('in swift.upload:')
+				try:
+					r=swift.upload(container, objs)
+				except Exception as e:
+					print ("swift.upload: ",e)
+				#print ('finish swift.upload r:',r)
+				try:
+					for ri in r:
+						if not ri['success']:
+							print ('object upload error')
+							print ('error:%s',r['error'])
+						#else:
+						#	print ('object upload ok')
+				except Exception as e:
+					print ('ri[''] failed, ',e)
 			except Exception as e:
 				print ("object create error:",e)
 	except Exception as e:
 		print ("swift object create initialize failed:",e)
 
 def sci_swift_object(sciobj_name, sciobj_source):
-	import numpy
-	from StringIO import StringIO
+	#import numpy
+	#from StringIO import StringIO
 	sci_stream = StringIO()
 	numpy.save(sci_stream,sciobj_source) # need to check if sciobj_source is a numpy array
 	objs = [SwiftUploadObject(

@@ -8,7 +8,7 @@ def swift_container_create(file_name):
 	try: 
 		conn= swift_connect()
 		container=file_name
-		print("creating container %s"%container)
+		#print("creating container %s"%container)
 		conn.put_container(container)
 	except Exception as e:
 		print ("file create failed in swift")

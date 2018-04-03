@@ -143,11 +143,11 @@ class H5PVol:
 			try:
 				#grp_obj=grp_parent_obj.create_group(name)
 				new_container_name = grp_parent_obj+'\\'+name
-				print ("new container name:%s"%new_container_name)
+				#print ("new container name:%s"%new_container_name)
 				swift_container_create(new_container_name)
 				curid = self.obj_curid
 				self.obj_list[curid] = new_container_name # insert new object
-				print('in group create, obj id:%d, name:%s'%(curid,new_container_name))
+				#print('in group create, obj id:%d, name:%s'%(curid,new_container_name))
 				#create an empty object with name = name
 				empty_sciobj_name = new_container_name
 				#put this object into parent container for tracking purpose. 
@@ -167,13 +167,13 @@ class H5PVol:
 		#print ("------- PYTHON H5Dcreate:%s"%name)
 		try:
 			dst_parent_obj=self.obj_list[obj_id]
-			print ('in dset create, obj id is %d, name:%s'%(obj_id,dst_parent_obj))
+			#print ('in dset create, obj id is %d, name:%s'%(obj_id,dst_parent_obj))
 			try:
 				#dst_obj=dst_parent_obj.create_dataset(name,dims,dtype=self.dt_types[pytype])
 				sci_obj_source = numpy.empty(dims, dtype=self.dt_types[pytype], order='C')
 				sci_obj_name = name
 				container_name = dst_parent_obj
-				print ('in dset create, contianer_name:%s,obj name:%s'%(container_name,sci_obj_name))
+				#print ('in dset create, contianer_name:%s,obj name:%s'%(container_name,sci_obj_name))
 				#print ("obj source: ",sci_obj_source)
 				swift_object_create(container = container_name, sciobj_name = sci_obj_name, sciobj_source = sci_obj_source) 
 				#swift_object_update()#TODO: append shape, type info into object's metadata
@@ -201,8 +201,8 @@ class H5PVol:
 					axx.append(ndims)
 					axx.append(dt)
 					axx=axx+list(dims)
-					import numpy as np
-					axx=np.asarray(axx,dtype='int64')
+					#import numpy as np
+					axx=numpy.asarray(axx,dtype='int64')
 					return axx
 		except Exception as e:
 			print (e)
