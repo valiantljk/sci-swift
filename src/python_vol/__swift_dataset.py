@@ -20,6 +20,7 @@ def swift_object_create(container, sciobj_name, sciobj_source=None, options=None
 	try:	
 		with SwiftService(options = options) as swift:
 			try:
+				objs = []
 				if sciobj_source is None: 
 					#obj_name is container's name, or a tracking group's name,: file.h5/grp1
 					#the following step is to create a empty object in parent container when a sub-group is created, 
@@ -30,7 +31,13 @@ def swift_object_create(container, sciobj_name, sciobj_source=None, options=None
 						)]
 				else:
 					objs = sci_swift_object(sciobj_name, sciobj_source)
-				swift.upload(container, objs)
+				print ('in swift.upload:')
+				r=swift.upload(container, objs)
+				if not r['success']:
+					print ('object upload error')
+					print ('error:%s',r['error'])
+				else:
+					print ('object upload ok')
 			except Exception as e:
 				print ("object create error:",e)
 	except Exception as e:

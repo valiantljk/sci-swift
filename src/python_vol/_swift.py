@@ -142,16 +142,17 @@ class H5PVol:
 			grp_parent_obj=self.obj_list[obj_id] # now the grp_parent_obj is the parent container's name
 			try:
 				#grp_obj=grp_parent_obj.create_group(name)
-				new_container_name = grp_parent_obj+'_'+name
+				new_container_name = grp_parent_obj+'\\'+name
 				print ("new container name:%s"%new_container_name)
 				swift_container_create(new_container_name)
 				curid = self.obj_curid
 				self.obj_list[curid] = new_container_name # insert new object
+				print('in group create, obj id:%d, name:%s'%(curid,new_container_name))
 				#create an empty object with name = name
 				empty_sciobj_name = new_container_name
 				#put this object into parent container for tracking purpose. 
 				swift_object_create(container = grp_parent_obj,sciobj_name = empty_sciobj_name)
-				self.obj_list[curid+1] = grp_parent_obj+'/'+empty_sciobj_name
+				self.obj_list[curid+1] = grp_parent_obj+'\\'+empty_sciobj_name
 				self.obj_curid = curid+2	# update current head, points to future object			
 				# #print ("------- PYTHON H5Gcreate OK")
 				return curid # return new obj's id
@@ -166,15 +167,18 @@ class H5PVol:
 		#print ("------- PYTHON H5Dcreate:%s"%name)
 		try:
 			dst_parent_obj=self.obj_list[obj_id]
+			print ('in dset create, obj id is %d, name:%s'%(obj_id,dst_parent_obj))
 			try:
 				#dst_obj=dst_parent_obj.create_dataset(name,dims,dtype=self.dt_types[pytype])
 				sci_obj_source = numpy.empty(dims, dtype=self.dt_types[pytype], order='C')
 				sci_obj_name = name
 				container_name = dst_parent_obj
+				print ('in dset create, contianer_name:%s,obj name:%s'%(container_name,sci_obj_name))
+				#print ("obj source: ",sci_obj_source)
 				swift_object_create(container = container_name, sciobj_name = sci_obj_name, sciobj_source = sci_obj_source) 
 				#swift_object_update()#TODO: append shape, type info into object's metadata
 				curid = self.obj_curid
-				self.obj_list[curid] = dst_parent_obj+'/'+name # insert new object#TODO: need full name or not? April Fool Day Puzzle
+				self.obj_list[curid] = dst_parent_obj+'\\'+name # insert new object#TODO: need full name or not? April Fool Day Puzzle
 				self.obj_curid = curid+1       # update current index
 				#print ("------- PYTHON H5Dcreate OK")
 				#print ('dataset id is %d'%curid)
