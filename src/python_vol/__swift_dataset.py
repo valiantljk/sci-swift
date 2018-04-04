@@ -48,9 +48,9 @@ def swift_object_create(container, sciobj_name, sciobj_source=None, options=None
 						if not ri['success']:
 							print ('object upload error')
 							print ('error:%s',r['error'])
-						else:
-							print ('object upload ok')
-							print ('ri:',ri)
+						#else:
+							#print ('object upload ok')
+							#print ('ri:',ri)
 				except Exception as e:
 					print ('ri[''] failed, ',e)
 			except Exception as e:

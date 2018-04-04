@@ -1,0 +1,39 @@
+#!/bin/bash
+#Clear swift store
+printf '\nClearing swift store:\n'
+source swift_cmd
+printf '\nDone\n'
+
+#compile hdf5 swift vol test code
+printf '\nCompiling test code:\n'
+make clean&make
+printf '\nDone\n'
+#Run HDF5 test code and write file to swift store
+printf '\nWriting hdf5 files to swift store:\n'
+./HDF5_Dataset_write rocket.h5 spacex falcon 3 100 20 30
+printf '\nDone\n'
+#when a file is put into swift store, I'd like to use swift cli to get the binary blob back,
+#and then use h5dump&h5import to convert this binary blob into a hdf5 dataset
+#then we can see if the data is correct visually. 
+
+#Step 1: Swift download
+printf '\nListing and downloading object from swift store\n'
+swift -A http://127.0.0.1:8080/auth/v1.0 -U test:tester -K testing list 
+swift -A http://127.0.0.1:8080/auth/v1.0 -U test:tester -K testing list rocket.h5\\spacex
+swift -A http://127.0.0.1:8080/auth/v1.0 -U test:tester -K testing download rocket.h5\\spacex falcon_int32
+printf '\nDone\n'
+#Step 2: Dump a ddl file from a regular hdf5 file created by h5py, this file should have the same shape with the one we put in swift
+printf '\nProducing a regular hdf5 file with h5py for comparison:\n'
+python regular_hdf5.py
+printf '\nDone\n'
+printf '\nH5dumping ddl now:\n'
+h5dump -p -d "spacex/falcon_int32" --ddl=dsetbin.dmp -o dset.bin -b regular.h5
+printf '\nDone\n'
+#Step 3: Import the binary file 'falcon_int32' downloaded from using swift cmd, given the ddl file, 'dsetbin.dmp', dumped from a regular hdf5 file, into a new regular hdf5 file
+printf '\nH5importing swift object into hdf5 file now:\n'
+h5import falcon_int32 -c dsetbin.dmp -o new-dset.h5
+printf '\nDone\n'
+#Step 4: check the new regular file and the file extracted from swift store.
+printf '\nH5diffing now:\n'
+h5diff regular.h5 new-dset.h5 /spacex/falcon_int32 /spacex/falcon_int32 
+printf '\nDone\n'

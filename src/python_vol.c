@@ -644,7 +644,7 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
       printf("pInstance is NULL in dataset write\n");
       return -1;
     }else{
-	printf("Calling in dataset_write in C\n");
+	//printf("Calling in dataset_write in C\n");
       pValue = PyObject_CallMethod(pInstance, method_name, "lllllOl", PyLong_AsLong(plong_under),  mem_type_id, mem_space_id, file_space_id,plist_id, pydata, 0);
       if(pValue !=NULL){
         //printf("------- Result of H5Dwrite from python: %ld\n", PyLong_AsLong(pValue));

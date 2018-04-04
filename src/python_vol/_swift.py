@@ -202,22 +202,22 @@ class H5PVol:
 
 	def H5VL_python_dt_info(self, obj_id):
 		try:
-			print ('query dt info: object name is:%s'%self.obj_list[obj_id])
+			#print ('query dt info: object name is:%s'%self.obj_list[obj_id])
 			z=self.obj_list[obj_id]
 			obj_name = z.split("\\")[-1]
 			container_name = z[:z.find(z.split('\\')[-1])-1]
-			print("start query")
+			#print("start query")
 			metadata = swift_metadata_get(container=container_name,sciobj_name=obj_name)
-			print("end query")
-			print (metadata)
+			#print("end query")
+			#print (metadata)
 			m=metadata['dims']
 			m=m[1:len(m)-1]
 			dims=numpy.fromstring(m,dtype=int,sep=' ')
 			ndims=int(metadata['ndim'])
 			#dims=self.obj_list[obj_id].shape
 			#ndims=len(dims)
-			print ('ndims:%d'%ndims)
-			print ('dtype:',metadata['type'])
+			#print ('ndims:%d'%ndims)
+			#print ('dtype:',metadata['type'])
 			for k,v in self.dt_types.items():
 				if v ==metadata['type']:
 					dt=k
@@ -233,18 +233,18 @@ class H5PVol:
 			pass
 
 	def H5VL_python_dataset_write(self, obj_id, mem_type_id, mem_space_id, file_space_id, plist_id, buf, req):
-		print ('dataset write')
+		#print ('dataset write')
 		try:
 			#print ('in python dataset write, obj is ',obj_id)
 			dst_parent_obj=self.obj_list[obj_id]
-			print ('in dset write, haha, dst_parent_obj:%s'%dst_parent_obj)
+			#print ('in dset write, haha, dst_parent_obj:%s'%dst_parent_obj)
 			z=dst_parent_obj
 			dst_container_name=z[:z.find(z.split('\\')[-1])-1]
 			dst_object_name=z.split('\\')[-1]
 			try:
 				#dst_parent_obj[:] = buf
 				#call swift_object_create(container = , sciobj_name = , sciobj_source = )
-				print ('puting dst object, container=%s, objec=%s'%(dst_container_name,dst_object_name))
+				#print ('puting dst object, container=%s, objec=%s'%(dst_container_name,dst_object_name))
 				swift_object_create(container=dst_container_name, sciobj_name=dst_object_name, sciobj_source=buf)
 				curid = self.obj_curid
 				#print ("------- PYTHON H5Dwrite OK")
