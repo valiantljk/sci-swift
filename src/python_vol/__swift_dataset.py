@@ -26,7 +26,7 @@ def swift_object_create(container, sciobj_name, sciobj_source=None, options=None
 					#obj_name is container's name, or a tracking group's name,: file.h5/grp1
 					#the following step is to create a empty object in parent container when a sub-group is created, 
 					#so the sub-group is trackable in the parent group as a virtual object
-					#print ("empty object")
+					#print ("empty object:%s"%sciobj_name)
 					try:	
 						objs = [SwiftUploadObject(
 							None, sciobj_name
@@ -35,9 +35,11 @@ def swift_object_create(container, sciobj_name, sciobj_source=None, options=None
 						print ('construct object error: ',e)
 				else:
 					objs = sci_swift_object(sciobj_name, sciobj_source)
+					#print('in swift.upload, obj name is %s:',sciobj_name)
+					#print ('in swift.upload, swift objs:',objs)
 				#print ('in swift.upload:')
 				try:
-					r=swift.upload(container, objs)
+					r=swift.upload(container=container,objects=objs)
 				except Exception as e:
 					print ("swift.upload: ",e)
 				#print ('finish swift.upload r:',r)
@@ -46,8 +48,9 @@ def swift_object_create(container, sciobj_name, sciobj_source=None, options=None
 						if not ri['success']:
 							print ('object upload error')
 							print ('error:%s',r['error'])
-						#else:
-						#	print ('object upload ok')
+						else:
+							print ('object upload ok')
+							print ('ri:',ri)
 				except Exception as e:
 					print ('ri[''] failed, ',e)
 			except Exception as e:
@@ -58,10 +61,14 @@ def swift_object_create(container, sciobj_name, sciobj_source=None, options=None
 def sci_swift_object(sciobj_name, sciobj_source):
 	#import numpy
 	#from StringIO import StringIO
-	sci_stream = StringIO()
-	numpy.save(sci_stream,sciobj_source) # need to check if sciobj_source is a numpy array
+	#sci_stream = StringIO()
+	#numpy.save(sci_stream,sciobj_source) # need to check if sciobj_source is a numpy array
+	#print ('sci_stream:',sci_stream)
+	#print ('sci_source:',sciobj_source)
+	from io import BytesIO
+	
 	objs = [SwiftUploadObject(
-		sci_stream, sciobj_name
+		BytesIO(sciobj_source), sciobj_name
 		)]
 	return objs
 def swift_object_open(container, sciobj_name, options=None):
@@ -70,3 +77,45 @@ def swift_object_open(container, sciobj_name, options=None):
 		return 1 
 	else:
 		return -1
+def swift_metadata_create(container, sciobj_name, sciobj_metadata,options=None):
+	#print ("hello")
+	#header_data={}
+	#first retrieve existing metadata, otherwise, meta post will destroy existing one
+	with SwiftService(options = options) as swift:
+		try:
+			#print("start stat:container=%s,object=%s"%(container,sciobj_name))
+			#r=swift.stat(container=container, objects=[sciobj_name])
+			#print ("end stat")
+		 	#header_data={}
+			#for item in r:
+				#print ("item is:",item)
+			#	if item['success']:
+			#		header_data[item['object']]=item['headers']
+				#else:
+				#	print ('Failed to retrieve meta')	
+			#print (header_data)
+			#test_medata={"dtype":"float","ndims":"3"}
+			post_options = {"meta": sciobj_metadata}
+			#post_options =  {"meta": test_medata}
+			#print('going to post the metadata:post_options:',post_options)
+			r=swift.post(container=container, objects=[sciobj_name],options=post_options)
+		except Exception as e: 
+			print ('stat error: ',e)
+
+def swift_metadata_get(container,sciobj_name, options=None):
+	with SwiftService(options = options) as swift:
+		try:
+			meta_data={}
+			r=swift.stat(container=container, objects=[sciobj_name])
+			for item in r:
+				if item['success']:
+					#print ("success")
+					meta_data['dims']=item['headers']['x-object-meta-dims']
+					meta_data['type']=item['headers']['x-object-meta-type']
+					meta_data['ndim']=item['headers']['x-object-meta-ndim']
+					#print('got meta:',meta_data)
+					#header_data[item['object']]=item['headers']['meta']
+			#print ('got meta2:',meta_data)
+			return meta_data
+		except Exception as e:
+			print ('stat error:',e)

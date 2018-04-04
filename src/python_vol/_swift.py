@@ -10,6 +10,8 @@ from __swift_file import swift_container_create
 from __swift_file import swift_container_open
 from __swift_dataset import swift_object_create
 from __swift_dataset import swift_object_open
+from __swift_dataset import swift_metadata_create
+from __swift_dataset import swift_metadata_get
 class H5PVol:
 	dt_types={ 0:"int16", 1:"int32",2:"float32",3:"float64"}
 	obj_curid = 1   # PyLong_AsVoidPtr can not convert 0 correctly
@@ -167,18 +169,26 @@ class H5PVol:
 		#print ("------- PYTHON H5Dcreate:%s"%name)
 		try:
 			dst_parent_obj=self.obj_list[obj_id]
+			name=name.replace("/","\\")
+			z=dst_parent_obj+'\\'+name
+			#print ('in dset create, full path is:%s,ndims:%d'%(z,ndims))
+			dst_container_name = z[:z.find(z.split('\\')[-1])-1]
+			dst_obj_name = z.split('\\')[-1]
 			#print ('in dset create, obj id is %d, name:%s'%(obj_id,dst_parent_obj))
 			try:
 				#dst_obj=dst_parent_obj.create_dataset(name,dims,dtype=self.dt_types[pytype])
 				sci_obj_source = numpy.empty(dims, dtype=self.dt_types[pytype], order='C')
-				sci_obj_name = name
-				container_name = dst_parent_obj
-				#print ('in dset create, contianer_name:%s,obj name:%s'%(container_name,sci_obj_name))
+				#print ('in dset create, contianer_name:%s,obj name:%s'%(dst_container_name,dst_obj_name))
 				#print ("obj source: ",sci_obj_source)
-				swift_object_create(container = container_name, sciobj_name = sci_obj_name, sciobj_source = sci_obj_source) 
-				#swift_object_update()#TODO: append shape, type info into object's metadata
+				swift_object_create(container = dst_container_name, sciobj_name = dst_obj_name, sciobj_source = sci_obj_source)
+				sci_obj_meta={}
+				sci_obj_meta['type'] = str(self.dt_types[pytype])
+				sci_obj_meta['dims'] = numpy.array_str(dims)
+				sci_obj_meta['ndim'] = str(ndims)
+				#print ('in dset create, sci obj meta:',sci_obj_meta) 
+				swift_metadata_create(container = dst_container_name, sciobj_name = dst_obj_name, sciobj_metadata=sci_obj_meta)#TODO: append shape, type info into object's metadata
 				curid = self.obj_curid
-				self.obj_list[curid] = dst_parent_obj+'\\'+name # insert new object#TODO: need full name or not? April Fool Day Puzzle
+				self.obj_list[curid] = z # insert new object#TODO: need full name or not? April Fool Day Puzzle
 				self.obj_curid = curid+1       # update current index
 				#print ("------- PYTHON H5Dcreate OK")
 				#print ('dataset id is %d'%curid)
@@ -192,10 +202,24 @@ class H5PVol:
 
 	def H5VL_python_dt_info(self, obj_id):
 		try:
-			dims=self.obj_list[obj_id].shape
-			ndims=len(dims)
+			print ('query dt info: object name is:%s'%self.obj_list[obj_id])
+			z=self.obj_list[obj_id]
+			obj_name = z.split("\\")[-1]
+			container_name = z[:z.find(z.split('\\')[-1])-1]
+			print("start query")
+			metadata = swift_metadata_get(container=container_name,sciobj_name=obj_name)
+			print("end query")
+			print (metadata)
+			m=metadata['dims']
+			m=m[1:len(m)-1]
+			dims=numpy.fromstring(m,dtype=int,sep=' ')
+			ndims=int(metadata['ndim'])
+			#dims=self.obj_list[obj_id].shape
+			#ndims=len(dims)
+			print ('ndims:%d'%ndims)
+			print ('dtype:',metadata['type'])
 			for k,v in self.dt_types.items():
-				if v ==self.obj_list[obj_id].dtype:
+				if v ==metadata['type']:
 					dt=k
 					axx=list()
 					axx.append(ndims)
@@ -209,18 +233,27 @@ class H5PVol:
 			pass
 
 	def H5VL_python_dataset_write(self, obj_id, mem_type_id, mem_space_id, file_space_id, plist_id, buf, req):
+		print ('dataset write')
 		try:
 			#print ('in python dataset write, obj is ',obj_id)
 			dst_parent_obj=self.obj_list[obj_id]
+			print ('in dset write, haha, dst_parent_obj:%s'%dst_parent_obj)
+			z=dst_parent_obj
+			dst_container_name=z[:z.find(z.split('\\')[-1])-1]
+			dst_object_name=z.split('\\')[-1]
 			try:
-				dst_parent_obj[:] = buf
+				#dst_parent_obj[:] = buf
+				#call swift_object_create(container = , sciobj_name = , sciobj_source = )
+				print ('puting dst object, container=%s, objec=%s'%(dst_container_name,dst_object_name))
+				swift_object_create(container=dst_container_name, sciobj_name=dst_object_name, sciobj_source=buf)
 				curid = self.obj_curid
 				#print ("------- PYTHON H5Dwrite OK")
 				return curid
 			except Exception as e:
 				print ('dataset write in python failed with error: ',e)
+				return -1
 		except Exception as e:
-			print ('retrieve obj failed in python dataset write')
+			print ('retrieve obj failed in python dataset write: ',e)
 			return -1
 
 	def H5VL_python_dataset_read(self, obj_id, mem_type_id, mem_space_id, file_space_id, plist_id, buf, req):

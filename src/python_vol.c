@@ -431,7 +431,9 @@ void helper_dt (hid_t dcpl_id, H5VL_DT * dt){
      hid_t space_id, type_id;
      H5Pget (dcpl_id, "dataset_space_id", &space_id); 
      H5Pget (dcpl_id, "dataset_type_id", &type_id);
+
      dt->ndims = H5Sget_simple_extent_ndims (space_id);
+     //printf("Checking dt ndims:%d\n",dt->ndims);
      dt->dims = malloc(sizeof(unsigned long long int )* dt->ndims);
      dt->maxdims = malloc(sizeof(unsigned long long int)* dt->ndims);
      H5Sget_simple_extent_dims(space_id,dt->dims, dt->maxdims);
@@ -462,7 +464,7 @@ H5VL_python_dataset_create(void *obj, H5VL_loc_params_t loc_params, const char *
     H5VL_DT * dt= malloc(sizeof(H5VL_DT)); //get the dataset size, type
     helper_dt (dcpl_id, dt);
     //printf("Testing H5VL_DT,%d\n",dt->py_type); 
-    npy_intp dtm=dt->ndims;  
+    npy_intp dtm=dt->ndims; 
     PyObject * py_dims = PyArray_SimpleNewFromData(1, &dtm, NPY_INTP,dt->dims);//TODO: 64 bits, vs 32 bit 
     PyObject * py_maxdims = PyArray_SimpleNewFromData(1, &dtm, NPY_INTP,dt->maxdims );  
     PyObject *pValue=NULL;
@@ -471,8 +473,8 @@ H5VL_python_dataset_create(void *obj, H5VL_loc_params_t loc_params, const char *
       fprintf(stderr, "pInstance is NULL in group create\n");
       return NULL; 
     }else{
-      pValue = PyObject_CallMethod(pInstance, method_name, "llsllllllOO", PyLong_AsLong(plong_under), 0, name, dcpl_id, dapl_id, dxpl_id, 0,dt->ndims,dt->py_type,py_dims, py_maxdims);
-      if(pValue !=NULL){
+	pValue = PyObject_CallMethod(pInstance, method_name, "llsllllilOO", PyLong_AsLong(plong_under), 0, name, dcpl_id, dapl_id, dxpl_id, 0,dt->ndims,dt->py_type,py_dims, py_maxdims);
+     if(pValue !=NULL){
         //printf("------- Result of H5Dcreate from python: %ld\n", PyLong_AsLong(pValue));
         void * rt_py = PyLong_AsVoidPtr(pValue);
         if (rt_py==NULL) fprintf(stderr, "Dataset create, returned pointer from python is NULL\n");
@@ -634,6 +636,7 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
     H5VL_python_t *o = (H5VL_python_t *)dset;
     PyObject * plong_under = PyLong_FromVoidPtr(o->under_object);
     PyObject * pydata= Data_CPY(PyLong_AsLong(plong_under), (void *)buf);
+    PyErr_Print();
     PyObject *pValue=NULL;
     char method_name[] = "H5VL_python_dataset_write";
     //Call dataset write method
@@ -641,6 +644,7 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
       printf("pInstance is NULL in dataset write\n");
       return -1;
     }else{
+	printf("Calling in dataset_write in C\n");
       pValue = PyObject_CallMethod(pInstance, method_name, "lllllOl", PyLong_AsLong(plong_under),  mem_type_id, mem_space_id, file_space_id,plist_id, pydata, 0);
       if(pValue !=NULL){
         //printf("------- Result of H5Dwrite from python: %ld\n", PyLong_AsLong(pValue));
