@@ -72,6 +72,7 @@ class H5PVol:
 		#print ("------- PYTHON H5Dopen:%s"%name)
 		try:
 			container_name=self.obj_list[obj_id] #retrieve container name based on obj_id
+			print ('in dt open, container is:%s'%container_name)
 			try:
 				if(swift_object_open(container = container_name, sciobj_name=name)==1):
 					#object exists
@@ -202,8 +203,9 @@ class H5PVol:
 
 	def H5VL_python_dt_info(self, obj_id):
 		try:
-			#print ('query dt info: object name is:%s'%self.obj_list[obj_id])
+			print ('query dt info: object name is:%s'%self.obj_list[obj_id])
 			z=self.obj_list[obj_id]
+			z=z.replace("/","\\")
 			obj_name = z.split("\\")[-1]
 			container_name = z[:z.find(z.split('\\')[-1])-1]
 			#print("start query")
@@ -260,6 +262,7 @@ class H5PVol:
 		try:
 			#print ('in python dataset read, obj is ',obj_id)
 			dst_parent_obj=self.obj_list[obj_id]
+			print ('what is this:ds_parent_obj:',dst_parent_obj)
 			try:
 				'''
 				buf[:] = dst_parent_obj[:] # TODO: make sure memcopy free
