@@ -12,6 +12,7 @@ from __swift_dataset import swift_object_create
 from __swift_dataset import swift_object_open
 from __swift_dataset import swift_metadata_create
 from __swift_dataset import swift_metadata_get
+from __swift_dataset import swift_object_download
 class H5PVol:
 	dt_types={ 0:"int16", 1:"int32",2:"float32",3:"float64"}
 	obj_curid = 1   # PyLong_AsVoidPtr can not convert 0 correctly
@@ -72,23 +73,42 @@ class H5PVol:
 		#print ("------- PYTHON H5Dopen:%s"%name)
 		try:
 			container_name=self.obj_list[obj_id] #retrieve container name based on obj_id
-			print ('in dt open, container is:%s'%container_name)
-			try:
-				if(swift_object_open(container = container_name, sciobj_name=name)==1):
+			print ('in dt open, container is:%s,object name:%s'%(container_name,name))
+			#reconstruct full path
+			full_path=container_name+"/"+name
+			z=full_path.replace("/","\\")
+			container_name = z[:z.find(z.split('\\')[-1])-1]
+                        obj_name = z.split('\\')[-1]
+			print('full_path:%s'%full_path)
+			print('container name:%s'%container_name)
+			print('obj name:%s'%obj_name)
+			metadata = swift_metadata_get(container=container_name,sciobj_name=obj_name)
+			print("In dataset open")
+			print (metadata)
+			print ("end showing metadata")
+			curid = self.obj_curid
+			self.obj_list[curid] = full_path
+			self.obj_curid = curid+1
+			return curid
+			#try:
+			#	metadata = swift_metadata_get(container=container_name,sciobj_name=name)
+			#	curid = self.obj_curid
+				
+			#	if(swift_object_open(container = container_name, sciobj_name=name)==1):
 					#object exists
-					curid = self.obj_curid
-					dset_obj={'name':name,'shape':(1,),'dtype':'float'} #TODO: retrieve from swift store (name,shape,type )
-					self.obj_list[curid] = dset_obj # insert object name 
-					self.obj_curid = curid+1       # update current index
+			#		curid = self.obj_curid
+			#		dset_obj={'name':name,'shape':(1,),'dtype':'float'} #TODO: retrieve from swift store (name,shape,type )
+			#		self.obj_list[curid] = dset_obj # insert object name 
+			#		self.obj_curid = curid+1       # update current index
 					# #print ("------- PYTHON H5Dopen OK")
 					#print ('dataset id is %d'%curid)
-					return curid
-				else:
-					print("dset obj not exists in container:%s"%container_name)
-					return -1
-			except Exception as e:
-				print ('dataset open in python failed with error: ',e)
-				return -1
+			#		return curid
+			#	else:
+			#		print("dset obj not exists in container:%s"%container_name)
+			#		return -1
+			#except Exception as e:
+			#	print ('dataset open in python failed with error: ',e)
+			#	return -1
 		except Exception as e:
 			print ('retrieve obj failed in python dataset open:',e)
 			return -1
@@ -168,6 +188,7 @@ class H5PVol:
 
 	def H5VL_python_dataset_create(self, obj_id, loc_params, name, dcpl_id, dapl_id, dxpl_id, req, ndims,pytype,dims,maxdims):
 		#print ("------- PYTHON H5Dcreate:%s"%name)
+		print ("-----------------ENTER Dataset Create-----------------")
 		try:
 			dst_parent_obj=self.obj_list[obj_id]
 			name=name.replace("/","\\")
@@ -186,13 +207,15 @@ class H5PVol:
 				sci_obj_meta['type'] = str(self.dt_types[pytype])
 				sci_obj_meta['dims'] = numpy.array_str(dims)
 				sci_obj_meta['ndim'] = str(ndims)
-				#print ('in dset create, sci obj meta:',sci_obj_meta) 
-				swift_metadata_create(container = dst_container_name, sciobj_name = dst_obj_name, sciobj_metadata=sci_obj_meta)#TODO: append shape, type info into object's metadata
+				print ('sci obj meta:',sci_obj_meta) 
+				r1=swift_metadata_create(container = dst_container_name, sciobj_name = dst_obj_name, sciobj_metadata=sci_obj_meta)#TODO: append shape, type info into object's metadata
+				#print("in dataset create, r1:",r1)
 				curid = self.obj_curid
 				self.obj_list[curid] = z # insert new object#TODO: need full name or not? April Fool Day Puzzle
 				self.obj_curid = curid+1       # update current index
 				#print ("------- PYTHON H5Dcreate OK")
 				#print ('dataset id is %d'%curid)
+				print ("-----------------LEAVE Dataset Create-----------------")
 				return curid
 			except Exception as e:
 				print ('dataset create in python failed with error: ',e)
@@ -203,12 +226,14 @@ class H5PVol:
 
 	def H5VL_python_dt_info(self, obj_id):
 		try:
-			print ('query dt info: object name is:%s'%self.obj_list[obj_id])
+			#print ('query dt info: object name is:%s'%self.obj_list[obj_id])
 			z=self.obj_list[obj_id]
 			z=z.replace("/","\\")
 			obj_name = z.split("\\")[-1]
 			container_name = z[:z.find(z.split('\\')[-1])-1]
 			#print("start query")
+			#print ("container:%s"%container_name)
+			#print ("object:%s"%obj_name)
 			metadata = swift_metadata_get(container=container_name,sciobj_name=obj_name)
 			#print("end query")
 			#print (metadata)
@@ -236,20 +261,31 @@ class H5PVol:
 
 	def H5VL_python_dataset_write(self, obj_id, mem_type_id, mem_space_id, file_space_id, plist_id, buf, req):
 		#print ('dataset write')
+		print ("-----------------ENTER Dataset Write-----------------")
 		try:
 			#print ('in python dataset write, obj is ',obj_id)
 			dst_parent_obj=self.obj_list[obj_id]
 			#print ('in dset write, haha, dst_parent_obj:%s'%dst_parent_obj)
-			z=dst_parent_obj
+			z = dst_parent_obj
 			dst_container_name=z[:z.find(z.split('\\')[-1])-1]
 			dst_object_name=z.split('\\')[-1]
 			try:
 				#dst_parent_obj[:] = buf
 				#call swift_object_create(container = , sciobj_name = , sciobj_source = )
 				#print ('puting dst object, container=%s, objec=%s'%(dst_container_name,dst_object_name))
+				metadata = swift_metadata_get(container=dst_container_name,sciobj_name=dst_object_name)
 				swift_object_create(container=dst_container_name, sciobj_name=dst_object_name, sciobj_source=buf)
+				#swift_metadata_get(container = dst_container_name, sciobj_name = dst_obj_name, sciobj_source = sci_obj_source)
+                                sci_obj_meta={}
+                                sci_obj_meta['type'] = str(metadata['type'])
+                                sci_obj_meta['dims'] = str(metadata['dims'])
+                                sci_obj_meta['ndim'] = str(metadata['ndim'])
+                                print ('sci obj meta:',sci_obj_meta)
+                                r1=swift_metadata_create(container = dst_container_name, sciobj_name = dst_object_name, sciobj_metadata=sci_obj_meta)
+
 				curid = self.obj_curid
 				#print ("------- PYTHON H5Dwrite OK")
+				print ("-----------------LEAVE Dataset Create-----------------")
 				return curid
 			except Exception as e:
 				print ('dataset write in python failed with error: ',e)
@@ -263,6 +299,9 @@ class H5PVol:
 			#print ('in python dataset read, obj is ',obj_id)
 			dst_parent_obj=self.obj_list[obj_id]
 			print ('what is this:ds_parent_obj:',dst_parent_obj)
+			z = dst_parent_obj
+			dst_container_name=z[:z.find(z.split('\\')[-1])-1]
+                        dst_object_name=z.split('\\')[-1] 
 			try:
 				'''
 				buf[:] = dst_parent_obj[:] # TODO: make sure memcopy free
@@ -273,7 +312,8 @@ class H5PVol:
 		        print (buf)
 		        print (buf.flags)
 		        '''
-				dst_parent_obj.read_direct(buf)
+				#dst_parent_obj.read_direct(buf)
+				swift_object_download(container=dst_container_name, sciobj_name=dst_object_name,sciobj_dst=buf)
 				#print ("------- PYTHON H5Dread OK")
 				return 1
 			except Exception as e:

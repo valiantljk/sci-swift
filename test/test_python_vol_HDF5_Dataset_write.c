@@ -86,8 +86,10 @@ int main(int argc, char **argv) {
 	int prop_def_value=0;
 	H5Pinsert2(acc_tpl, pyplugin_name, prop_size, &prop_def_value, NULL, NULL, NULL, NULL, NULL, NULL);
         H5Pset_vol(acc_tpl, vol_id, &under_fapl);
+	
 
 	//Test HDF5 File Create
+	printf("Testing File create\n");
 	file_id = H5Fcreate(file_name, H5F_ACC_TRUNC, H5P_DEFAULT, acc_tpl);
 	printf("Testing Group Create\n");
         //Test HDF5 Group Create
