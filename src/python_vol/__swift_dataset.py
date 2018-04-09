@@ -31,11 +31,11 @@ def swift_object_create(container, sciobj_name, sciobj_source=None, options=None
                                 	sci_obj_meta['ndim'] = str(meta_old['ndim'])
 					post_options={"meta": sci_obj_meta, "long": "True"}
 				except Exception as e:
-					print ("getting metadata of obj:%s failed"%sciobj_name)
+					#print ("getting metadata of obj:%s failed"%sciobj_name)
 					pass
-				print ('in object create:post_options:',post_options)
+				#print ('in object create:post_options:',post_options)
 				if sciobj_source is None:
-					print ("object source is None") 
+					#print ("object source is None") 
 					#obj_name is container's name, or a tracking group's name,: file.h5/grp1
 					#the following step is to create a empty object in parent container when a sub-group is created, 
 					#so the sub-group is trackable in the parent group as a virtual object
@@ -87,9 +87,9 @@ def swift_object_create(container, sciobj_name, sciobj_source=None, options=None
 						if not ri['success']:
 							print ('object upload error')
 							print ('error:%s',r['error'])
-						else:
-							print ('HAHAHAHAH object upload ok')
-							print ('in swift.upload, ri:',ri)
+						#else:
+						#	print ('HAHAHAHAH object upload ok')
+						#	print ('in swift.upload, ri:',ri)
 				except Exception as e:
 					print ('ri[''] failed, ',e)
 				#print('++++++++++++++End print r')
@@ -102,9 +102,34 @@ def swift_object_create(container, sciobj_name, sciobj_source=None, options=None
 				print ("object create error:",e)
 	except Exception as e:
 		print ("swift object create initialize failed:",e)
-def swift_object_download(container, sciobj_name, sciobj_dst=None, options=None):
-        print ('need to implement swift object download')
-	return 1
+def swift_object_download(container, sciobj_name, sciobj_dst=None, dtype=None, options=None):
+        print ('-----------------------Testing swift object download')
+	#first try download the binary blob from swift store
+	conn= swift_connect()
+	container.replace('/','\\')
+	print("container:(%s),obj:(%s)"%(container,sciobj_name))
+	res, obj=conn.get_object(container,sciobj_name)
+	if dtype==None:
+		dtype='int32'
+	sciobj_dst=numpy.frombuffer(obj,dtype=dtype)
+	#numpy.copyto(sciobj_dst,obj,dtype=dtype)
+	#print sciobj_dst		
+	print('-----------------------Testing swift object download END')
+	#swift_object_get(container=container,sciobj_name=sciobj_name,options=post_options)
+	return sciobj_dst
+def swift_object_get(container, sciobj_name,options=None):
+	try:
+		with  SwiftService(options = options) as swift:
+			print ("container:%s, obj:%s"%(container,sciobj_name))
+			for r in swift.download(container=container,objects=[sciobj_name]):
+				if r['success']:
+					print ('Downloaded object:%s'%(sciobj_name))
+					print r
+				else:
+					print ('for r error:',r)
+	except Exception as e:
+		print ('in swift object get:error:',e)
+
 def sci_swift_object(sciobj_name, sciobj_source,options=None):
 	#import numpy
 	#from StringIO import StringIO
@@ -113,7 +138,7 @@ def sci_swift_object(sciobj_name, sciobj_source,options=None):
 	#print ('sci_stream:',sci_stream)
 	#print ('sci_source:',sciobj_source)
 	from io import BytesIO
-	print ("In sci obj construction,options are:")	
+	#print ("In sci obj construction,options are:")	
 	print (options)
 	objs = [SwiftUploadObject(
 		BytesIO(sciobj_source), sciobj_name
@@ -131,7 +156,7 @@ def swift_metadata_create(container, sciobj_name, sciobj_metadata,options=None):
 	#first retrieve existing metadata, otherwise, meta post will destroy existing one
 	with SwiftService(options = options) as swift:
 		try:
-			print("in metadata create: container=%s,object=%s"%(container,sciobj_name))
+			#print("in metadata create: container=%s,object=%s"%(container,sciobj_name))
 			#r=swift.stat(container=container, objects=[sciobj_name])
 			#print ("end stat")
 		 	#header_data={}
@@ -147,15 +172,15 @@ def swift_metadata_create(container, sciobj_name, sciobj_metadata,options=None):
 			#post_options =  {"meta": test_medata}
 			#print('going to post the metadata:post_options:',post_options)
 			r=swift.post(container=container, objects=[sciobj_name],options=post_options)
-			print ("in swift.post, r=",r)
+			#print ("in swift.post, r=",r)
 			try:
 				for ri in r:
 					if not ri['success']:
 						print ('object upload error')
 						print ('error:%s',r['error'])
-					else:
-						print ('object upload ok')
-						print ('ri:',ri)
+					#else:
+					#	print ('object upload ok')
+					#	print ('ri:',ri)
 			except Exception as e:
 				print ('ri[''] failed, ',e)
 		except Exception as e: 
@@ -165,21 +190,22 @@ def swift_metadata_get(container,sciobj_name, options=None):
 	with SwiftService(options = options) as swift:
 		try:
 			meta_data={}
-			print('stat:container:%s,obj:%s'%(container,sciobj_name))
+			#print('stat:container:%s,obj:%s'%(container,sciobj_name))
 			r=swift.stat(container=container, objects=[sciobj_name])
 			for item in r:
 				if item['success']:
-					print ("in metadata_get, success, item:")
-					print(item)
+					#print ("in metadata_get, success, item:")
+					#print(item)
 					meta_data['dims']=item['headers']['x-object-meta-dims']
 					meta_data['type']=item['headers']['x-object-meta-type']
 					meta_data['ndim']=item['headers']['x-object-meta-ndim']
 					#print('got meta:',meta_data)
 					#header_data[item['object']]=item['headers']['meta']
 			#print ('got meta2:',meta_data)
-				else:
-					print ('failed,item:',item)
+				#else:
+				#	print ('failed,item:',item)
 			return meta_data
 		except Exception as e:
 			print ('stat error:',e)
-			print ('r:',r)
+			#print ('r:',r)
+

@@ -73,19 +73,19 @@ class H5PVol:
 		#print ("------- PYTHON H5Dopen:%s"%name)
 		try:
 			container_name=self.obj_list[obj_id] #retrieve container name based on obj_id
-			print ('in dt open, container is:%s,object name:%s'%(container_name,name))
+			#print ('in dt open, container is:%s,object name:%s'%(container_name,name))
 			#reconstruct full path
 			full_path=container_name+"/"+name
 			z=full_path.replace("/","\\")
 			container_name = z[:z.find(z.split('\\')[-1])-1]
                         obj_name = z.split('\\')[-1]
-			print('full_path:%s'%full_path)
-			print('container name:%s'%container_name)
-			print('obj name:%s'%obj_name)
+			#print('full_path:%s'%full_path)
+			#print('container name:%s'%container_name)
+			#print('obj name:%s'%obj_name)
 			metadata = swift_metadata_get(container=container_name,sciobj_name=obj_name)
-			print("In dataset open")
-			print (metadata)
-			print ("end showing metadata")
+			#print("In dataset open")
+			#print (metadata)
+			#print ("end showing metadata")
 			curid = self.obj_curid
 			self.obj_list[curid] = full_path
 			self.obj_curid = curid+1
@@ -207,7 +207,7 @@ class H5PVol:
 				sci_obj_meta['type'] = str(self.dt_types[pytype])
 				sci_obj_meta['dims'] = numpy.array_str(dims)
 				sci_obj_meta['ndim'] = str(ndims)
-				print ('sci obj meta:',sci_obj_meta) 
+				#print ('sci obj meta:',sci_obj_meta) 
 				r1=swift_metadata_create(container = dst_container_name, sciobj_name = dst_obj_name, sciobj_metadata=sci_obj_meta)#TODO: append shape, type info into object's metadata
 				#print("in dataset create, r1:",r1)
 				curid = self.obj_curid
@@ -280,7 +280,7 @@ class H5PVol:
                                 sci_obj_meta['type'] = str(metadata['type'])
                                 sci_obj_meta['dims'] = str(metadata['dims'])
                                 sci_obj_meta['ndim'] = str(metadata['ndim'])
-                                print ('sci obj meta:',sci_obj_meta)
+                                #print ('sci obj meta:',sci_obj_meta)
                                 r1=swift_metadata_create(container = dst_container_name, sciobj_name = dst_object_name, sciobj_metadata=sci_obj_meta)
 
 				curid = self.obj_curid
@@ -298,26 +298,45 @@ class H5PVol:
 		try:
 			#print ('in python dataset read, obj is ',obj_id)
 			dst_parent_obj=self.obj_list[obj_id]
-			print ('what is this:ds_parent_obj:',dst_parent_obj)
-			z = dst_parent_obj
+			#print ('what is this:ds_parent_obj:',dst_parent_obj)
+			z = dst_parent_obj.replace("/","\\")
 			dst_container_name=z[:z.find(z.split('\\')[-1])-1]
                         dst_object_name=z.split('\\')[-1] 
 			try:
 				'''
-				buf[:] = dst_parent_obj[:] # TODO: make sure memcopy free
-				print ("passed in buffer has shape:,",buf.shape)
-	            print ("data to be returned has shape:,",dst_parent_obj)
-		        buf[:] = dst_parent_obj[:]
-	        	Direct read from HDF5 file into numpy array
-		        print (buf)
-		        print (buf.flags)
-		        '''
+					buf[:] = dst_parent_obj[:] # TODO: make sure memcopy free
+					print ("passed in buffer has shape:,",buf.shape)
+	            			print ("data to be returned has shape:,",dst_parent_obj)
+		        		buf[:] = dst_parent_obj[:]
+	        			Direct read from HDF5 file into numpy array
+		        		print (buf)
+		        		print (buf.flags)
+		        	'''
 				#dst_parent_obj.read_direct(buf)
-				swift_object_download(container=dst_container_name, sciobj_name=dst_object_name,sciobj_dst=buf)
-				#print ("------- PYTHON H5Dread OK")
-				return 1
+				
+				print ('in python dataset read, container:%s, objects:%s'%(dst_container_name,dst_object_name))
+				print ('type and shape of input buf is')
+				print (type(buf),buf.shape)
+				x=swift_object_download(container=dst_container_name, sciobj_name=dst_object_name).reshape(buf.shape)
+				#swift_object_download(container=dst_container_name, sciobj_name=dst_object_name, dst_obj=buf)
+				print ('type and shape of returned buffer:',type(x),x.shape)
+				#numpy.copyto(buf,x)
+				print ("------- PYTHON H5Dread OK")
+				#print('x is')
+				#print(x)
+				#print('before copy, buf is')
+				#print(buf)
+				#buf=buf.reshape(x.shape)
+				#buf[:]=x
+				#print ('length of x:%d'%(len(x)))
+				#for i in range(len(x)):
+				#	print ('Loop:%d'%i)
+				#	buf[i]=x[i]
+				#	print(buf)
+				#print('after copy, buf is:\n',buf)
+				return x
 			except Exception as e:
-				print ('dataset write in python failed with error: ',e)
+				print ('dataset read in python failed with error: ',e)
 		except Exception as e:
 			print ('retrieve obj failed in python dataset write')
 			return -1

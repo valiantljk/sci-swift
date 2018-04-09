@@ -77,12 +77,14 @@ int main(int argc, char **argv) {
 	int check = 0;
 	void *data_in = NULL;
 	if(strstr(dset_name, "int32")!=NULL){
-		printf("datapath:%s, dataset name:%s\n",dset_path, dset_name);
+		//printf("datapath:%s, dataset name:%s\n",dset_path, dset_name);
 		data_in   = malloc(sizeof(int)      *nelem);
 		H5Dread (datasetId, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_in);
-		printf("Printing first 10 numbers\n");
-		for(check=0; check<10; check++) 
+		if(data_in!=NULL){
+		 printf("Printing first 10 numbers\n");
+		 for(check=0; check<10; check++) 
 		    printf("%d ",((int *)data_in)[check]);
+		}
 	}else if(strstr(dset_name, "int16")!=NULL){
 		data_in   =  malloc(sizeof(short int)*nelem);
 		H5Dread (datasetId, H5T_NATIVE_SHORT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_in);
@@ -105,7 +107,7 @@ int main(int argc, char **argv) {
 	else {
 		printf("dataset specified error\n");
 	}
-	if(data_in!=NULL ) free (data_in);
+	//if(data_in!=NULL ) free (data_in);
 	
 	//Test HDF5 Dataset Close
 	H5Dclose(datasetId);

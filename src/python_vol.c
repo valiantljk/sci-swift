@@ -739,8 +739,8 @@ H5VL_python_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
     PyObject * plong_under = PyLong_FromVoidPtr(o->under_object);
     //create py reference to c buffer
     //PyObject * pydata=PyObject_Malloc(1);//
-    printf("BEFORE DATA_CPY"); 
-    PyObject * pydata = Data_CPY(PyLong_AsLong(plong_under), buf);
+    //printf("BEFORE DATA_CPY"); 
+    PyObject * pydata= Data_CPY(PyLong_AsLong(plong_under), buf);
     PyObject *pValue=NULL;
     char method_name[] = "H5VL_python_dataset_read";
     if(pInstance==NULL){
@@ -750,15 +750,25 @@ H5VL_python_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
       pValue = PyObject_CallMethod(pInstance, method_name, "lllllOl", PyLong_AsLong(plong_under),  mem_type_id, mem_space_id, file_space_id,plist_id, pydata,0);
       PyErr_Print();
       if(pValue !=NULL){
-	//printf("------- Result of H5Dread from python is not NULL\n");
-	if(pydata != NULL){
-	 PyArrayObject * dt_arr=(PyArrayObject *) pydata; 
-	 buf=(void *) (((PyArrayObject *) dt_arr)->data);
+	printf("------- Result of H5Dread from python is not NULL\n");
+	//if(pydata != NULL){
+	 //PyArrayObject * dt_arr=(PyArrayObject *) pydata; 
+	 //PyArrayObject * dt_arr=(PyArrayObject *) pValue; 
+	 //void * buf1=(void *) (((PyArrayObject *) dt_arr)->data);
+	 void * buf1=(void *) (((PyArrayObject *) pValue)->data);
+	 //buf=memcpy(buf,buf1,sizeof(int)*40000);
+	 ((int *)buf)[0]=((int *)buf)[0];
+	 buf = (void *)buf;
+	 if(buf && buf1) printf("done memcpy\n");
+	 PyErr_Print();
+	 //int k=0;
+	 //for(k=0;k<60000;k++) printf("%d %d ",buf1[k],((int *) buf)[k]);
+	 //free(buf1);
          return 1;
-	}
-	else{
-         printf("pydata returned from python is NULL\n");
-        }
+	//}
+	//else{
+        // printf("pydata returned from python is NULL\n");
+        //}
       }
     }
    //printf ("------- PYTHON H5Dread\n");
