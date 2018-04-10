@@ -756,8 +756,13 @@ H5VL_python_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
 	 //PyArrayObject * dt_arr=(PyArrayObject *) pValue; 
 	 //void * buf1=(void *) (((PyArrayObject *) dt_arr)->data);
 	 void * buf1=(void *) (((PyArrayObject *) pValue)->data);
+	 buf = (int *) buf;
+	 buf1 = (int *) buf1;
+	 memcpy(buf,buf1,sizeof(int)*40000);
 	 //buf=memcpy(buf,buf1,sizeof(int)*40000);
-	 ((int *)buf)[0]=((int *)buf)[0];
+	 //((int *)buf)[0]=((int *)buf1)[0];
+	 //((int *)buf)[1]=((int *)buf1)[1];
+	 
 	 buf = (void *)buf;
 	 if(buf && buf1) printf("done memcpy\n");
 	 PyErr_Print();

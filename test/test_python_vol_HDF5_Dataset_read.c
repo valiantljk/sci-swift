@@ -84,6 +84,7 @@ int main(int argc, char **argv) {
 		 printf("Printing first 10 numbers\n");
 		 for(check=0; check<10; check++) 
 		    printf("%d ",((int *)data_in)[check]);
+		 printf("Should be 0-9\n");
 		}
 	}else if(strstr(dset_name, "int16")!=NULL){
 		data_in   =  malloc(sizeof(short int)*nelem);
@@ -91,18 +92,21 @@ int main(int argc, char **argv) {
 		printf("Printing first 10 numbers\n");
 		for(check=0; check<10; check++) 
 		    printf("%u ",((short int *) data_in)[check]);
+		printf("Should be 1\n");
 	}else if(strstr(dset_name, "float32")!=NULL){
 		data_in   = malloc(sizeof(float)    *nelem);
 		H5Dread (datasetId, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_in);
 		printf("Printing first 10 numbers\n");
 		for(check=0; check<10; check++) 
 		    printf("%f ",((float *)data_in)[check]);
+		printf("Should be 2.0\n");
 	}else if(strstr(dset_name, "float64")!=NULL){
 		data_in   = malloc(sizeof(double)   *nelem);
 		H5Dread (datasetId, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_in);
 		printf("Printing first 10 numbers\n");
 		for(check=0; check<10; check++) 
 		    printf("%lf ",((double *)data_in)[check]);
+		printf("Should be 3.14\n");
 	}
 	else {
 		printf("dataset specified error\n");
