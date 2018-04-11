@@ -5,10 +5,16 @@ except Exception as e:
 	import sys
 	print(sys.executable)
 	print (e)
-default_authurl = 'http://127.0.0.1:8080/auth/v1.0'
-default_auth_version = '1'
-default_user = 'test:tester'
-default_key = 'testing'
+import os
+default_authurl = os.environ['OS_AUTH_URL'] 
+default_auth_version = os.environ['OS_AUTH_VERSION']
+default_user = os.environ['LOGNAME']
+default_key = os.environ['OS_PASSWORD']
+default_os_options = {
+    'user_domain_name': os.environ['OS_USER_DOMAIN_NAME'],
+    'project_domain_name': os.environ['OS_PROJECT_DOMAIN_NAME'],
+    'project_name': os.environ['OS_PROJECT_NAME']
+}
 def swift_connect(_authurl=None, _auth_version=None, _user=None, _key=None):
 	if(_authurl==None):
 		_authurl=default_authurl
@@ -22,7 +28,8 @@ def swift_connect(_authurl=None, _auth_version=None, _user=None, _key=None):
 		authurl=_authurl,
 		user=_user,
 		key=_key,
-		auth_version=_auth_version
+		auth_version=_auth_version,
+		os_options=default_os_options
 	)
 	return conn
 #container = 'new-container'
