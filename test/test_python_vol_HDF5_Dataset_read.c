@@ -34,7 +34,7 @@ int main(int argc, char **argv) {
 	Py_Initialize();
 	import_array();
 
-        printf("Start testing\n");
+        printf("Start testing\n\n");
 
 	//Test VOL Plugin Setup
         under_fapl = H5Pcreate (H5P_FILE_ACCESS);
@@ -76,15 +76,19 @@ int main(int argc, char **argv) {
         //Test HDF5 Dataset Read
 	int check = 0;
 	void *data_in = NULL;
+ 	//nelem = H5Count(datasetId);
+	//printf("nelem is:%lu\n",nelem);	
 	if(strstr(dset_name, "int32")!=NULL){
 		//printf("datapath:%s, dataset name:%s\n",dset_path, dset_name);
-		data_in   = malloc(sizeof(int)      *nelem);
+		//printf("Allocating %lu int \n(But so far, it doesn't matter if you malloc or not, swift vol will return you a buffer area and redirect your pointer data)\n",(unsigned long)nelem);
+		data_in   = malloc(sizeof(int) *nelem);
+		if(data_in==NULL) printf("Alloc error\n");
 		H5Dread (datasetId, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_in);
 		if(data_in!=NULL){
 		 printf("Printing first 10 numbers\n");
 		 for(check=0; check<10; check++) 
 		    printf("%d ",((int *)data_in)[check]);
-		 printf("Should be 0-9\n");
+		    printf("\nShould be 0 - 9\n");
 		}
 	}else if(strstr(dset_name, "int16")!=NULL){
 		data_in   =  malloc(sizeof(short int)*nelem);
@@ -92,26 +96,26 @@ int main(int argc, char **argv) {
 		printf("Printing first 10 numbers\n");
 		for(check=0; check<10; check++) 
 		    printf("%u ",((short int *) data_in)[check]);
-		printf("Should be 1\n");
+		printf("\nShould be 1\n");
 	}else if(strstr(dset_name, "float32")!=NULL){
 		data_in   = malloc(sizeof(float)    *nelem);
 		H5Dread (datasetId, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_in);
 		printf("Printing first 10 numbers\n");
 		for(check=0; check<10; check++) 
 		    printf("%f ",((float *)data_in)[check]);
-		printf("Should be 2.0\n");
+		printf("\nShould be 2.0\n");
 	}else if(strstr(dset_name, "float64")!=NULL){
 		data_in   = malloc(sizeof(double)   *nelem);
 		H5Dread (datasetId, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_in);
 		printf("Printing first 10 numbers\n");
 		for(check=0; check<10; check++) 
 		    printf("%lf ",((double *)data_in)[check]);
-		printf("Should be 3.14\n");
+		printf("\nShould be 3.14\n");
 	}
 	else {
 		printf("dataset specified error\n");
 	}
-	//if(data_in!=NULL ) free (data_in);
+	if(data_in!=NULL ) free (data_in);
 	
 	//Test HDF5 Dataset Close
 	H5Dclose(datasetId);
@@ -125,6 +129,7 @@ int main(int argc, char **argv) {
 
         Py_Finalize();
 	printf("\nTesting Complete\n");
+	//if(data_in!=NULL ) free (data_in);
 	return 0;
 }
 

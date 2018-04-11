@@ -103,18 +103,18 @@ def swift_object_create(container, sciobj_name, sciobj_source=None, options=None
 	except Exception as e:
 		print ("swift object create initialize failed:",e)
 def swift_object_download(container, sciobj_name, sciobj_dst=None, dtype=None, options=None):
-        print ('-----------------------Testing swift object download')
+        #print ('-----------------------Testing swift object download')
 	#first try download the binary blob from swift store
 	conn= swift_connect()
 	container.replace('/','\\')
-	print("container:(%s),obj:(%s)"%(container,sciobj_name))
+	#print("container:(%s),obj:(%s)"%(container,sciobj_name))
 	res, obj=conn.get_object(container,sciobj_name)
 	if dtype==None:
 		dtype='int32'
 	sciobj_dst=numpy.frombuffer(obj,dtype=dtype)
 	#numpy.copyto(sciobj_dst,obj,dtype=dtype)
 	#print sciobj_dst		
-	print('-----------------------Testing swift object download END')
+	#print('-----------------------Testing swift object download END')
 	#swift_object_get(container=container,sciobj_name=sciobj_name,options=post_options)
 	return sciobj_dst
 def swift_object_get(container, sciobj_name,options=None):

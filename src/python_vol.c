@@ -607,8 +607,50 @@ H5VL_python_dataset_open(void *obj, H5VL_loc_params_t loc_params, const char *na
     }
     return NULL;
 }
+/*
+hsize_t H5Count(long dsetId, hsize_t *nelem, int * type_size)
+{
+    char dt_name[] = "H5VL_python_dt_info";
+    npy_intp ndims=0,dtype=0;
+    npy_intp *dims=NULL;
+    //if((h5_ndims = H5Sget_simple_extent_ndims(dset->space_id)) < 0)
+    //    HGOTO_ERROR(H5E_DATASET, H5E_CANTGET, FAIL, "can't get number of dimensions")
+    //if(ndims != H5Sget_simple_extent_dims(dset->space_id, dim, NULL))
+    //    HGOTO_ERROR(H5E_DATASET, H5E_CANTGET, FAIL, "can't get dimensions")
+    
+    import_array();
+    //retrieve the dataset information based dataset id in python vol layer. 
+    if(pInstance!=NULL){
+       PyObject * dt_obj= PyObject_CallMethod(pInstance, dt_name, "l",dsetId);
+       if(dt_obj==NULL){
+        fprintf(stderr, "dt_Obj is null\n");
+        return -1;
+       }
+       PyArrayObject * dt_arr=(PyArrayObject *)dt_obj;
+       //convert back to c array
+       if(dt_arr->descr->type_num>=0){
+         npy_intp * dt_if =(npy_intp *) dt_arr->data;
+         ndims=dt_if[0];
+         dtype=dt_if[1];
+         dims=dt_if+2; //pointer starts from 3rd element
+       }else{
+        printf("dt_arr.type_num:%d is not PyArray_LONG\n",dt_arr->descr->type_num);
+       }
 
-PyObject * Data_CPY(long dsetId, void * buf)
+    }
+    else{
+       fprintf(stderr, "pInstance is NULL\n");
+       return -1;
+    }
+   npy_intp i=0;
+   npy_intp x=1;
+   for(i=0;i<ndims;i++) x*=dims[i];
+   *x1=(hsize_t)x;
+   *type_size=(int)dtype
+   return (hsize_t) x;
+}
+*/
+PyObject * Data_CPY(long dsetId, void * buf,hsize_t * nelem, int * type_size)
 {
     char dt_name[] = "H5VL_python_dt_info";
     npy_intp ndims=0,dtype=0;
@@ -646,15 +688,19 @@ PyObject * Data_CPY(long dsetId, void * buf)
     PyObject * pydata;
     if (dtype == 0){//int16 
       pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_INT16, buf );
+      *type_size=(int)sizeof(short int);
     }
     else if (dtype == 1){//int32
       pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_INT32, buf );
+      *type_size=(int)sizeof(int);
     }
     else if (dtype == 2) {//float32
       pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_FLOAT, buf );
+      *type_size=(int)sizeof(float);
     }
     else if (dtype == 3) {//float64
       pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_DOUBLE, buf );
+      *type_size=(int)sizeof(double);
     }
     else {
       fprintf(stderr, "Type is not supported for now Jan 31 2018\n");
@@ -662,6 +708,10 @@ PyObject * Data_CPY(long dsetId, void * buf)
     }
     //convert to C-contiguous array
     PyObject * pydata_c = PyArray_FROM_OF(pydata, NPY_ARRAY_C_CONTIGUOUS);
+    npy_intp x=1;
+    int i;
+    for(i=0;i<ndims;i++) x*=dims[i];
+    *nelem = (hsize_t)x;
     return pydata_c;
 }
 PyObject * Data_CPY2(long dsetId, void * buf, H5VL_python_t * dset)
@@ -670,9 +720,9 @@ PyObject * Data_CPY2(long dsetId, void * buf, H5VL_python_t * dset)
     npy_intp ndims=0,dtype=0;
     npy_intp *dims=NULL;
     hsize_t h5_dims[H5S_MAX_RANK];
-    int h5_ndims; 
-    h5_ndims = H5Sget_simple_extent_ndims(dset->space_id);
-    H5Sget_simple_extent_dims(dset->space_id, h5_dims, NULL);
+    //int h5_ndims; 
+    //h5_ndims = H5Sget_simple_extent_ndims(dset->space_id);
+    //H5Sget_simple_extent_dims(dset->space_id, h5_dims, NULL);
     /*if((h5_dims = H5Sget_simple_extent_ndims(dset->space_id)) < 0)
         HGOTO_ERROR(H5E_DATASET, H5E_CANTGET, FAIL, "can't get number of dimensions")
     if(h5_ndims != H5Sget_simple_extent_dims(dset->space_id, dim, NULL))
@@ -740,7 +790,9 @@ H5VL_python_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
     //create py reference to c buffer
     //PyObject * pydata=PyObject_Malloc(1);//
     //printf("BEFORE DATA_CPY"); 
-    PyObject * pydata= Data_CPY(PyLong_AsLong(plong_under), buf);
+    hsize_t * count_size=malloc(sizeof(hsize_t));
+    int * type_size=malloc(sizeof(int));
+    PyObject * pydata= Data_CPY(PyLong_AsLong(plong_under), buf,count_size,type_size);
     PyObject *pValue=NULL;
     char method_name[] = "H5VL_python_dataset_read";
     if(pInstance==NULL){
@@ -750,7 +802,7 @@ H5VL_python_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
       pValue = PyObject_CallMethod(pInstance, method_name, "lllllOl", PyLong_AsLong(plong_under),  mem_type_id, mem_space_id, file_space_id,plist_id, pydata,0);
       PyErr_Print();
       if(pValue !=NULL){
-	printf("------- Result of H5Dread from python is not NULL\n");
+	//printf("------- Result of H5Dread from python is not NULL\n");
 	//if(pydata != NULL){
 	 //PyArrayObject * dt_arr=(PyArrayObject *) pydata; 
 	 //PyArrayObject * dt_arr=(PyArrayObject *) pValue; 
@@ -758,13 +810,12 @@ H5VL_python_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
 	 void * buf1=(void *) (((PyArrayObject *) pValue)->data);
 	 buf = (int *) buf;
 	 buf1 = (int *) buf1;
-	 memcpy(buf,buf1,sizeof(int)*40000);
-	 //buf=memcpy(buf,buf1,sizeof(int)*40000);
-	 //((int *)buf)[0]=((int *)buf1)[0];
-	 //((int *)buf)[1]=((int *)buf1)[1];
-	 
-	 buf = (void *)buf;
-	 if(buf && buf1) printf("done memcpy\n");
+	 //hsize_t count_size=H5Count(PyLong_AsLong(plong_under));
+	 //int type_size = H5Type_size(PyLong_AsLong(plong_under));
+	 //printf("In vol, number of elements is:%lu\n",(unsigned long)count_size);
+	 if(count_size<0) {printf("number of elements is zero\n");return -1;}
+	 memcpy(buf,buf1,*type_size**count_size);
+	 //if(buf && buf1) {printf("done memcpy\n"); free(buf1);}
 	 PyErr_Print();
 	 //int k=0;
 	 //for(k=0;k<60000;k++) printf("%d %d ",buf1[k],((int *) buf)[k]);
@@ -779,7 +830,6 @@ H5VL_python_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
    //printf ("------- PYTHON H5Dread\n");
     return 1;     
 }
-
 static herr_t 
 H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
                        hid_t file_space_id, hid_t plist_id, const void *buf, void **req)
