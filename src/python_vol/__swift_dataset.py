@@ -47,7 +47,7 @@ def swift_object_create(container, sciobj_name, sciobj_source=None, options=None
 					except Exception as e:
 						print ('construct object error: ',e)
 				else:
-					print ("object source is not None")
+					#print ("object source is not None")
 					#objs = sci_swift_object(sciobj_name, sciobj_source,options=post_options)
 					objs = sci_swift_object(sciobj_name, sciobj_source)
 					#print('in swift.upload, obj name is %s:',sciobj_name)
@@ -139,7 +139,7 @@ def sci_swift_object(sciobj_name, sciobj_source,options=None):
 	#print ('sci_source:',sciobj_source)
 	from io import BytesIO
 	#print ("In sci obj construction,options are:")	
-	print (options)
+	#print (options)
 	objs = [SwiftUploadObject(
 		BytesIO(sciobj_source), sciobj_name
 		,options=options)]

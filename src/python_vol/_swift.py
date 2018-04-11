@@ -285,7 +285,7 @@ class H5PVol:
 
 				curid = self.obj_curid
 				#print ("------- PYTHON H5Dwrite OK")
-				print ("-----------------LEAVE Dataset Create-----------------")
+				print ("-----------------LEAVE Dataset Write-----------------")
 				return curid
 			except Exception as e:
 				print ('dataset write in python failed with error: ',e)
