@@ -120,6 +120,8 @@ swift_cpp.tar
 swiftonfile/
 test.h5
 *.pyc
+src/*.pyc
 src/python_vol/*.pyc
+src/python_vol/__init__.pyc
 # password info
 openrc.jialin

@@ -6,6 +6,22 @@
 #include <stdlib.h>
 #include <assert.h>
 #include "hdf5.h"
+#include "H5private.h"          /* Generic Functions                    */
+
+#include "H5Dprivate.h"         /* Datasets                             */
+//#include "H5Eprivate.h"         /* Error handling                       */
+#include "H5Fprivate.h"         /* Files                                */
+#include "H5FDprivate.h"        /* File drivers                         */
+//#include "H5FFprivate.h"        /* Fast Forward                         */
+#include "H5Iprivate.h"         /* IDs                                  */
+//#include "H5Mprivate.h"         /* Maps                                 */
+//#include "H5MMprivate.h"        /* Memory management                    */
+//#include "H5Opkg.h"             /* Objects                              */
+#include "H5Pprivate.h"         /* Property lists                       */
+#include "H5Sprivate.h"         /* Dataspaces                           */
+//#include "H5TRprivate.h"        /* Transactions                         */
+#include "H5VLprivate.h"        /* VOL plugins                          */
+
 #include "python_vol.h"
 #include "inttypes.h"
 #define PYTHON 502
@@ -122,7 +138,9 @@ const H5VL_class_t H5VL_python_g = {
 };
 
 typedef struct H5VL_python_t {
-    void   *under_object;
+    void  *under_object;
+    hid_t space_id;
+    hid_t type_id;
 } H5VL_python_t;
 
 typedef struct H5VL_DT {
@@ -154,14 +172,12 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
     PyObject *pModule, *pClass;
     PyObject *pValue=NULL; 
     const char module_name[ ] = "python_vol";
-    //const char class_name[ ] = "H5PVol";
     char class_name[] = "swift";
     char method_name[]= "H5VL_python_file_create";
     pModule = PyImport_ImportModule(module_name); 
-    //pClass = PyObject_GetAttrString(pModule, class_name); // get file class 
     // Instantiate an object
+    PyErr_Print();    
     
-    // if(pClass !=NULL){
     if(pModule != NULL){
        if(pInstance!=NULL){
           printf("Supporting one file operation only, please close existing files before opening/creating new file\n");
@@ -169,7 +185,6 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
           Py_DECREF(pInstance);
           return NULL;
        }
-       //pInstance = PyInstance_New(pClass, NULL, NULL); // file object
        pInstance = PyObject_CallMethod(pModule, class_name,NULL,NULL);
        PyErr_Print();
     }
@@ -220,20 +235,17 @@ H5VL_python_file_open(const char *name, unsigned flags, hid_t fapl_id, hid_t dxp
     char class_name [ ] = "swift";
     const char module_name[ ] = "python_vol";
     pModule = PyImport_ImportModule(module_name);
-    //pClass = PyObject_GetAttrString(pModule, class_name); // get file class 
     //PyErr_Print();
     //Instantiate an object
   
-    //if(pClass !=NULL){
     if(pModule != NULL){
-       if(pInstance!=NULL){
-	  printf("Supporting one file only, please close existing files before opening/creating new file\n");	
-	  //call file close and free file instance
-	  Py_DECREF(pInstance);
-	  return NULL; 
+      if(pInstance!=NULL){
+	     printf("Supporting one file only, please close existing files before opening/creating new file\n");	
+	     //call file close and free file instance
+	     Py_DECREF(pInstance);
+	     return NULL; 
        }
        //printf("New file object\n");
-       //pInstance = PyInstance_New(pClass, NULL, NULL); // file object
        pInstance = PyObject_CallMethod(pModule, class_name,NULL,NULL);
     }
     else{
@@ -437,7 +449,9 @@ void helper_dt (hid_t dcpl_id, H5VL_DT * dt){
      hid_t space_id, type_id;
      H5Pget (dcpl_id, "dataset_space_id", &space_id); 
      H5Pget (dcpl_id, "dataset_type_id", &type_id);
+
      dt->ndims = H5Sget_simple_extent_ndims (space_id);
+     //printf("Checking dt ndims:%d\n",dt->ndims);
      dt->dims = malloc(sizeof(unsigned long long int )* dt->ndims);
      dt->maxdims = malloc(sizeof(unsigned long long int)* dt->ndims);
      H5Sget_simple_extent_dims(space_id,dt->dims, dt->maxdims);
@@ -468,22 +482,68 @@ H5VL_python_dataset_create(void *obj, H5VL_loc_params_t loc_params, const char *
     H5VL_DT * dt= malloc(sizeof(H5VL_DT)); //get the dataset size, type
     helper_dt (dcpl_id, dt);
     //printf("Testing H5VL_DT,%d\n",dt->py_type); 
-    npy_intp dtm=dt->ndims;  
+    npy_intp dtm=dt->ndims; 
     PyObject * py_dims = PyArray_SimpleNewFromData(1, &dtm, NPY_INTP,dt->dims);//TODO: 64 bits, vs 32 bit 
     PyObject * py_maxdims = PyArray_SimpleNewFromData(1, &dtm, NPY_INTP,dt->maxdims );  
     PyObject *pValue=NULL;
     char method_name[] = "H5VL_python_dataset_create";
+    size_t type_size = 0;
+    size_t space_size = 0;
+    hid_t type_id, space_id;
+    void *type_buf = NULL;
+    void *space_buf = NULL; 
+    H5P_genplist_t *plist = NULL;      /* Property list pointer */ 
+    /* Get the dcpl plist structure */
+    plist = (H5P_genplist_t *)H5I_object(dcpl_id);
+    /*
+    if(NULL == (plist = (H5P_genplist_t *)H5I_object(dcpl_id)))
+        HGOTO_ERROR(H5E_ATOM, H5E_BADATOM, NULL, "can't find object for ID")
+    */
+    /* get creation properties */
+    H5P_get(plist, H5VL_PROP_DSET_TYPE_ID, &type_id);
+    H5P_get(plist, H5VL_PROP_DSET_SPACE_ID, &space_id);
+    /*
+    if(H5P_get(plist, H5VL_PROP_DSET_TYPE_ID, &type_id) < 0)
+        HGOTO_ERROR(H5E_PLIST, H5E_CANTGET, NULL, "can't get property value for datatype id")
+    if(H5P_get(plist, H5VL_PROP_DSET_SPACE_ID, &space_id) < 0)
+        HGOTO_ERROR(H5E_PLIST, H5E_CANTGET, NULL, "can't get property value for space id")
+    */
     if(pInstance==NULL){
       fprintf(stderr, "pInstance is NULL in group create\n");
       return NULL; 
     }else{
-      pValue = PyObject_CallMethod(pInstance, method_name, "llsllllllOO", PyLong_AsLong(plong_under), 0, name, dcpl_id, dapl_id, dxpl_id, 0,dt->ndims,dt->py_type,py_dims, py_maxdims);
-      if(pValue !=NULL){
+	pValue = PyObject_CallMethod(pInstance, method_name, "llsllllilOO", PyLong_AsLong(plong_under), 0, name, dcpl_id, dapl_id, dxpl_id, 0,dt->ndims,dt->py_type,py_dims, py_maxdims);
+     if(pValue !=NULL){
         //printf("------- Result of H5Dcreate from python: %ld\n", PyLong_AsLong(pValue));
         void * rt_py = PyLong_AsVoidPtr(pValue);
         if (rt_py==NULL) fprintf(stderr, "Dataset create, returned pointer from python is NULL\n");
         dset->under_object = rt_py;
-        return (void *) dset;
+	//when you create a dataset, you also want to serialize the space and type info and adds as metadata into the dataset
+	//you can just store it in memory, but later when you want to re-open this dataset, you still need to retrieve it from storage
+	//let me first try the in memory part. 
+	//The following encode part will be used in disk verision
+        /* Encode dataspace */
+        /*
+        if(H5Sencode(space_id, NULL, &space_size) < 0)
+            HGOTO_ERROR(H5E_ARGS, H5E_BADTYPE, NULL, "can't determine serialized length of dataaspace")
+        if(NULL == (space_buf = H5MM_malloc(space_size)))
+            HGOTO_ERROR(H5E_RESOURCE, H5E_CANTALLOC, NULL, "can't allocate buffer for serialized dataaspace")
+        if(H5Sencode(space_id, space_buf, &space_size) < 0)
+            HGOTO_ERROR(H5E_DATASET, H5E_CANTENCODE, NULL, "can't serialize dataaspace")	
+        */
+	//type_id
+	/* Encode datatype */
+        /*
+        if(H5Tencode(type_id, NULL, &type_size) < 0)
+            HGOTO_ERROR(H5E_ARGS, H5E_BADTYPE, NULL, "can't determine serialized length of datatype")
+        if(NULL == (type_buf = H5MM_malloc(type_size)))
+            HGOTO_ERROR(H5E_RESOURCE, H5E_CANTALLOC, NULL, "can't allocate buffer for serialized datatype")
+        if(H5Tencode(type_id, type_buf, &type_size) < 0)
+            HGOTO_ERROR(H5E_DATASET, H5E_CANTENCODE, NULL, "can't serialize datatype")
+        */
+        dset->space_id=space_id;
+	dset->type_id=type_id;
+	return (void *) dset;
       }      
     } 
     return NULL;
@@ -547,12 +607,59 @@ H5VL_python_dataset_open(void *obj, H5VL_loc_params_t loc_params, const char *na
     }
     return NULL;
 }
-
-PyObject * Data_CPY(long dsetId, void * buf)
+/*
+hsize_t H5Count(long dsetId, hsize_t *nelem, int * type_size)
 {
     char dt_name[] = "H5VL_python_dt_info";
     npy_intp ndims=0,dtype=0;
     npy_intp *dims=NULL;
+    //if((h5_ndims = H5Sget_simple_extent_ndims(dset->space_id)) < 0)
+    //    HGOTO_ERROR(H5E_DATASET, H5E_CANTGET, FAIL, "can't get number of dimensions")
+    //if(ndims != H5Sget_simple_extent_dims(dset->space_id, dim, NULL))
+    //    HGOTO_ERROR(H5E_DATASET, H5E_CANTGET, FAIL, "can't get dimensions")
+    
+    import_array();
+    //retrieve the dataset information based dataset id in python vol layer. 
+    if(pInstance!=NULL){
+       PyObject * dt_obj= PyObject_CallMethod(pInstance, dt_name, "l",dsetId);
+       if(dt_obj==NULL){
+        fprintf(stderr, "dt_Obj is null\n");
+        return -1;
+       }
+       PyArrayObject * dt_arr=(PyArrayObject *)dt_obj;
+       //convert back to c array
+       if(dt_arr->descr->type_num>=0){
+         npy_intp * dt_if =(npy_intp *) dt_arr->data;
+         ndims=dt_if[0];
+         dtype=dt_if[1];
+         dims=dt_if+2; //pointer starts from 3rd element
+       }else{
+        printf("dt_arr.type_num:%d is not PyArray_LONG\n",dt_arr->descr->type_num);
+       }
+
+    }
+    else{
+       fprintf(stderr, "pInstance is NULL\n");
+       return -1;
+    }
+   npy_intp i=0;
+   npy_intp x=1;
+   for(i=0;i<ndims;i++) x*=dims[i];
+   *x1=(hsize_t)x;
+   *type_size=(int)dtype
+   return (hsize_t) x;
+}
+*/
+PyObject * Data_CPY(long dsetId, void * buf,hsize_t * nelem, int * type_size)
+{
+    char dt_name[] = "H5VL_python_dt_info";
+    npy_intp ndims=0,dtype=0;
+    npy_intp *dims=NULL;
+    /*if((h5_ndims = H5Sget_simple_extent_ndims(dset->space_id)) < 0)
+        HGOTO_ERROR(H5E_DATASET, H5E_CANTGET, FAIL, "can't get number of dimensions")
+    if(ndims != H5Sget_simple_extent_dims(dset->space_id, dim, NULL))
+        HGOTO_ERROR(H5E_DATASET, H5E_CANTGET, FAIL, "can't get dimensions")
+    */
     import_array();
     //retrieve the dataset information based dataset id in python vol layer. 
     if(pInstance!=NULL){
@@ -581,6 +688,80 @@ PyObject * Data_CPY(long dsetId, void * buf)
     PyObject * pydata;
     if (dtype == 0){//int16 
       pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_INT16, buf );
+      *type_size=(int)sizeof(short int);
+    }
+    else if (dtype == 1){//int32
+      pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_INT32, buf );
+      *type_size=(int)sizeof(int);
+    }
+    else if (dtype == 2) {//float32
+      pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_FLOAT, buf );
+      *type_size=(int)sizeof(float);
+    }
+    else if (dtype == 3) {//float64
+      pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_DOUBLE, buf );
+      *type_size=(int)sizeof(double);
+    }
+    else {
+      fprintf(stderr, "Type is not supported for now Jan 31 2018\n");
+      return NULL; 
+    }
+    //convert to C-contiguous array
+    PyObject * pydata_c = PyArray_FROM_OF(pydata, NPY_ARRAY_C_CONTIGUOUS);
+    npy_intp x=1;
+    int i;
+    for(i=0;i<ndims;i++) x*=dims[i];
+    *nelem = (hsize_t)x;
+    return pydata_c;
+}
+PyObject * Data_CPY2(long dsetId, void * buf, H5VL_python_t * dset)
+{
+    char dt_name[] = "H5VL_python_dt_info";
+    npy_intp ndims=0,dtype=0;
+    npy_intp *dims=NULL;
+    hsize_t h5_dims[H5S_MAX_RANK];
+    //int h5_ndims; 
+    //h5_ndims = H5Sget_simple_extent_ndims(dset->space_id);
+    //H5Sget_simple_extent_dims(dset->space_id, h5_dims, NULL);
+    /*if((h5_dims = H5Sget_simple_extent_ndims(dset->space_id)) < 0)
+        HGOTO_ERROR(H5E_DATASET, H5E_CANTGET, FAIL, "can't get number of dimensions")
+    if(h5_ndims != H5Sget_simple_extent_dims(dset->space_id, dim, NULL))
+        HGOTO_ERROR(H5E_DATASET, H5E_CANTGET, FAIL, "can't get dimensions")
+    */
+    /*int x=0;
+    printf("In Data_CPY2:\n");
+    for(x=0;x<h5_ndims;x++){
+	printf("%d-th dims is:%lu\n",x,(unsigned long)h5_dims[x]);	
+    }
+    */
+    import_array();
+    //retrieve the dataset information based dataset id in python vol layer. 
+    if(pInstance!=NULL){
+       PyObject * dt_obj= PyObject_CallMethod(pInstance, dt_name, "l",dsetId);
+       if(dt_obj==NULL){
+        fprintf(stderr, "dt_Obj is null\n");
+        return NULL;
+       }
+       PyArrayObject * dt_arr=(PyArrayObject *)dt_obj;
+       //convert back to c array
+       if(dt_arr->descr->type_num>=0){
+         npy_intp * dt_if =(npy_intp *) dt_arr->data;
+         ndims=dt_if[0];
+         dtype=dt_if[1];
+         dims=dt_if+2; //pointer starts from 3rd element
+       }else{
+        printf("dt_arr.type_num:%d is not PyArray_LONG\n",dt_arr->descr->type_num);
+       }
+    }
+    else{
+       fprintf(stderr, "pInstance is NULL\n");
+       return NULL;
+    }
+    //Create pyobject reference to c buffer
+
+    PyObject * pydata;
+    if (dtype == 0){//int16 
+      pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_INT16, buf );
     }
     else if (dtype == 1){//int32
       pydata = PyArray_SimpleNewFromData(ndims, dims, NPY_INT32, buf );
@@ -593,7 +774,7 @@ PyObject * Data_CPY(long dsetId, void * buf)
     }
     else {
       fprintf(stderr, "Type is not supported for now Jan 31 2018\n");
-      return NULL; 
+      return NULL;
     }
     //convert to C-contiguous array
     PyObject * pydata_c = PyArray_FROM_OF(pydata, NPY_ARRAY_C_CONTIGUOUS);
@@ -607,8 +788,11 @@ H5VL_python_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
     H5VL_python_t *o = (H5VL_python_t *)dset;
     PyObject * plong_under = PyLong_FromVoidPtr(o->under_object);
     //create py reference to c buffer
-    //PyObject * pydata=PyObject_Malloc(1);// 
-    PyObject * pydata = Data_CPY(PyLong_AsLong(plong_under), buf);
+    //PyObject * pydata=PyObject_Malloc(1);//
+    //printf("BEFORE DATA_CPY"); 
+    hsize_t * count_size=malloc(sizeof(hsize_t));
+    int * type_size=malloc(sizeof(int));
+    PyObject * pydata= Data_CPY(PyLong_AsLong(plong_under), buf,count_size,type_size);
     PyObject *pValue=NULL;
     char method_name[] = "H5VL_python_dataset_read";
     if(pInstance==NULL){
@@ -619,27 +803,42 @@ H5VL_python_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
       PyErr_Print();
       if(pValue !=NULL){
 	//printf("------- Result of H5Dread from python is not NULL\n");
-	if(pydata != NULL){
-	 PyArrayObject * dt_arr=(PyArrayObject *) pydata; 
-	 buf=(void *) (((PyArrayObject *) dt_arr)->data);
+	//if(pydata != NULL){
+	 //PyArrayObject * dt_arr=(PyArrayObject *) pydata; 
+	 //PyArrayObject * dt_arr=(PyArrayObject *) pValue; 
+	 //void * buf1=(void *) (((PyArrayObject *) dt_arr)->data);
+	 void * buf1=(void *) (((PyArrayObject *) pValue)->data);
+	 buf = (int *) buf;
+	 buf1 = (int *) buf1;
+	 //hsize_t count_size=H5Count(PyLong_AsLong(plong_under));
+	 //int type_size = H5Type_size(PyLong_AsLong(plong_under));
+	 //printf("In vol, number of elements is:%lu\n",(unsigned long)count_size);
+	 if(count_size<0) {printf("number of elements is zero\n");return -1;}
+	 memcpy(buf,buf1,*type_size**count_size);
+	 //if(buf && buf1) {printf("done memcpy\n"); free(buf1);}
+	 PyErr_Print();
+	 //int k=0;
+	 //for(k=0;k<60000;k++) printf("%d %d ",buf1[k],((int *) buf)[k]);
+	 //free(buf1);
          return 1;
-	}
-	else{
-         printf("pydata returned from python is NULL\n");
-        }
+	//}
+	//else{
+        // printf("pydata returned from python is NULL\n");
+        //}
       }
     }
    //printf ("------- PYTHON H5Dread\n");
     return 1;     
 }
-
 static herr_t 
 H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
                        hid_t file_space_id, hid_t plist_id, const void *buf, void **req)
 {
     H5VL_python_t *o = (H5VL_python_t *)dset;
     PyObject * plong_under = PyLong_FromVoidPtr(o->under_object);
-    PyObject * pydata= Data_CPY(PyLong_AsLong(plong_under), (void *)buf);
+    //PyObject * pydata= Data_CPY(PyLong_AsLong(plong_under), (void *)buf);
+    PyObject * pydata = Data_CPY2(PyLong_AsLong(plong_under), (void *)buf, o);
+    PyErr_Print();
     PyObject *pValue=NULL;
     char method_name[] = "H5VL_python_dataset_write";
     //Call dataset write method
@@ -647,6 +846,7 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
       printf("pInstance is NULL in dataset write\n");
       return -1;
     }else{
+	//printf("Calling in dataset_write in C\n");
       pValue = PyObject_CallMethod(pInstance, method_name, "lllllOl", PyLong_AsLong(plong_under),  mem_type_id, mem_space_id, file_space_id,plist_id, pydata, 0);
       if(pValue !=NULL){
         //printf("------- Result of H5Dwrite from python: %ld\n", PyLong_AsLong(pValue));

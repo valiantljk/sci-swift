@@ -45,6 +45,14 @@ int main(int argc, char **argv) {
         sprintf(fullpath_int16,  "%s/%s%s",group_name, dset_name,"_int16");
         sprintf(fullpath_float32,"%s/%s%s",group_name, dset_name,"_float32");
         sprintf(fullpath_float64,"%s/%s%s",group_name, dset_name,"_float64");
+        char dsetpath_int32[100];
+        char dsetpath_int16[100];
+        char dsetpath_float32[100];
+        char dsetpath_float64[100];
+        sprintf(dsetpath_int32,  "%s%s", dset_name,"_int32");
+        sprintf(dsetpath_int16,  "%s%s", dset_name,"_int16");
+        sprintf(dsetpath_float32,"%s%s", dset_name,"_float32");
+        sprintf(dsetpath_float64,"%s%s", dset_name,"_float64");
        //Create Data Space
         dataspaceId = H5Screate_simple(ndims, dims, NULL);
 
@@ -80,10 +88,16 @@ int main(int argc, char **argv) {
 	group_id = H5Gcreate2(file_id, group_name, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 
  	//Test HDF5 Dataset Create
+	/*
 	hid_t datasetId_int32   = H5Dcreate2(file_id,fullpath_int32,  H5T_NATIVE_INT,   dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
         hid_t datasetId_int16   = H5Dcreate2(file_id,fullpath_int16,  H5T_NATIVE_SHORT, dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
         hid_t datasetId_float32 = H5Dcreate2(file_id,fullpath_float32,H5T_NATIVE_FLOAT, dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
 	hid_t datasetId_float64 = H5Dcreate2(file_id,fullpath_float64,H5T_NATIVE_DOUBLE,dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT); 
+	*/
+	hid_t datasetId_int32   = H5Dcreate2(group_id,dsetpath_int32,  H5T_NATIVE_INT,   dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
+        hid_t datasetId_int16   = H5Dcreate2(group_id,dsetpath_int16,  H5T_NATIVE_SHORT, dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
+        hid_t datasetId_float32 = H5Dcreate2(group_id,dsetpath_float32,H5T_NATIVE_FLOAT, dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
+        hid_t datasetId_float64 = H5Dcreate2(group_id,dsetpath_float64,H5T_NATIVE_DOUBLE,dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT); 
 	//Test HDF5 Dataset Close
 	H5Dclose(datasetId_int16);
 	H5Dclose(datasetId_int32);

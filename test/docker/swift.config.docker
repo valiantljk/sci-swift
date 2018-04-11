@@ -1,0 +1,10 @@
+#!/bin/bash
+export ST_AUTH="http://127.0.0.1:8080/auth/v1.0"
+export OS_IDENTITY_API_VERSION=1
+export OS_AUTH_VERSION=1.0
+export ST_USER="test:tester"
+export ST_KEY="testing"
+export OS_USER_DOMAIN_NAME=Default
+export OS_PROJECT_NAME=jialin_demo
+export OS_PROJECT_DOMAIN_NAME=Default
+export OS_REGION_NAME=regionOne
