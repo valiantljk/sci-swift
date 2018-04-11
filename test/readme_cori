@@ -3,14 +3,14 @@ export SWIFT_PROJNAME="Jialin_demo2" # You will need NERSC staff to create one
 export NIMPW="" # This is your nersc nim password, same with cori/edison login pw
 echo $LOGNAME "is Your Swift Store Login Name"
 if [ $NIMPW = ""]; then
-	exit
+	echo "You Need to Export Your NIM PW to variable NIMPW"	
 else
 	echo "Your NIM Password is your Swift Store Login Password"
+	module load python
+	module load hdf5-parallel/1.9.234
+	pip install python-swiftclient --user
+	make
+	source swift.config.nersc
+	source python.config.nersc
+	echo "Test Sci-Swift Store with ./HDF5_Object_create"
 fi
-module load python
-module load hdf5-parallel/1.9.234
-pip install python-swiftclient --user
-make
-source swift.config.nersc
-source python.config.nersc
-echo "Test Sci-Swift Store with ./HDF5_Object_create"
