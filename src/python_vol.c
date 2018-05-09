@@ -179,12 +179,12 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
     PyErr_Print();    
     
     if(pModule != NULL){
-       if(pInstance!=NULL){
-          printf("Supporting one file operation only, please close existing files before opening/creating new file\n");
+       //if(pInstance!=NULL){
+       //   printf("Supporting one file operation only, please close existing files before opening/creating new file\n");
           //call file close and free file instance
-          Py_DECREF(pInstance);
-          return NULL;
-       }
+        //  Py_DECREF(pInstance);
+        //  return NULL;
+       //}
        pInstance = PyObject_CallMethod(pModule, class_name,NULL,NULL);
        PyErr_Print();
     }
@@ -239,12 +239,12 @@ H5VL_python_file_open(const char *name, unsigned flags, hid_t fapl_id, hid_t dxp
     //Instantiate an object
   
     if(pModule != NULL){
-      if(pInstance!=NULL){
-	     printf("Supporting one file only, please close existing files before opening/creating new file\n");	
+      //if(pInstance!=NULL){
+	//     printf("Supporting one file only, please close existing files before opening/creating new file\n");	
 	     //call file close and free file instance
-	     Py_DECREF(pInstance);
-	     return NULL; 
-       }
+	  //   Py_DECREF(pInstance);
+	     //return NULL; 
+       //}
        //printf("New file object\n");
        pInstance = PyObject_CallMethod(pModule, class_name,NULL,NULL);
     }

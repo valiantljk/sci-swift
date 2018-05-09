@@ -4,7 +4,7 @@ CFLAGS = -c -fno-strict-aliasing -Wmissing-include-dirs -O2 -DNDEBUG -fwrapv -O3
 LDFLAGS = -L/usr/common/software/python/2.7-anaconda-4.4/lib -lpython2.7 -lpthread -ldl -lutil -lm -Xlinker -export-dynamic #-Wl,--verbose
 
 #ALL: swift test_pylong 
-ALL: HDF5_File_create HDF5_File_open HDF5_Objects_create HDF5_Objects_open HDF5_Dataset_read HDF5_Dataset_write
+ALL: HDF5_File_create HDF5_File_open HDF5_Objects_create HDF5_Objects_open HDF5_Dataset_read HDF5_Dataset_write	VPIC_IO
 
 swift: swift.o test_swift.o
 	$(CC) swift.o test_swift.o  $(LDFLAGS) -o swift
@@ -13,6 +13,8 @@ swift.o: ${dir}/swift.c
 test_swift.o: test_swift.c
 	$(CC) $(CFLAGS) test_swift.c -o test_swift.o
 
+VPIC_IO: python_vol.o vpicio_uni_h5.o
+	h5pcc -g vpicio_uni_h5.o python_vol.o $(LDFLAGS) -o VPIC_IO
 HDF5_Objects_create: python_vol.o test_python_vol_HDF5_Objects_create.o
 	h5pcc -g test_python_vol_HDF5_Objects_create.o python_vol.o $(LDFLAGS) -o HDF5_Objects_create
 
@@ -24,6 +26,9 @@ HDF5_File_create: python_vol.o test_python_vol_HDF5_File_create.o
 
 HDF5_File_open: python_vol.o test_python_vol_HDF5_File_open.o
 	h5pcc -g test_python_vol_HDF5_File_open.o python_vol.o $(LDFLAGS) -o HDF5_File_open
+
+vpicio_uni_h5.o: vpicio_uni_h5.c
+	h5pcc -g $(CFLAGS) vpicio_uni_h5.c -o vpicio_uni_h5.o
 
 test_python_vol_HDF5_File_create.o: test_python_vol_HDF5_File_create.c 
 	h5pcc -g $(CFLAGS) test_python_vol_HDF5_File_create.c -o test_python_vol_HDF5_File_create.o

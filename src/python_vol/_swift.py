@@ -188,7 +188,7 @@ class H5PVol:
 
 	def H5VL_python_dataset_create(self, obj_id, loc_params, name, dcpl_id, dapl_id, dxpl_id, req, ndims,pytype,dims,maxdims):
 		#print ("------- PYTHON H5Dcreate:%s"%name)
-		print ("-----------------ENTER Dataset Create-----------------")
+		#print ("-----------------ENTER Dataset Create-----------------")
 		try:
 			dst_parent_obj=self.obj_list[obj_id]
 			name=name.replace("/","\\")
@@ -215,7 +215,7 @@ class H5PVol:
 				self.obj_curid = curid+1       # update current index
 				#print ("------- PYTHON H5Dcreate OK")
 				#print ('dataset id is %d'%curid)
-				print ("-----------------LEAVE Dataset Create-----------------")
+				#print ("-----------------LEAVE Dataset Create-----------------")
 				return curid
 			except Exception as e:
 				print ('dataset create in python failed with error: ',e)
@@ -261,7 +261,7 @@ class H5PVol:
 
 	def H5VL_python_dataset_write(self, obj_id, mem_type_id, mem_space_id, file_space_id, plist_id, buf, req):
 		#print ('dataset write')
-		print ("-----------------ENTER Dataset Write-----------------")
+		#print ("-----------------ENTER Dataset Write-----------------")
 		try:
 			#print ('in python dataset write, obj is ',obj_id)
 			dst_parent_obj=self.obj_list[obj_id]
@@ -285,7 +285,7 @@ class H5PVol:
 
 				curid = self.obj_curid
 				#print ("------- PYTHON H5Dwrite OK")
-				print ("-----------------LEAVE Dataset Write-----------------")
+				#print ("-----------------LEAVE Dataset Write-----------------")
 				return curid
 			except Exception as e:
 				print ('dataset write in python failed with error: ',e)

@@ -59,10 +59,10 @@ def swift_object_create(container, sciobj_name, sciobj_source=None, options=None
 					#print ("=========objects:")
 					#print (objs)
 					#print ("=========objects end")
-					print ("**************swift.upload start")
+					#print ("**************swift.upload start")
 					r=swift.upload(container=container,objects=objs)
 					#print('updating with old meta')
-					print ("**************swift.upload end")
+					#print ("**************swift.upload end")
 					#print(meta_old)
 					#post_options={"meta": meta_old}
 					#r1=swift_metadata_create(container, sciobj_name, sciobj_metadata=sci_obj_meta)
