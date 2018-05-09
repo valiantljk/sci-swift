@@ -780,16 +780,71 @@ PyObject * Data_CPY2(long dsetId, void * buf, H5VL_python_t * dset)
     PyObject * pydata_c = PyArray_FROM_OF(pydata, NPY_ARRAY_C_CONTIGUOUS);
     return pydata_c;
 }
-
+/*-------------------------------------------------------------------------
+ * Function:    H5VL_python_dataset_read
+ *
+ * Purpose:     Reads raw data from a dataset into a buffer.
+ *`
+ * Return:      Success:        0
+ *              Failure:        -1, dataset not read.
+ *
+ * Programmer:  Jialin Liu
+ *              May, 2018
+ *
+ *-------------------------------------------------------------------------
+ */
 static herr_t 
 H5VL_python_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
                       hid_t file_space_id, hid_t plist_id, void *buf, void **req)
 {
+
     H5VL_python_t *o = (H5VL_python_t *)dset;
     PyObject * plong_under = PyLong_FromVoidPtr(o->under_object);
+    H5S_sel_iter_t sel_iter;    /* Selection iteration info */
+    hbool_t sel_iter_init = FALSE;      /* Selection iteration info has been initialized */
+    int ndims;
+    hsize_t dim[H5S_MAX_RANK];
+    hid_t real_file_space_id;
+    hid_t real_mem_space_id;
+    hssize_t num_elem;
+
+    FUNC_ENTER_NOAPI_NOINIT
+    /* Get dataspace extent */
+    if((ndims = H5Sget_simple_extent_ndims(o->space_id)) < 0)
+        HGOTO_ERROR(H5E_DATASET, H5E_CANTGET, FAIL, "can't get number of dimensions")
+    if(ndims != H5Sget_simple_extent_dims(o->space_id, dim, NULL))
+        HGOTO_ERROR(H5E_DATASET, H5E_CANTGET, FAIL, "can't get dimensions")
+
+    /* Get "real" file space */
+    if(file_space_id == H5S_ALL)
+        real_file_space_id = o->space_id;
+    else
+        real_file_space_id = file_space_id;
+
+    /* Get number of elements in selection */
+    if((num_elem = H5Sget_select_npoints(real_file_space_id)) < 0)
+        HGOTO_ERROR(H5E_DATASET, H5E_CANTGET, FAIL, "can't get number of points in selection")
+
+    /* Get "real" file space */
+    if(mem_space_id == H5S_ALL)
+        real_mem_space_id = real_file_space_id;
+    else {
+        hssize_t num_elem_file;
+
+        real_mem_space_id = mem_space_id;
+
+        /* Verify number of elements in memory selection matches file selection
+         */
+        if((num_elem_file = H5Sget_select_npoints(real_mem_space_id)) < 0)
+            HGOTO_ERROR(H5E_DATASET, H5E_CANTGET, FAIL, "can't get number of points in selection")
+        if(num_elem_file != num_elem)
+            HGOTO_ERROR(H5E_ARGS, H5E_BADVALUE, FAIL, "src and dest data spaces have different sizes")
+    } /* end else */
+
+    /* Check for no selection */
+    if(num_elem == 0)
+        HGOTO_DONE(SUCCEED)
     //create py reference to c buffer
-    //PyObject * pydata=PyObject_Malloc(1);//
-    //printf("BEFORE DATA_CPY"); 
     hsize_t * count_size=malloc(sizeof(hsize_t));
     int * type_size=malloc(sizeof(int));
     PyObject * pydata= Data_CPY(PyLong_AsLong(plong_under), buf,count_size,type_size);
@@ -802,33 +857,16 @@ H5VL_python_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
       pValue = PyObject_CallMethod(pInstance, method_name, "lllllOl", PyLong_AsLong(plong_under),  mem_type_id, mem_space_id, file_space_id,plist_id, pydata,0);
       PyErr_Print();
       if(pValue !=NULL){
-	//printf("------- Result of H5Dread from python is not NULL\n");
-	//if(pydata != NULL){
-	 //PyArrayObject * dt_arr=(PyArrayObject *) pydata; 
-	 //PyArrayObject * dt_arr=(PyArrayObject *) pValue; 
-	 //void * buf1=(void *) (((PyArrayObject *) dt_arr)->data);
 	 void * buf1=(void *) (((PyArrayObject *) pValue)->data);
 	 buf = (int *) buf;
 	 buf1 = (int *) buf1;
-	 //hsize_t count_size=H5Count(PyLong_AsLong(plong_under));
-	 //int type_size = H5Type_size(PyLong_AsLong(plong_under));
-	 //printf("In vol, number of elements is:%lu\n",(unsigned long)count_size);
 	 if(count_size<0) {printf("number of elements is zero\n");return -1;}
 	 memcpy(buf,buf1,*type_size**count_size);
-	 //if(buf && buf1) {printf("done memcpy\n"); free(buf1);}
 	 PyErr_Print();
-	 //int k=0;
-	 //for(k=0;k<60000;k++) printf("%d %d ",buf1[k],((int *) buf)[k]);
-	 //free(buf1);
-         return 1;
-	//}
-	//else{
-        // printf("pydata returned from python is NULL\n");
-        //}
+	 return 1;
       }
     }
-   //printf ("------- PYTHON H5Dread\n");
-    return 1;     
+   return 1;     
 }
 static herr_t 
 H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,

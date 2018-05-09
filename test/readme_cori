@@ -1,6 +1,7 @@
 #!/bin/bash
 export SWIFT_PROJNAME="Jialin_demo2" # You will need NERSC staff to create one
 # You will need to export nersc nim password, same with cori/edison login pw
+export CRAYPE_LINK_TYPE=dynamic
 echo $LOGNAME "is Your Swift Store Login Name"
 if [ -z "$NIMPW" ]; then
 	echo "You Need to Export Your NIM PW to variable NIMPW"	
