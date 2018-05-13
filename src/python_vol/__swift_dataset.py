@@ -18,6 +18,17 @@ An HDF5 Group is mapped to one swift object
 An HDF5 Attribute is associated to an Swift object as metadata, paired into (key,value), extendable
 '''
 def swift_object_create(container, sciobj_name, sciobj_source=None, options=None):
+	"""
+	`Object create' is called by different HDF5 object create, e.g., group create, dataset create, 
+	and dataset write (since there is no update in swift)
+
+	Input: 
+		Container name
+		Object name
+		Object source
+	Output:
+		None
+	"""
 	try:	
 		with SwiftService(options = options) as swift:
 			try:
@@ -131,28 +142,45 @@ def swift_object_get(container, sciobj_name,options=None):
 		print ('in swift object get:error:',e)
 
 def sci_swift_object(sciobj_name, sciobj_source,options=None):
-	#import numpy
-	#from StringIO import StringIO
-	#sci_stream = StringIO()
-	#numpy.save(sci_stream,sciobj_source) # need to check if sciobj_source is a numpy array
-	#print ('sci_stream:',sci_stream)
-	#print ('sci_source:',sciobj_source)
+	"""
+	Construct swift object
+
+	Input:
+		Object name
+		Object source
+		Options
+	Output:
+		Swift Object
+	"""
 	from io import BytesIO
-	#print ("In sci obj construction,options are:")	
-	#print (options)
-	objs = [SwiftUploadObject(
-		BytesIO(sciobj_source), sciobj_name
-		,options=options)]
-	return objs
+	try:
+		objs = [SwiftUploadObject(
+			BytesIO(sciobj_source), sciobj_name
+			,options=options)]
+		return objs
+	except Exception as e:
+		print ('swift object construct failed:',e)
+
+
 def swift_object_open(container, sciobj_name, options=None):
 	if 1==1: #TODO: query swift store to see if object exists
 		#TODO: retrieve object shape and type info via swift metadata query
 		return 1 
 	else:
 		return -1
+
 def swift_metadata_create(container, sciobj_name, sciobj_metadata,options=None):
-	#print ("hello")
-	#header_data={}
+	"""
+	Post metadata to existing object, by first GET existing metadata then concatenating two meta
+
+	Input: 
+		Container name
+		Object name
+		Metadata object
+	Output:
+		None
+	TODO: GET existing metadata
+	"""
 	#first retrieve existing metadata, otherwise, meta post will destroy existing one
 	with SwiftService(options = options) as swift:
 		try:
@@ -187,6 +215,15 @@ def swift_metadata_create(container, sciobj_name, sciobj_metadata,options=None):
 			print ('stat error: ',e)
 
 def swift_metadata_get(container,sciobj_name, options=None):
+	"""
+	Use swift.stat to query the metadata of the object 
+	Input: 
+		Container name
+		Object name
+		options
+	Output:
+		Dictionary of metadata, e.g., dims, type, ndim. 
+	"""
 	with SwiftService(options = options) as swift:
 		try:
 			meta_data={}

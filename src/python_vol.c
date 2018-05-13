@@ -26,6 +26,18 @@
 #include "inttypes.h"
 #define PYTHON 502
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+typdef struct H5VL_python_fapl_t {
+    MPI_Comm    comm; /*communicator*/
+    MPI_Info    info; /*file information*/
+}H5VL_python_fapl_t;
+
+/* Stack allocation sizes */
+#define H5VL_PYTHON_FOI_BUF_SIZE 1024
+#define H5VL_PYTHON_LINK_VAL_BUF_SIZE 256
+#define H5VL_PYTHON_GINFO_BUF_SIZE 256
+#define H5VL_PYTHON_DINFO_BUF_SIZE 1024
+#define H5VL_PYTHON_SEQ_LIST_LEN 128
+
 //static herr_t H5VL_python_init(hid_t vipl_id);
 //static herr_t H5VL_python_term(hid_t vtpl_id);
 /* Datatype callbacks */
@@ -139,8 +151,15 @@ const H5VL_class_t H5VL_python_g = {
 
 typedef struct H5VL_python_t {
     void  *under_object;
-    hid_t space_id;
-    hid_t type_id;
+    char * file_name;
+    size_t file_name_len;
+    unsigned flags;
+    hid_t fcpl_id;
+    hid_t fapl_id;
+    MPI_Comm comm;
+    MPI_Info info;
+    int my_rank;
+    int num_nprocs;
 } H5VL_python_t;
 
 typedef struct H5VL_DT {
@@ -159,8 +178,37 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
 {
     //hid_t under_fapl;
     H5VL_python_t *file;
+    //Allocate memory for file object
     file = (H5VL_python_t *)calloc(1, sizeof(H5VL_python_t));
+    file->fcpl_id = FAIL;
+    file->fapl_id = FAIL;
 
+    /*Get information from fapl*/
+    /* Get information from the FAPL */
+    if(NULL == (plist = H5P_object_verify(fapl_id, H5P_FILE_ACCESS)))
+        HGOTO_ERROR(H5E_ARGS, H5E_BADTYPE, NULL, "not a file access property list")
+    if(NULL == (fa = (H5VL_python_fapl_t *)H5P_get_vol_info(plist)))
+        HGOTO_ERROR(H5E_FILE, H5E_CANTGET, NULL, "can't get RADOS info struct")
+
+    //Fill in info
+    file->file_name = HDstrdup(name);
+    file->file_name_len = HDstrlen(name);
+    file->flags = flags;
+    file->fcpl_id = H5Pcopy(fcpl_id);
+    file->fapl_id = H5Pcopy(fapl_id);
+
+    /*Duplicate communicator and Info object*/
+    H5FD_mpi_comm_info_dup(fa->comm, fa->info, &file->comm, &file->info);
+    /* Obtain the process rank and size from the communicator attached to the
+     * fapl ID */
+    MPI_Comm_rank(fa->comm, &file->my_rank);
+    MPI_Comm_size(fa->comm, &file->num_procs);
+
+
+    /* Determine if we requested collective object ops for the file */
+    if(H5Pget_all_coll_metadata_ops(fapl_id, &file->collective) < 0)
+        HGOTO_ERROR(H5E_FILE, H5E_CANTGET, NULL, "can't get collective access property")
+ 
     //under_fapl = *((hid_t *)H5Pget_vol_info(fapl_id));
     //printf("under_fapl:%ld\n",under_fapl);
     int ipvol=0; //default is using swift for python vol
@@ -168,7 +216,8 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
     if( H5Pexist(fapl_id, pvol_name)>0){
       H5Pget(fapl_id, pvol_name, &ipvol);
     }
-   
+    //TODO: need to write the meta into disk
+    //TODO: need to create the root group
     PyObject *pModule, *pClass;
     PyObject *pValue=NULL; 
     const char module_name[ ] = "python_vol";
@@ -217,9 +266,26 @@ static void *
 H5VL_python_file_open(const char *name, unsigned flags, hid_t fapl_id, hid_t dxpl_id, void **req)
 {
     //printf("in H5VL file open\n");
+    H5VL_python_fapl_t *fa = NULL;
+    H5P_genplist_t *plist = NULL;      /* Property list pointer */
+    //H5VL_python_file_t *file = NULL;
+    char foi_buf_static[H5VL_PYTHON_FOI_BUF_SIZE];
+    char *foi_buf_dyn = NULL;
+    char *foi_buf = foi_buf_static;
+    void *gcpl_buf = NULL;
+    uint64_t gcpl_len;
+    uint64_t root_grp_oid;
+    hbool_t must_bcast = FALSE;
+    uint8_t *p;
+    int ret;
+    void *ret_value = NULL;
     hid_t under_fapl;
     H5VL_python_t *file;
-    file = (H5VL_python_t *)calloc(1, sizeof(H5VL_python_t));
+
+    //Allocate file object 
+    if(NULL==(file = (H5VL_python_t *)calloc(1, sizeof(H5VL_python_t))))
+      HGOTO_ERROR(H5E_FILE, H5E_CANTALLOC, NULL, "can't allocate RADOS file struct");
+
     //under_fapl = *((hid_t *)H5Pget_vol_info(fapl_id));
     PyObject *pModule=NULL, *pClass=NULL;
     PyObject *pValue=NULL;
@@ -230,6 +296,30 @@ H5VL_python_file_open(const char *name, unsigned flags, hid_t fapl_id, hid_t dxp
     if( H5Pexist(fapl_id, pvol_name)>0){
       H5Pget(fapl_id, pvol_name, &ipvol);
     }
+
+    /* Get information from the FAPL */
+    if(NULL == (plist = H5P_object_verify(fapl_id, H5P_FILE_ACCESS)))
+        HGOTO_ERROR(H5E_ARGS, H5E_BADTYPE, NULL, "not a file access property list")
+    if(NULL == (fa = (H5VL_python_fapl_t *)H5P_get_vol_info(plist))) //get mpi infor from fapl id
+        HGOTO_ERROR(H5E_SYM, H5E_CANTGET, NULL, "can't get python info struct")
+
+    if(NULL == (file->file_name = HDstrdup(name)))
+        HGOTO_ERROR(H5E_RESOURCE, H5E_CANTALLOC, NULL, "can't copy file name")
+    file->file_name_len = HDstrlen(name);
+    file->flags = flags;
+    if((file->fapl_id = H5Pcopy(fapl_id)) < 0) // keep the fapl in memory, for later reference
+        HGOTO_ERROR(H5E_FILE, H5E_CANTCOPY, NULL, "failed to copy fapl")
+
+    /* Duplicate communicator and Info object. */
+    if(FAIL == H5FD_mpi_comm_info_dup(fa->comm, fa->info, &file->comm, &file->info)) //copy from fa to file
+        HGOTO_ERROR(H5E_INTERNAL, H5E_CANTCOPY, NULL, "Communicator/Info duplicate failed")
+
+    /* Obtain the process rank and size from the communicator attached to the
+     * fapl ID */
+    MPI_Comm_rank(fa->comm, &file->my_rank);
+    MPI_Comm_size(fa->comm, &file->num_procs);
+
+    //Question: what infor to bdcast? 
 
 
     char class_name [ ] = "swift";
@@ -590,6 +680,8 @@ H5VL_python_dataset_open(void *obj, H5VL_loc_params_t loc_params, const char *na
     H5VL_python_t *o = (H5VL_python_t *)obj;
     PyObject * plong_under = PyLong_FromVoidPtr(o->under_object);
     dset = (H5VL_python_t *)calloc(1, sizeof(H5VL_python_t));
+
+    //retrieve metadata and fill in memory buffer for later using. 
     PyObject *pValue=NULL;
     char method_name[] = "H5VL_python_dataset_open";
     if(pInstance==NULL){
