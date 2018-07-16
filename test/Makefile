@@ -1,10 +1,10 @@
 dir=../src/
 CC = gcc 
-CFLAGS = -c -fno-strict-aliasing -Wmissing-include-dirs -O2 -DNDEBUG -fwrapv -O3 -Wall -Wstrict-prototypes -I/usr/common/software/python/2.7-anaconda-4.4/include/python2.7 -isystem/usr/common/software/python/2.7-anaconda-4.4/lib/python2.7/site-packages/numpy/core/include  -Wno-unused-variable  -Wno-strict-prototypes -Wno-cpp -I/usr/common/software/hdf5-parallel/hdf5-1.9.234/src
+CFLAGS = -c -fno-strict-aliasing -Wmissing-include-dirs -O2 -DNDEBUG -fwrapv -O3 -Wall -Wstrict-prototypes -I/usr/common/software/python/2.7-anaconda-4.4/include/python2.7 -isystem/usr/common/software/python/2.7-anaconda-4.4/lib/python2.7/site-packages/numpy/core/include  -Wno-unused-variable  -Wno-strict-prototypes -I/usr/common/software/hdf5-parallel/hdf5-1.9.234/src
 LDFLAGS = -L/usr/common/software/python/2.7-anaconda-4.4/lib -lpython2.7 -lpthread -ldl -lutil -lm -Xlinker -export-dynamic #-Wl,--verbose
 
 #ALL: swift test_pylong 
-ALL: HDF5_File_create HDF5_File_open HDF5_Objects_create HDF5_Objects_open HDF5_Dataset_read HDF5_Dataset_write	
+ALL: HDF5_File_create HDF5_File_open HDF5_Objects_create HDF5_Objects_open HDF5_Dataset_read HDF5_Dataset_write HDF5_File_create_parallel	
 #VPIC_IO
 
 swift: swift.o test_swift.o
@@ -25,6 +25,9 @@ HDF5_Objects_open: python_vol.o test_python_vol_HDF5_Objects_open.o
 HDF5_File_create: python_vol.o test_python_vol_HDF5_File_create.o
 	h5pcc -g test_python_vol_HDF5_File_create.o python_vol.o $(LDFLAGS) -o HDF5_File_create
 
+HDF5_File_create_parallel: python_vol.o test_python_vol_HDF5_File_create_parallel.o
+	h5pcc -g test_python_vol_HDF5_File_create_parallel.o python_vol.o $(LDFLAGS) -o HDF5_File_create_parallel
+
 HDF5_File_open: python_vol.o test_python_vol_HDF5_File_open.o
 	h5pcc -g test_python_vol_HDF5_File_open.o python_vol.o $(LDFLAGS) -o HDF5_File_open
 
@@ -43,6 +46,8 @@ test_python_vol_HDF5_Objects_create.o: test_python_vol_HDF5_Objects_create.c
 test_python_vol_HDF5_Objects_open.o: test_python_vol_HDF5_Objects_open.c
 	h5pcc -g $(CFLAGS) test_python_vol_HDF5_Objects_open.c -o test_python_vol_HDF5_Objects_open.o
 
+test_python_vol_HDF5_File_create_parallel.o: test_python_vol_HDF5_File_create_parallel.c
+	h5pcc -g $(CFLAGS) test_python_vol_HDF5_File_create_parallel.c -o test_python_vol_HDF5_File_create_parallel.o
 
 HDF5_Dataset_read: python_vol.o test_python_vol_HDF5_Dataset_read.o
 	h5pcc -g test_python_vol_HDF5_Dataset_read.o python_vol.o $(LDFLAGS) -o HDF5_Dataset_read
@@ -63,6 +68,6 @@ test_pylong: test_pylong.o
 test_pylong.o: test_pylong.c
 	$(CC) $(CFLAGS) test_pylong.c -o test_pylong.o        
 clean:
-	rm HDF5_File_create HDF5_File_open HDF5_Objects_create HDF5_Objects_open HDF5_Dataset_read HDF5_Dataset_write 
+	rm HDF5_File_create HDF5_File_open HDF5_Objects_create HDF5_Objects_open HDF5_Dataset_read HDF5_Dataset_write HDF5_File_create_parallel 
 
 #	rm *.o HDF5_* ../src/*.pyc *.pyc HDF5_File_create HDF5_File_open HDF5_Objects_create HDF5_Objects_open HDF5_Dataset_read HDF5_Dataset_write

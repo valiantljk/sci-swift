@@ -1,0 +1,1 @@
+export LD_LIBRARY_PATH=/usr/common/software/python/2.7-anaconda-4.4/lib:$LD_LIBRARY_PATH

@@ -3,6 +3,6 @@ export PYTHONPATH=$PWD/../src/:$PYTHONPATH
 #export PYTHONPATH=.:$PYTHONPATH
 #export PYTHONHOME=/root/anaconda
 export CRAYPE_LINK_TYPE=dynamic
-export LD_LIBRARY_PATH=/usr/common/software/python/2.7-anaconda-4.4/lib:$LD_LIBRARY_PATH
+#export LD_LIBRARY_PATH=/usr/common/software/python/2.7-anaconda-4.4/lib:$LD_LIBRARY_PATH
 #pip install python-keystoneclient --user
 #pip install python-swiftclient --user

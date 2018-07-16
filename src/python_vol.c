@@ -26,7 +26,7 @@
 #include "inttypes.h"
 #define PYTHON 502
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
-typdef struct H5VL_python_fapl_t {
+typedef struct H5VL_python_fapl_t {
     MPI_Comm    comm; /*communicator*/
     MPI_Info    info; /*file information*/
 }H5VL_python_fapl_t;
@@ -160,8 +160,11 @@ typedef struct H5VL_python_t {
     MPI_Info info;
     int my_rank;
     int num_nprocs;
+    hid_t type_id;
+    hid_t space_id;
+    hid_t dcpl_id;
+    hid_t dapl_id;
 } H5VL_python_t;
-
 typedef struct H5VL_DT {
     int  ndims;	  // Acquired with H5Sget_simple_extent_ndims
     hsize_t * dims;      // Acquired with H5Sget_simple_extent_dims 
@@ -177,7 +180,9 @@ static void *
 H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t fapl_id, hid_t dxpl_id, void **req)
 {
     //hid_t under_fapl;
-    H5VL_python_t *file;
+    H5VL_python_t *file=NULL;
+    H5VL_python_fapl_t *fa=NULL;
+    H5P_genplist_t *plist = NULL;      /* Property list pointer */
     //Allocate memory for file object
     file = (H5VL_python_t *)calloc(1, sizeof(H5VL_python_t));
     file->fcpl_id = FAIL;
@@ -186,10 +191,11 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
     /*Get information from fapl*/
     /* Get information from the FAPL */
     if(NULL == (plist = H5P_object_verify(fapl_id, H5P_FILE_ACCESS)))
-        HGOTO_ERROR(H5E_ARGS, H5E_BADTYPE, NULL, "not a file access property list")
+        //HGOTO_ERROR(H5E_ARGS, H5E_BADTYPE, NULL, "not a file access property list")
+	printf("not a file access property list\n");
     if(NULL == (fa = (H5VL_python_fapl_t *)H5P_get_vol_info(plist)))
-        HGOTO_ERROR(H5E_FILE, H5E_CANTGET, NULL, "can't get RADOS info struct")
-
+        //HGOTO_ERROR(H5E_FILE, H5E_CANTGET, NULL, "can't get RADOS info struct")
+	printf("can't get swift info struct\n");
     //Fill in info
     file->file_name = HDstrdup(name);
     file->file_name_len = HDstrlen(name);
@@ -202,13 +208,13 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
     /* Obtain the process rank and size from the communicator attached to the
      * fapl ID */
     MPI_Comm_rank(fa->comm, &file->my_rank);
-    MPI_Comm_size(fa->comm, &file->num_procs);
+    MPI_Comm_size(fa->comm, &file->num_nprocs);
 
 
     /* Determine if we requested collective object ops for the file */
-    if(H5Pget_all_coll_metadata_ops(fapl_id, &file->collective) < 0)
-        HGOTO_ERROR(H5E_FILE, H5E_CANTGET, NULL, "can't get collective access property")
- 
+   // if(H5Pget_all_coll_metadata_ops(fapl_id, &file->collective) < 0)
+        //HGOTO_ERROR(H5E_FILE, H5E_CANTGET, NULL, "can't get collective access property")
+   //	printf("can't get collective access property\n");
     //under_fapl = *((hid_t *)H5Pget_vol_info(fapl_id));
     //printf("under_fapl:%ld\n",under_fapl);
     int ipvol=0; //default is using swift for python vol
@@ -284,8 +290,8 @@ H5VL_python_file_open(const char *name, unsigned flags, hid_t fapl_id, hid_t dxp
 
     //Allocate file object 
     if(NULL==(file = (H5VL_python_t *)calloc(1, sizeof(H5VL_python_t))))
-      HGOTO_ERROR(H5E_FILE, H5E_CANTALLOC, NULL, "can't allocate RADOS file struct");
-
+      //HGOTO_ERROR(H5E_FILE, H5E_CANTALLOC, NULL, "can't allocate RADOS file struct");
+	printf("can't allocate swift file struct\n");
     //under_fapl = *((hid_t *)H5Pget_vol_info(fapl_id));
     PyObject *pModule=NULL, *pClass=NULL;
     PyObject *pValue=NULL;
@@ -299,25 +305,27 @@ H5VL_python_file_open(const char *name, unsigned flags, hid_t fapl_id, hid_t dxp
 
     /* Get information from the FAPL */
     if(NULL == (plist = H5P_object_verify(fapl_id, H5P_FILE_ACCESS)))
-        HGOTO_ERROR(H5E_ARGS, H5E_BADTYPE, NULL, "not a file access property list")
+        //HGOTO_ERROR(H5E_ARGS, H5E_BADTYPE, NULL, "not a file access property list")
+	printf("not a file access property list\n");
     if(NULL == (fa = (H5VL_python_fapl_t *)H5P_get_vol_info(plist))) //get mpi infor from fapl id
-        HGOTO_ERROR(H5E_SYM, H5E_CANTGET, NULL, "can't get python info struct")
-
+        //HGOTO_ERROR(H5E_SYM, H5E_CANTGET, NULL, "can't get python info struct")
+	printf("can't get python info struct\n");
     if(NULL == (file->file_name = HDstrdup(name)))
-        HGOTO_ERROR(H5E_RESOURCE, H5E_CANTALLOC, NULL, "can't copy file name")
+        //HGOTO_ERROR(H5E_RESOURCE, H5E_CANTALLOC, NULL, "can't copy file name")
+	printf("can't copy file name\n");
     file->file_name_len = HDstrlen(name);
     file->flags = flags;
     if((file->fapl_id = H5Pcopy(fapl_id)) < 0) // keep the fapl in memory, for later reference
-        HGOTO_ERROR(H5E_FILE, H5E_CANTCOPY, NULL, "failed to copy fapl")
-
+        //HGOTO_ERROR(H5E_FILE, H5E_CANTCOPY, NULL, "failed to copy fapl")
+	printf("failed to copy fapl\n");
     /* Duplicate communicator and Info object. */
     if(FAIL == H5FD_mpi_comm_info_dup(fa->comm, fa->info, &file->comm, &file->info)) //copy from fa to file
-        HGOTO_ERROR(H5E_INTERNAL, H5E_CANTCOPY, NULL, "Communicator/Info duplicate failed")
-
+        //HGOTO_ERROR(H5E_INTERNAL, H5E_CANTCOPY, NULL, "Communicator/Info duplicate failed")
+	printf("Communicator/Info duplicate failed\n");
     /* Obtain the process rank and size from the communicator attached to the
      * fapl ID */
     MPI_Comm_rank(fa->comm, &file->my_rank);
-    MPI_Comm_size(fa->comm, &file->num_procs);
+    MPI_Comm_size(fa->comm, &file->num_nprocs);
 
     //Question: what infor to bdcast? 
 
@@ -900,13 +908,14 @@ H5VL_python_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
     hid_t real_mem_space_id;
     hssize_t num_elem;
 
-    FUNC_ENTER_NOAPI_NOINIT
+    //FUNC_ENTER_NOAPI_NOINIT
     /* Get dataspace extent */
     if((ndims = H5Sget_simple_extent_ndims(o->space_id)) < 0)
-        HGOTO_ERROR(H5E_DATASET, H5E_CANTGET, FAIL, "can't get number of dimensions")
+	printf("can't get number of dimensions\n");
+        //HGOTO_ERROR(H5E_DATASET, H5E_CANTGET, FAIL, "can't get number of dimensions")
     if(ndims != H5Sget_simple_extent_dims(o->space_id, dim, NULL))
-        HGOTO_ERROR(H5E_DATASET, H5E_CANTGET, FAIL, "can't get dimensions")
-
+        //HGOTO_ERROR(H5E_DATASET, H5E_CANTGET, FAIL, "can't get dimensions")
+	printf("can't get dimensions");
     /* Get "real" file space */
     if(file_space_id == H5S_ALL)
         real_file_space_id = o->space_id;
@@ -915,8 +924,8 @@ H5VL_python_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
 
     /* Get number of elements in selection */
     if((num_elem = H5Sget_select_npoints(real_file_space_id)) < 0)
-        HGOTO_ERROR(H5E_DATASET, H5E_CANTGET, FAIL, "can't get number of points in selection")
-
+        //HGOTO_ERROR(H5E_DATASET, H5E_CANTGET, FAIL, "can't get number of points in selection")
+	printf("can't get number of points in selection\n");
     /* Get "real" file space */
     if(mem_space_id == H5S_ALL)
         real_mem_space_id = real_file_space_id;
@@ -928,14 +937,16 @@ H5VL_python_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
         /* Verify number of elements in memory selection matches file selection
          */
         if((num_elem_file = H5Sget_select_npoints(real_mem_space_id)) < 0)
-            HGOTO_ERROR(H5E_DATASET, H5E_CANTGET, FAIL, "can't get number of points in selection")
+            //HGOTO_ERROR(H5E_DATASET, H5E_CANTGET, FAIL, "can't get number of points in selection")
+	printf("can't get number of points in selection\n");
         if(num_elem_file != num_elem)
-            HGOTO_ERROR(H5E_ARGS, H5E_BADVALUE, FAIL, "src and dest data spaces have different sizes")
+            //HGOTO_ERROR(H5E_ARGS, H5E_BADVALUE, FAIL, "src and dest data spaces have different sizes")
+	printf("src and dest data spaces have different sizes\n");
     } /* end else */
 
     /* Check for no selection */
-    if(num_elem == 0)
-        HGOTO_DONE(SUCCEED)
+    //if(num_elem == 0)
+        //HGOTO_DONE(SUCCEED)
     //create py reference to c buffer
     hsize_t * count_size=malloc(sizeof(hsize_t));
     int * type_size=malloc(sizeof(int));
@@ -957,6 +968,7 @@ H5VL_python_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
 	 PyErr_Print();
 	 return 1;
       }
+      else return -1;
     }
    return 1;     
 }
@@ -1004,39 +1016,10 @@ H5VL_python_dataset_close(void *dset, hid_t dxpl_id, void **req)
         //printf("------- Result of H5Dclose from python: %ld\n", PyLong_AsLong(pValue));
         return 1;
       }
+      else
+        return -1;
     }
     //printf ("------- PYTHON H5Dclose\n");
     free(d);
     return 1;
 }
-#if 0
-static void *H5VL_python_attr_create(void *obj, H5VL_loc_params_t loc_params, const char *attr_name, hid_t acpl_id, hid_t aapl_id, hid_t dxpl_id, void **req){    
-static herr_t H5VL_python_attr_close(void *attr, hid_t dxpl_id, void **req){
-
-/* Datatype callbacks */
-
-
-/* Dataset callbacks */
-static void *H5VL_python_dataset_create(void *obj, H5VL_loc_params_t loc_params, const char *name, hid_t dcpl_id, hid_t dapl_id, hid_t dxpl_id, void **req){
-static herr_t H5VL_python_dataset_close(void *dset, hid_t dxpl_id, void **req){
-
-/* File callbacks */
-
-    
-static void *H5VL_python_file_open(const char *name, unsigned flags, hid_t fapl_id, hid_t dxpl_id, void **req){
-
-
-/* Group callbacks */
-
-static void *H5VL_python_group_open(void *obj, H5VL_loc_params_t loc_params, const char *name, hid_t gapl_id, hid_t dxpl_id, void **req){
-static herr_t H5VL_python_group_get(void *obj, H5VL_group_get_t get_type, hid_t dxpl_id, void **req, va_list arguments){
-
-
-/* Link callbacks */
-
-/* Object callbacks */
-
-
-#endif
-
-//#endif

@@ -1,0 +1,7 @@
+export NIWPW=nim password
+
+#to compile the code
+source readme_cori
+
+#before 
+source final.config.nersc
