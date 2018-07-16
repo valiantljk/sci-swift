@@ -68,6 +68,6 @@ test_pylong: test_pylong.o
 test_pylong.o: test_pylong.c
 	$(CC) $(CFLAGS) test_pylong.c -o test_pylong.o        
 clean:
-	rm HDF5_File_create HDF5_File_open HDF5_Objects_create HDF5_Objects_open HDF5_Dataset_read HDF5_Dataset_write HDF5_File_create_parallel 
+	rm HDF5_File_create HDF5_File_open HDF5_Objects_create HDF5_Objects_open HDF5_Dataset_read HDF5_Dataset_write HDF5_File_create_parallel *.o 
 
 #	rm *.o HDF5_* ../src/*.pyc *.pyc HDF5_File_create HDF5_File_open HDF5_Objects_create HDF5_Objects_open HDF5_Dataset_read HDF5_Dataset_write
