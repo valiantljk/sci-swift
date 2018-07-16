@@ -2,7 +2,12 @@
 __pycache__/
 *.py[cod]
 *$py.class
-
+vol_src/
+	examples/karen.h5
+	examples/karen1.h5
+	examples/test.oct13
+	get_swift_auth.prompt
+	openrc_new.jialin
 # C extensions
 *.so
 
