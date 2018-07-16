@@ -198,7 +198,6 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
 	printf("can't get swift info struct\n");
     //Fill in info
     file->file_name = HDstrdup(name);
-    printf("inside vol, file name got:[%s]\n",file->file_name);
     file->file_name_len = HDstrlen(name);
     file->flags = flags;
     file->fcpl_id = H5Pcopy(fcpl_id);

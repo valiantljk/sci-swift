@@ -28,10 +28,12 @@ int main(int argc, char **argv) {
 		int my_rank, num_procs;
 		MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 		MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
+		printf("number of ranks:[%d]\n",num_procs);
 		//Initialize Python and Numpy Routine
+		
 		Py_Initialize();
 		import_array();
-
+		
         	printf("Start testing\n");
 		//Test VOL Plugin Setup
         	under_fapl = H5Pcreate (H5P_FILE_ACCESS);
@@ -51,6 +53,7 @@ int main(int argc, char **argv) {
 		int prop_def_value=0;
 		H5Pinsert2(acc_tpl, pyplugin_name, prop_size, &prop_def_value, NULL, NULL, NULL, NULL, NULL, NULL);
         	H5Pset_vol(acc_tpl, vol_id, &under_fapl);
+		
 		timer_on (0);	
 		//Test HDF5 File Create
 		int ifile=0;
@@ -62,14 +65,13 @@ int main(int argc, char **argv) {
 			//H5Fclose(file_id);
 		}
 		timer_off (0);
+		/*
 		//Test HDF5 File Close
 		H5Fclose(file_id);
         	Py_Finalize();
 		printf("Testing Complete\n");
 		timer_msg (0);
+		*/
 		return 0;
 	}
 }
-
-
-
