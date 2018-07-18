@@ -18,8 +18,8 @@ int main(int argc, char **argv) {
 	hsize_t ndims=0, *dims=NULL,nelem=1;
         if(argc<6)//at least 5 parameters: python_vol fname dname ndims dim0
 	{
-           printf("./python_vol_HDF5_Objects_Create filename groupname datasetname ndims dims0 dims1 ...\n");
-	   printf("Example:\n./python_vol_HDF5_Objects_Create rocket.h5 spacex falcon 3 100 20 30\n");
+           printf("./HDF5_objects_create_parallel filename groupname datasetname ndims dims0 dims1 ...\n");
+	   printf("Example:\n./HDF5_objects_create_parallel rocket.h5 spacex falcon 3 100 20 30\n");
 	   return 0;
         }
         else{
@@ -37,6 +37,23 @@ int main(int argc, char **argv) {
 	     nelem*=dims[i];
 	   }
         }
+	
+        //MPI Routine
+        MPI_Init(&argc, &argv);
+        int my_rank, num_procs;
+        MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+        MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
+        if(my_rank==0) printf("number of ranks:[%d]\n",num_procs);
+
+        //Initialize Python and Numpy Routine
+        Py_Initialize();
+        import_array();
+
+        //Setup Swift Vol
+        acc_tpl = H5Pcreate (H5P_FILE_ACCESS);
+        if (acc_tpl < 0) printf("H5Pcreate failed\n");
+        H5Pset_fapl_swift(acc_tpl,plugin_name, MPI_COMM_WORLD, MPI_INFO_NULL);
+
         char fullpath_int32[100];
         char fullpath_int16[100];
         char fullpath_float32[100];
@@ -56,37 +73,13 @@ int main(int argc, char **argv) {
        //Create Data Space
         dataspaceId = H5Screate_simple(ndims, dims, NULL);
 
-	//Initialize Python and Numpy Routine
-	Py_Initialize();
-	import_array();
-
-        printf("Start testing\n");
-
-	//Test VOL Plugin Setup
-        under_fapl = H5Pcreate (H5P_FILE_ACCESS);
-        H5Pset_fapl_native(under_fapl);
-        assert(H5VLis_registered("native") == 1);
-        vol_id = H5VLregister (&H5VL_python_g);
-        assert(vol_id > 0);
-        assert(H5VLis_registered(plugin_name) == 1);
-        vol_id2 = H5VLget_plugin_id(plugin_name);
-        H5VLinitialize(vol_id2, H5P_DEFAULT);
-        H5VLclose(vol_id2);
-        native_plugin_id = H5VLget_plugin_id("native");
-        assert(native_plugin_id > 0);
-        acc_tpl = H5Pcreate (H5P_FILE_ACCESS);
-	size_t prop_size=sizeof(int);
- 	char pyplugin_name[5]="py";
-	int prop_def_value=0;
-	H5Pinsert2(acc_tpl, pyplugin_name, prop_size, &prop_def_value, NULL, NULL, NULL, NULL, NULL, NULL);
-        H5Pset_vol(acc_tpl, vol_id, &under_fapl);
-
 	//Test HDF5 File Create
+	if(my_rank==0) printf("file create\n");
 	file_id = H5Fcreate(file_name, H5F_ACC_TRUNC, H5P_DEFAULT, acc_tpl);
-
+	if(my_rank==0) printf("group create\n");
         //Test HDF5 Group Create
 	group_id = H5Gcreate2(file_id, group_name, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-
+        if(my_rank==0) printf("dataset create\n");
  	//Test HDF5 Dataset Create
 	/*
 	hid_t datasetId_int32   = H5Dcreate2(file_id,fullpath_int32,  H5T_NATIVE_INT,   dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);

@@ -18,33 +18,36 @@ int main(int argc, char **argv) {
 	int i;
 	if(argc<3)//at least 2 parameters: python_vol fname
 	{
-		printf("./python_vol_HDF5_File_create filename number_of_files\n");
-		printf("Example:\n./HDF5_File_create rocket.h5 10\n");
+		printf("./HDF5_file_create_parallel filename number_of_files\n");
+		printf("Example:\n./HDF5_file_create_parallel rocket.h5 10\n");
 		return 0;
 	}
 	else{
 		strcpy(file_name,argv[1]);
+		//MPI Routine
 		MPI_Init(&argc, &argv);
 		int my_rank, num_procs;
 		MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 		MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
-		printf("number of ranks:[%d]\n",num_procs);
+		if(my_rank==0) printf("number of ranks:[%d]\n",num_procs);
+
 		//Initialize Python and Numpy Routine
-		
 		Py_Initialize();
 		import_array();
 		
-        	printf("Start testing\n");
+        	//Setup Swift Vol
 		acc_tpl = H5Pcreate (H5P_FILE_ACCESS);
 		if (acc_tpl < 0) printf("H5Pcreate failed\n");
 		H5Pset_fapl_swift(acc_tpl,plugin_name, MPI_COMM_WORLD, MPI_INFO_NULL);
+
+		if(my_rank==0) printf("Start testing\n");
 		timer_on (0);	
 		//Test HDF5 File Create
 		int ifile=0;
 		char newfile_name[100];
 		for(ifile=0;ifile<atoi(argv[2]);ifile++){
-			sprintf(newfile_name,  "%s_%d",file_name,ifile);	
-			//printf("creating %s\n",newfile_name);
+			if(my_rank==0) printf("creating file:[%d_%s]\n",ifile,file_name);
+			sprintf(newfile_name,  "%d_%s",ifile,file_name);	
 			file_id = H5Fcreate(newfile_name, H5F_ACC_TRUNC, H5P_DEFAULT, acc_tpl);	
 			//H5Fclose(file_id);
 		}

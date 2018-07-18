@@ -4,7 +4,7 @@ CFLAGS = -c -fno-strict-aliasing -Wmissing-include-dirs -O2 -DNDEBUG -fwrapv -O3
 LDFLAGS = -L/usr/common/software/python/2.7-anaconda-4.4/lib -lpython2.7 -lpthread -ldl -lutil -lm -Xlinker -export-dynamic #-Wl,--verbose
 
 #ALL: swift test_pylong 
-ALL: HDF5_file_create HDF5_file_open HDF5_objects_create HDF5_objects_open HDF5_dataset_read HDF5_dataset_write HDF5_file_create_parallel	
+ALL: HDF5_file_create HDF5_file_open HDF5_objects_create HDF5_objects_open HDF5_dataset_read HDF5_dataset_write HDF5_file_create_parallel HDF5_objects_create_parallel	
 #VPIC_IO
 
 swift: swift.o test_swift.o
@@ -28,6 +28,9 @@ HDF5_file_create: python_vol.o HDF5_file_create.o
 HDF5_file_create_parallel: python_vol.o HDF5_file_create_parallel.o
 	h5pcc -g HDF5_file_create_parallel.o python_vol.o $(LDFLAGS) -o HDF5_file_create_parallel
 
+HDF5_objects_create_parallel: python_vol.o HDF5_objects_create_parallel.o
+	h5pcc -g HDF5_objects_create_parallel.o python_vol.o $(LDFLAGS) -o HDF5_objects_create_parallel
+
 HDF5_file_open: python_vol.o HDF5_file_open.o
 	h5pcc -g HDF5_file_open.o python_vol.o $(LDFLAGS) -o HDF5_file_open
 
@@ -48,6 +51,9 @@ HDF5_objects_open.o: HDF5_objects_open.c
 
 HDF5_file_create_parallel.o: HDF5_file_create_parallel.c
 	h5pcc -g $(CFLAGS) HDF5_file_create_parallel.c -o HDF5_file_create_parallel.o
+
+HDF5_objects_create_parallel.o: HDF5_objects_create_parallel.c
+	h5pcc -g $(CFLAGS) HDF5_objects_create_parallel.c -o HDF5_objects_create_parallel.o
 
 HDF5_dataset_read: python_vol.o HDF5_dataset_read.o
 	h5pcc -g HDF5_dataset_read.o python_vol.o $(LDFLAGS) -o HDF5_dataset_read
