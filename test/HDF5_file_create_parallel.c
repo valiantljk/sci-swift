@@ -35,30 +35,6 @@ int main(int argc, char **argv) {
 		import_array();
 		
         	printf("Start testing\n");
-
-		/* replace the following functions with one 
-		  H5Pset_fapl_swift(hid_t fapl, MPI_Comm, MPI_Info)
-		*/
-		/*
-		//Test VOL Plugin Setup
-        	under_fapl = H5Pcreate (H5P_FILE_ACCESS);
-        	//H5Pset_fapl_native(under_fapl);
-        	//assert(H5VLis_registered("native") == 1);
-        	vol_id = H5VLregister (&H5VL_python_g);
-        	assert(vol_id > 0);
-        	assert(H5VLis_registered(plugin_name) == 1);
-        	vol_id2 = H5VLget_plugin_id(plugin_name);
-        	H5VLinitialize(vol_id2, H5P_DEFAULT);
-        	H5VLclose(vol_id2);
-        	//native_plugin_id = H5VLget_plugin_id("native");
-        	//assert(native_plugin_id > 0);
-        	acc_tpl = H5Pcreate (H5P_FILE_ACCESS);
-		//size_t prop_size=sizeof(int);
- 		//char pyplugin_name[5]="py";
-		//int prop_def_value=0;
-		//H5Pinsert2(acc_tpl, pyplugin_name, prop_size, &prop_def_value, NULL, NULL, NULL, NULL, NULL, NULL);
-        	H5Pset_vol(acc_tpl, vol_id, &under_fapl);
-		*/
 		acc_tpl = H5Pcreate (H5P_FILE_ACCESS);
 		if (acc_tpl < 0) printf("H5Pcreate failed\n");
 		H5Pset_fapl_swift(acc_tpl,plugin_name, MPI_COMM_WORLD, MPI_INFO_NULL);
