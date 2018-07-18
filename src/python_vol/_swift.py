@@ -88,7 +88,7 @@ class H5PVol:
 			full_path=container_name+"/"+name
 			z=full_path.replace("/","\\")
 			container_name = z[:z.find(z.split('\\')[-1])-1]
-            obj_name = z.split('\\')[-1]
+            		obj_name = z.split('\\')[-1]
 			#print('full_path:%s'%full_path)
 			#print('container name:%s'%container_name)
 			#print('obj name:%s'%obj_name)
@@ -286,12 +286,12 @@ class H5PVol:
 				metadata = swift_metadata_get(container=dst_container_name,sciobj_name=dst_object_name)
 				swift_object_create(container=dst_container_name, sciobj_name=dst_object_name, sciobj_source=buf)
 				#swift_metadata_get(container = dst_container_name, sciobj_name = dst_obj_name, sciobj_source = sci_obj_source)
-                sci_obj_meta={}
-                sci_obj_meta['type'] = str(metadata['type'])
-                sci_obj_meta['dims'] = str(metadata['dims'])
-                sci_obj_meta['ndim'] = str(metadata['ndim'])
-                #print ('sci obj meta:',sci_obj_meta)
-                r1=swift_metadata_create(container = dst_container_name, sciobj_name = dst_object_name, sciobj_metadata=sci_obj_meta)
+                		sci_obj_meta={}
+                		sci_obj_meta['type'] = str(metadata['type'])
+                		sci_obj_meta['dims'] = str(metadata['dims'])
+                		sci_obj_meta['ndim'] = str(metadata['ndim'])
+                		#print ('sci obj meta:',sci_obj_meta)
+                		r1=swift_metadata_create(container = dst_container_name, sciobj_name = dst_object_name, sciobj_metadata=sci_obj_meta)
 				curid = self.obj_curid
 				#print ("------- PYTHON H5Dwrite OK")
 				#print ("-----------------LEAVE Dataset Write-----------------")

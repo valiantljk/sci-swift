@@ -175,6 +175,23 @@ typedef struct H5VL_DT {
 
 PyObject * pInstance=NULL;
 
+/* H5Pset_fapl_swift
+ * update file access property list with MPI info
+
+*/
+herr_t H5Pset_fapl_swift(hid_t fapl, const char plugin, MPI_Comm comm, MPI_Info info){
+
+   H5VL_python_fapl_t fa;
+   
+   //register swift vol first
+   hid_t vol_id = H5VLregister (&H5VL_python_g);
+   //verify vol registered 
+   assert(H5VLis_registered(plugin) ==1 );
+   //setup MPI info
+   fa.comm = comm;
+   fa.info = info; 
+   return H5Pset_vol(fapl, vol_id, &fa); 
+}
 /* File callbacks Implementation*/
 static void *
 H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t fapl_id, hid_t dxpl_id, void **req)
