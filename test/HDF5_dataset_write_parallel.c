@@ -98,23 +98,28 @@ int main(int argc, char **argv) {
 	if (my_rank==0) printf ("Testing hyperslab\n");
 	file_space =  H5Screate_simple(ndims,dims,NULL);
 	mem_space = H5Screate_simple(ndims,dims,NULL);
- 	int * start = malloc(ndims * sizeof(int ));
-	int * count = malloc(ndims * sizeof(int ));	
-	start[0] = 0;
+ 	hsize_t start[ndims];
+	hsize_t count[ndims];	
 	int size_rank = dims[0] /num_procs;
-	count[0] = size_rank;
-	for (i=1;i<num_procs;i++){
-		start[i] = my_rank*size_rank;
-		count[i] = size_rank;
+	for (i=0;i<ndims;i++){
+		if(i==0) {
+			start[i] = size_rank*my_rank;
+			count[i] = size_rank;
+		}else{
+			start[i] = 0;
+                	count[i] = dims[i];
+		}
 	}
-	count[num_procs-1] = dims[0] - (num_procs-1)*size_rank;
+	if(my_rank==num_procs-1) 
+		count[0] = dims[0] - (num_procs-1)*size_rank;
 	H5Sselect_hyperslab(file_space, H5S_SELECT_SET, start, NULL, count, NULL);
 	H5Sselect_hyperslab(mem_space, H5S_SELECT_SET, start, NULL, count, NULL);
-	printf("Rank:%d,off:%d len:%d\n",my_rank,start[my_rank],count[my_rank]);
+	for(i=0;i<ndims;i++)
+	printf("Rank:%d,%d dim: off:%llu len:%llu\n",my_rank,i,start[i],count[i]);
 	if (my_rank==0) printf("Testing Dataset Write\n");
 	
 	//Test HDF5 Dataset Write
-	H5Dwrite(datasetId_int16,   H5T_NATIVE_SHORT,  H5S_ALL, H5S_ALL, H5P_DEFAULT, data_int16);
+	H5Dwrite(datasetId_int16,   H5T_NATIVE_SHORT, mem_space, file_space, H5P_DEFAULT, data_int16);
 	H5Dwrite(datasetId_int32,   H5T_NATIVE_INT,    H5S_ALL, H5S_ALL, H5P_DEFAULT, data_int32);
    	H5Dwrite(datasetId_float32, H5T_NATIVE_FLOAT,  H5S_ALL, H5S_ALL, H5P_DEFAULT, data_float32);
 	H5Dwrite(datasetId_float64, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_float64);
