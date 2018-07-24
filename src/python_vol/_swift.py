@@ -284,6 +284,10 @@ class H5PVol:
 				#call swift_object_create(container = , sciobj_name = , sciobj_source = )
 				#print ('puting dst object, container=%s, objec=%s'%(dst_container_name,dst_object_name))
 				metadata = swift_metadata_get(container=dst_container_name,sciobj_name=dst_object_name)
+				if(req > 0):
+					dst_object_name = dst_object_name + '_' + str(req)
+				if(req == -2):
+					dst_object_name = dst_object_name + 'gmeta'
 				swift_object_create(container=dst_container_name, sciobj_name=dst_object_name, sciobj_source=buf)
 				#swift_metadata_get(container = dst_container_name, sciobj_name = dst_obj_name, sciobj_source = sci_obj_source)
                 		sci_obj_meta={}
