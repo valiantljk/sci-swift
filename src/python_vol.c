@@ -1085,10 +1085,11 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
     //iterate sequence from the hyperslab
     size_t mem_nseq = 0, file_nseq=0;
     size_t nelem;
-    hsize_t mem_off[128], file_off[128]; //why 128, ask Neil/Quincey, July 19, 2018
+    hsize_t mem_off[128], file_off[128]; //why 128, ask Neil/Quincey, July 19, 2018. Answer: H5S_SELECT_GET_SEQ_LIST just retrieve 128 each time
     size_t  mem_len[128], file_len[128];
     size_t io_len;
     size_t tot_len = num_elem_memory * type_size;
+    size_t tot_len2 = tot_len;
     size_t mem_i = 0, file_i=0;
     PyObject *pValue=NULL;
     char method_name[] = "H5VL_python_dataset_write";
@@ -1101,7 +1102,8 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
     if(temp_buf == NULL) printf("error in allocating temp buffer\n");
     int cur_loc = 0;
     int start_offset=0;
-    size_t * meta_offlen= (size_t *) malloc (((num_elem_file+1)*2+1)*sizeof(size_t));
+    size_t * meta_offlen= NULL; //(size_t *) malloc (((num_elem_file+1)*2+1)*sizeof(size_t));
+    int meta_length =3;//first elem is total length of this array, second and third is min and max offsets
     /* Generate sequences from the file space until finished */
     do {
         /* Get the sequences of bytes if necessary */  // only do this during first itertion of this do-while loop, note by Jialin
@@ -1110,18 +1112,30 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
             if(H5S_SELECT_GET_SEQ_LIST(mem_space_obj, 0, &mem_sel_iter, (size_t)128, (size_t)-1, &mem_nseq, &nelem, mem_off, mem_len) < 0)
                 printf( "memory sequence generation failed\n");
             mem_i = 0;
-	    if(H5S_SELECT_GET_SEQ_LIST(file_space_obj, 0, &file_sel_iter, (size_t)128, (size_t)-1, &file_nseq, &nelem, file_off, file_len)<0)
-		printf("file sequence generation failed\n");
-	    file_i = 0;
         } /* end if */
 	io_len = mem_len[mem_i];
 	tot_len-=io_len;
-	//concantate memory buffer
+	//concatenate memory buffer
 	memcpy(temp_buf+cur_loc,buf+mem_off[mem_i],mem_len[mem_i]);
 	cur_loc += io_len;
+        mem_i++;
     } while(tot_len > 0);
-    memcpy(meta_offlen+3, file_off,num_elem_file); //record file offset list, store in meta_offlen at meta_offlen +2
-    memcpy(meta_offlen+3+num_elem_file, file_len, num_elem_file); //record file length list, store after offset list
+
+    do {
+       if(file_i == file_nseq){
+           if(H5S_SELECT_GET_SEQ_LIST(file_space_obj, 0, &file_sel_iter, (size_t)128, (size_t)-1, &file_nseq, &nelem, file_off, file_len)<0)
+                   printf("file sequence generation failed\n");
+           memcpy(meta_offlen+3, file_off,file_nseq); //record file offset list, store in meta_offlen at meta_offlen +2
+           memcpy(meta_offlen+3+file_nseq, file_len, file_nseq); //record file length list, store after offset list
+           realloc(meta_offlen,file_nseq);
+           file_i = 0;
+ 
+      }
+       io_len = file_len[file_i];
+       tot_len2 -= io_len;
+       file_i++;
+    } while(tot_len2  > 0)
+
     meta_offlen[1] = file_off[0];//min file offset
     meta_offlen[2] = file_off[file_nseq-1]+file_len[file_nseq-1];//max file offset 
     meta_offlen[0] = (num_elem_file+1)*2+1;// total length of this array
