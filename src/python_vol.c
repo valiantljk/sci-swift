@@ -1085,10 +1085,11 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
     //iterate sequence from the hyperslab
     size_t mem_nseq = 0, file_nseq=0;
     size_t nelem;
-    hsize_t mem_off[128], file_off[128]; //why 128, ask Neil/Quincey, July 19, 2018. Answer: H5S_SELECT_GET_SEQ_LIST just retrieve 128 each time
+    size_t mem_off[128], file_off[128]; //why 128, ask Neil/Quincey, July 19, 2018. Answer: H5S_SELECT_GET_SEQ_LIST just retrieve 128 each time
     size_t  mem_len[128], file_len[128];
     size_t io_len;
     size_t tot_len = num_elem_memory * type_size;
+    printf("Rank:%d, Total length:%lu,type_size:%lu, num_elem:%lu\n",o->my_rank,tot_len,type_size,num_elem_memory);
     size_t tot_len2 = tot_len;
     size_t mem_i = 0, file_i=0;
     PyObject *pValue=NULL;
@@ -1098,11 +1099,11 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
       printf("pInstance is NULL in dataset write\n");
       return -1;
     }
-    char * temp_buf = malloc(tot_len);
+    char * temp_buf = (char *)malloc(tot_len);
     if(temp_buf == NULL) printf("error in allocating temp buffer\n");
     int cur_loc = 0;
     int start_offset=0;
-    size_t * meta_offlen= NULL; //(size_t *) malloc (((num_elem_file+1)*2+1)*sizeof(size_t));
+    size_t * meta_offlen= (size_t *) malloc (3*sizeof(size_t));
     int meta_length =3;//first elem is total length of this array, second and third is min and max offsets
     /* Generate sequences from the file space until finished */
     do {
@@ -1120,34 +1121,43 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
 	cur_loc += io_len;
         mem_i++;
     } while(tot_len > 0);
+    
+    size_t cur_metal = 3;
 
     do {
        if(file_i == file_nseq){
-           if(H5S_SELECT_GET_SEQ_LIST(file_space_obj, 0, &file_sel_iter, (size_t)128, (size_t)-1, &file_nseq, &nelem, file_off, file_len)<0)
+	   if(H5S_SELECT_GET_SEQ_LIST(file_space_obj, 0, &file_sel_iter, (size_t)128, (size_t)-1, &file_nseq, &nelem, file_off, file_len)<0)
                    printf("file sequence generation failed\n");
-           memcpy(meta_offlen+3, file_off,file_nseq); //record file offset list, store in meta_offlen at meta_offlen +2
-           memcpy(meta_offlen+3+file_nseq, file_len, file_nseq); //record file length list, store after offset list
-           realloc(meta_offlen,file_nseq);
+	   printf("myrank:%d, file_nseq:%lu,nelem:%lu, file_off:%lu, file_len:%lu\n",o->my_rank, file_nseq,nelem, file_off[0],file_len[0]);
+	   meta_offlen=realloc(meta_offlen, (cur_metal + file_nseq*2)*sizeof(size_t));
+           memcpy(meta_offlen+cur_metal, file_off,file_nseq*sizeof(size_t)); //record file offset list, store in meta_offlen at meta_offlen +2
+           memcpy(meta_offlen+cur_metal+file_nseq, file_len, file_nseq*sizeof(size_t)); //record file length list, store after offset list
+	   cur_metal+=file_nseq*2;
            file_i = 0;
- 
-      }
+       }
        io_len = file_len[file_i];
        tot_len2 -= io_len;
        file_i++;
-    } while(tot_len2  > 0)
+    } while(tot_len2 > 0);
 
-    meta_offlen[1] = file_off[0];//min file offset
-    meta_offlen[2] = file_off[file_nseq-1]+file_len[file_nseq-1];//max file offset 
-    meta_offlen[0] = (num_elem_file+1)*2+1;// total length of this array
-    start_offset = file_off[0];//append into dset name to form a unique object name: dsetname_start_offset, e.g., data_offset_32
-    printf("In Dataset write, Rank:%d, dsetname offset:%d\n",o->my_rank, start_offset);
+    int cur_mi=0;
+   
+    meta_offlen[1] = meta_offlen[3];//min file offset
+    meta_offlen[2] = meta_offlen[cur_metal-2]+meta_offlen[cur_metal-1];//max file offset 
+    meta_offlen[0] = cur_metal;// total length of this array
+    start_offset = meta_offlen[1];//append into dset name to form a unique object name: dsetname_start_offset, e.g., data_offset_32
+
+    for(cur_mi=0;cur_mi<cur_metal;cur_mi++){
+        printf("rank:%d meta i:%d,meta:%lu\n",o->my_rank,cur_mi,meta_offlen[cur_mi]);
+    }
+ 
     PyObject * pydata = Data_CPY2(PyLong_AsLong(plong_under), (void *)temp_buf, o);
     //printf("Calling in dataset_write in C\n");
     pValue = PyObject_CallMethod(pInstance, method_name, "lllllOl", PyLong_AsLong(plong_under),  mem_type_id, mem_space_id, file_space_id,plist_id, pydata, start_offset);
     //dset_off:dset
 
     // communicate metadata and ask rank 0 to write metadata as one object with name dset_gmeta
-    int elems_cur_rank = (num_elem_file+1)*2+1; // this includes length of array, min_off, max_off and offset list, thus 1 + 2 + 2*num_elem_file
+    int elems_cur_rank = meta_offlen[0]; // this includes length of array, min_off, max_off and offset list, thus 1 + 2 + 2*num_elem_file
     if(o->my_rank==0){
      //gather size info from other ranks 
      int * receive_counts = malloc(o->num_nprocs * sizeof(int));
@@ -1176,8 +1186,9 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
      PyObject_CallMethod(pInstance, method_name, "lllllOl", PyLong_AsLong(plong_under),  mem_type_id, mem_space_id, file_space_id,plist_id, pydata_meta, -2); 
     //dset_gmeta: len_meta1,min_off_meta1, max_off_meta1,len_meta2,min_off_meta2,max_off_meta2, ....
     } 
+   
     //printf ("-------! PYTHON H5Dwrite\n");
-    return -1;     
+    return 1;     
 }
 static herr_t 
 H5VL_python_dataset_close(void *dset, hid_t dxpl_id, void **req)

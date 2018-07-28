@@ -92,9 +92,9 @@ int main(int argc, char **argv) {
 	printf("Testing Dataset Create\n");
  	//Test HDF5 Dataset Create
 	hid_t datasetId_int16   = H5Dcreate2(file_id,fullpath_int16,  H5T_NATIVE_SHORT, dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
-	hid_t datasetId_int32   = H5Dcreate2(file_id,fullpath_int32,  H5T_NATIVE_INT,   dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
-        hid_t datasetId_float32 = H5Dcreate2(file_id,fullpath_float32,H5T_NATIVE_FLOAT, dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
-	hid_t datasetId_float64 = H5Dcreate2(file_id,fullpath_float64,H5T_NATIVE_DOUBLE,dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT); 
+	//hid_t datasetId_int32   = H5Dcreate2(file_id,fullpath_int32,  H5T_NATIVE_INT,   dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
+        //hid_t datasetId_float32 = H5Dcreate2(file_id,fullpath_float32,H5T_NATIVE_FLOAT, dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
+	//hid_t datasetId_float64 = H5Dcreate2(file_id,fullpath_float64,H5T_NATIVE_DOUBLE,dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT); 
 	if (my_rank==0) printf ("Testing hyperslab\n");
 	file_space =  H5Screate_simple(ndims,dims,NULL);
 	mem_space = H5Screate_simple(ndims,dims,NULL);
@@ -124,14 +124,14 @@ int main(int argc, char **argv) {
    	//H5Dwrite(datasetId_float32, H5T_NATIVE_FLOAT,  H5S_ALL, H5S_ALL, H5P_DEFAULT, data_float32);
 	//H5Dwrite(datasetId_float64, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_float64);
 	free (data_int16);
-      	free (data_int32);
-	free (data_float32);
-	free (data_float64);
+      	//free (data_int32);
+	//free (data_float32);
+	//free (data_float64);
 	//Test HDF5 Dataset Close
 	H5Dclose(datasetId_int16);
-	H5Dclose(datasetId_int32);
-	H5Dclose(datasetId_float32);
-	H5Dclose(datasetId_float64);
+	//H5Dclose(datasetId_int32);
+	//H5Dclose(datasetId_float32);
+	//H5Dclose(datasetId_float64);
 
 
 	//Test HDF5 Group Close
