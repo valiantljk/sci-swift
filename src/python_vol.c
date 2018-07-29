@@ -1176,9 +1176,9 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
      }
      total_meta = malloc(total_meta_length * sizeof(int)); 
      //gather all metadata into total_meta
-     MPI_Gatherv(meta_offlen, elems_cur_rank, MPI_UNSIGNED,
-                total_meta, receive_counts, displs, MPI_UNSIGNED,
-                0, o->comm);
+     //MPI_Gatherv(meta_offlen, elems_cur_rank, MPI_UNSIGNED,
+     //           total_meta, receive_counts, displs, MPI_UNSIGNED,
+     //           0, o->comm);
      //write total_meta into storage
 
      PyObject * pydata_meta = Data_CPY3((void *)total_meta, total_meta_length, 1);
