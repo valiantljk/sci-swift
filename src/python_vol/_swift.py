@@ -284,16 +284,21 @@ class H5PVol:
 				#call swift_object_create(container = , sciobj_name = , sciobj_source = )
 				#print ('puting dst object, container=%s, objec=%s'%(dst_container_name,dst_object_name))
 				metadata = swift_metadata_get(container=dst_container_name,sciobj_name=dst_object_name)
-				if(req > 0):
+				if(req >= 0 ):
 					dst_object_name = dst_object_name + '_' + str(req)
 				if(req == -2):
-					dst_object_name = dst_object_name + 'gmeta'
+					dst_object_name = dst_object_name + '_' + 'meta'
+				#print ("In python, dst_object_name is %s"%dst_object_name)
+				#print ('req is: ',req)
 				swift_object_create(container=dst_container_name, sciobj_name=dst_object_name, sciobj_source=buf)
 				#swift_metadata_get(container = dst_container_name, sciobj_name = dst_obj_name, sciobj_source = sci_obj_source)
                 		sci_obj_meta={}
-                		sci_obj_meta['type'] = str(metadata['type'])
-                		sci_obj_meta['dims'] = str(metadata['dims'])
-                		sci_obj_meta['ndim'] = str(metadata['ndim'])
+                		#sci_obj_meta['type'] = str(metadata['type'])
+                		#sci_obj_meta['dims'] = str(metadata['dims'])
+                		#sci_obj_meta['ndim'] = str(metadata['ndim'])
+				sci_obj_meta['type'] = str(buf.dtype)
+				sci_obj_meta['dims'] = str(buf.shape)
+				sci_obj_meta['ndim'] = str(buf.ndim)
                 		#print ('sci obj meta:',sci_obj_meta)
                 		r1=swift_metadata_create(container = dst_container_name, sciobj_name = dst_object_name, sciobj_metadata=sci_obj_meta)
 				curid = self.obj_curid

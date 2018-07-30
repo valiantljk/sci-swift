@@ -9,7 +9,7 @@ source final.config.nersc
 #echo 'objects create'
 #srun -n 2 ./HDF5_objects_create_parallel liu2.h5 mygroup mydset 3 10 20 30 # run as ./HDF5_objects_create_parallel filename groupname datasetname ndims dims0 dims1
 echo 'dataset write in parallel'
-srun -n 2 ./HDF5_dataset_write_parallel $1 liu_grp liu_dset 3 10 20 30 # run as ./HDF5_objects_create_parallel filename groupname datasetname ndims dims0 dims1
+srun -n 20 ./HDF5_dataset_write_parallel $1 liu_grp liu_dset 3 100 20 30 # run as ./HDF5_objects_create_parallel filename groupname datasetname ndims dims0 dims1
 
 LD_LIBRARY_PATH=$LD_LIBRARY_PATH_BEFORE
 echo 'done'

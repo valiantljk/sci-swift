@@ -89,7 +89,7 @@ int main(int argc, char **argv) {
         //Test HDF5 Group Create
 	group_id = H5Gcreate2(file_id, group_name, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 
-	printf("Testing Dataset Create\n");
+	if(my_rank==0) printf("Testing Dataset Create\n");
  	//Test HDF5 Dataset Create
 	hid_t datasetId_int16   = H5Dcreate2(file_id,fullpath_int16,  H5T_NATIVE_SHORT, dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
 	//hid_t datasetId_int32   = H5Dcreate2(file_id,fullpath_int32,  H5T_NATIVE_INT,   dataspaceId,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
@@ -114,8 +114,8 @@ int main(int argc, char **argv) {
 		count[0] = dims[0] - (num_procs-1)*size_rank;
 	H5Sselect_hyperslab(file_space, H5S_SELECT_SET, start, NULL, count, NULL);
 	H5Sselect_hyperslab(mem_space, H5S_SELECT_SET, start, NULL, count, NULL);
-	for(i=0;i<ndims;i++)
-	printf("Rank:%d,%d dim: off:%llu len:%llu\n",my_rank,i,start[i],count[i]);
+	//for(i=0;i<ndims;i++)
+	//printf("Rank:%d,%d dim: off:%llu len:%llu\n",my_rank,i,start[i],count[i]);
 	if (my_rank==0) printf("Testing Dataset Write\n");
 	
 	//Test HDF5 Dataset Write
@@ -142,7 +142,7 @@ int main(int argc, char **argv) {
 	H5Fclose(file_id);
 
         Py_Finalize();
-	printf("Testing Complete\n");
+	if(my_rank==0) printf("Testing Complete\n");
 	return 0;
 }
 

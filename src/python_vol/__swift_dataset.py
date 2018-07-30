@@ -7,6 +7,7 @@
 try:
 	from __swift_connect import swift_connect
 	import numpy
+        import sys
 	from StringIO import StringIO
 	from swiftclient.service import SwiftError, SwiftService, SwiftUploadObject
 except Exception as e:
@@ -154,6 +155,11 @@ def sci_swift_object(sciobj_name, sciobj_source,options=None):
 	"""
 	from io import BytesIO
 	try:
+		#print ('Object name is :%s'%sciobj_name)
+		#print ('Type of sciobj_source is ',type(sciobj_source))
+		#print ('Element of sciobj has type: ',sciobj_source.dtype)
+		#print ('sciobj has shape: ',sciobj_source.shape)
+		#print ('Size of sciobj_source is ,should be [6000]',sys.getsizeof(sciobj_source))
 		objs = [SwiftUploadObject(
 			BytesIO(sciobj_source), sciobj_name
 			,options=options)]
