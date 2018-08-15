@@ -1035,7 +1035,6 @@ H5VL_python_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
     hbool_t sel_iter_init = FALSE;      /* Selection iteration info has been initialized */
     int ndims;
     hsize_t dim[H5S_MAX_RANK];
-    hssize_t num_elem;
     MPI_Comm_rank(o->comm, &o->my_rank);
     MPI_Comm_size(o->comm, &o->num_nprocs);
 
@@ -1069,7 +1068,6 @@ H5VL_python_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
     }
     // Assuming H5Pget_layout returns H5D_CONTIGUOUS, skip cases of H5D_COMPACT, and H5D_CHUNKED
     // skip type checking
-    size_t  type_size = H5Tget_size(mem_type_id);
     // Initialize selection iterators
     H5S_t * mem_space_obj = (H5S_t *) H5I_object_verify(real_mem_space_id, H5I_DATASPACE);
     H5S_t * file_space_obj = (H5S_t *) H5I_object_verify(real_file_space_id, H5I_DATASPACE);
@@ -1087,6 +1085,7 @@ H5VL_python_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
     //calculate file space offset from file space selection 
     size_t mem_i=0, file_i=0;
     size_t tot_len = num_elem_memory * type_size;
+    size_t tot_len2=tot_len;
     size_t mem_nseq = 0, file_nseq=0;
     size_t nelem;
     size_t mem_off[128], file_off[128];    
@@ -1111,6 +1110,9 @@ H5VL_python_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
 	tot_len2 -= io_len;
 	file_i++;
     } while(tot_len2 > 0);
+    meta_offlen[1] = meta_offlen[3];//min file offset
+    meta_offlen[2] = meta_offlen[cur_metal-2]+meta_offlen[cur_metal-1];//max file offset=  last seq's off + last seq's len
+    meta_offlen[0] = cur_metal;// total length of this array
 //NOW, meta_offlen has per rank's file offset/length info, and first element tells the total length of this array
 
 
@@ -1143,18 +1145,25 @@ H5VL_python_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
     MPI_Bcast( gmeta,*gmeta_len+1, MPI_INT, 0, o->comm); // bcast metadata info: length, min_off, max_off, off1,len1,off2, len2, ...
     //now rank 0 should have same content with other ranks
 
-//Figure out which object to be read for the current rank.
+// Figure out which object to be read for the current rank.
 
-//Goal is to calculate a object list, that can cover this rank's request TODO: in the future, explore two phase collective object I/O, may ask Tang to do this work, Oct 2018, target SC 2019, etc
+// Goal is to calculate a object list, that can cover this rank's request TODO: in the future, explore two phase collective object I/O, may ask Tang to do this work, Oct 2018, target SC 2019, etc
 
-//Input: 
+// Input: 
 //	gmeta: The metadata info about all objects within this dataset
 //	meta_offlen: the required off/len info of each byte sequence in the file
-//Output:
+// Output:
 //	obj_meta: object off(
 
+// Implementation: pass all the request to python layer
+// return a contiguous buffer for current rank's request from python to C layer
+    PyObject * py_gmeta = Data_CPY3(gmeta, *gmeta_len+1, 1); //convert into pyobject
+    PyObject * py_meta_offlen = Data_CPY3(meta_offlen, *gmeta_len+1, 1);//convert into pyobject
+    char method_name_scan[] = "H5VL_python_dsetobj_scan";
+    PyObject * pValue_cdata = PyObject_CallMethod(pInstance, method_name_scan, "lOlOll",PyLong_AsLong(plong_under), py_gmeta,*gmeta_len+1, py_meta_offlen,cur_metal,0);
 //create py reference to c buffer
     //read has memory copy, bc, in python layer, don't know how to fill in buffer directly as of aug 14 2018
+    /*
     hsize_t * count_size=malloc(sizeof(hsize_t));
     int * type_size=malloc(sizeof(int));
     PyObject * pydata= Data_CPY(PyLong_AsLong(plong_under), buf,count_size,type_size);
@@ -1177,6 +1186,8 @@ H5VL_python_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
       }
       else return -1;
     }
+    */
+   
    return 1;     
 }
 static herr_t 
