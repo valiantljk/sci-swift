@@ -3,10 +3,10 @@ CFLAGS = -c -fno-strict-aliasing -Wmissing-include-dirs -O2 -DNDEBUG -fwrapv -O3
 LDFLAGS = -L/usr/common/software/python/2.7-anaconda-4.4/lib -lpython2.7 -lpthread -ldl -lutil -lm -Xlinker -export-dynamic 
 ALL: SWIFT_H5BOSS
 
-SWIFT_H5BOSS: python_vol.o h5boss_rados.o
-	h5pcc -g -O0 h5boss_rados.o python_vol.o $(LDFLAGS) -o SWIFT_H5BOSS
+SWIFT_H5BOSS: python_vol.o h5boss_swift.o
+	h5pcc -g -O0 h5boss_swift.o python_vol.o $(LDFLAGS) -o SWIFT_H5BOSS
 
 python_vol.o: ${dir}/python_vol.c
 	h5pcc -g -O0 $(CFLAGS) ${dir}python_vol.c -o python_vol.o
 clean:
-	rm SWIFT_H5BOSS h5boss_rados.o
+	rm SWIFT_H5BOSS h5boss_swift.o
