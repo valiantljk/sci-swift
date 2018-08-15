@@ -5,7 +5,7 @@
 #How we start a new python vol?
 #First, copy the template _h5py.py
 #import h5py
-import numpy
+import numpy,sys
 from __swift_file import swift_container_create
 from __swift_file import swift_container_open
 from __swift_dataset import swift_object_create
@@ -212,7 +212,8 @@ class H5PVol:
 				sci_obj_source = numpy.empty(dims, dtype=self.dt_types[pytype], order='C')
 				#print ('in dset create, contianer_name:%s,obj name:%s'%(dst_container_name,dst_obj_name))
 				#print ("obj source: ",sci_obj_source)
-				swift_object_create(container = dst_container_name, sciobj_name = dst_obj_name, sciobj_source = sci_obj_source)
+				#swift_object_create(container = dst_container_name, sciobj_name = dst_obj_name, sciobj_source = sci_obj_source)
+				swift_object_create(container = dst_container_name, sciobj_name = dst_obj_name)
 				sci_obj_meta={}
 				sci_obj_meta['type'] = str(self.dt_types[pytype])
 				sci_obj_meta['dims'] = numpy.array_str(dims)
@@ -223,6 +224,7 @@ class H5PVol:
 				curid = self.obj_curid
 				self.obj_list[curid] = z # insert new object#TODO: need full name or not? April Fool Day Puzzle
 				self.obj_curid = curid+1       # update current index
+				#print ("objects bytes:%.2f"%sys.getsizeof(self.obj_list))
 				#print ("------- PYTHON H5Dcreate OK")
 				#print ('dataset id is %d'%curid)
 				#print ("-----------------LEAVE Dataset Create-----------------")
@@ -285,9 +287,12 @@ class H5PVol:
 				#print ('puting dst object, container=%s, objec=%s'%(dst_container_name,dst_object_name))
 				metadata = swift_metadata_get(container=dst_container_name,sciobj_name=dst_object_name)
 				if(req >= 0 ):
-					dst_object_name = dst_object_name + '_' + str(req)
+					dst_object_name = dst_object_name + '_' + str(req) # data of this hyperslab block, ended with start offset
 				if(req == -2):
-					dst_object_name = dst_object_name + '_' + 'meta'
+					dst_object_name = dst_object_name + '_' + 'meta' # meta of this hyperslab block
+				if(req == -3):
+					dst_object_name = dst_object_name + '_' + 'simple' # no hyperslab enabled
+					#print (dst_object_name)
 				#print ("In python, dst_object_name is %s"%dst_object_name)
 				#print ('req is: ',req)
 				swift_object_create(container=dst_container_name, sciobj_name=dst_object_name, sciobj_source=buf)
@@ -296,11 +301,16 @@ class H5PVol:
                 		#sci_obj_meta['type'] = str(metadata['type'])
                 		#sci_obj_meta['dims'] = str(metadata['dims'])
                 		#sci_obj_meta['ndim'] = str(metadata['ndim'])
-				sci_obj_meta['type'] = str(buf.dtype)
-				sci_obj_meta['dims'] = str(buf.shape)
-				sci_obj_meta['ndim'] = str(buf.ndim)
+
+				#sci_obj_meta['type'] = str(buf.dtype)
+				#sci_obj_meta['dims'] = str(buf.shape)
+				#sci_obj_meta['ndim'] = str(buf.ndim)
+
                 		#print ('sci obj meta:',sci_obj_meta)
-                		r1=swift_metadata_create(container = dst_container_name, sciobj_name = dst_object_name, sciobj_metadata=sci_obj_meta)
+
+                		#r1=swift_metadata_create(container = dst_container_name, sciobj_name = dst_object_name, sciobj_metadata=sci_obj_meta)
+				if(sys.getsizeof(self.obj_list)% 52428800 == 0 ):
+				    print ("objects in memory is %.2f MB now"%(5* sys.getsizeof(self.obj_list)/5242880))
 				curid = self.obj_curid
 				#print ("------- PYTHON H5Dwrite OK")
 				#print ("-----------------LEAVE Dataset Write-----------------")
