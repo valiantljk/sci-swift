@@ -1,6 +1,7 @@
 dir=../src/
 CFLAGS = -c -fno-strict-aliasing -Wmissing-include-dirs -O2 -DNDEBUG -fwrapv -O3 -Wall -Wstrict-prototypes -I/usr/common/software/python/2.7-anaconda-4.4/include/python2.7 -isystem/usr/common/software/python/2.7-anaconda-4.4/lib/python2.7/site-packages/numpy/core/include  -Wno-unused-variable  -Wno-strict-prototypes -I/usr/common/software/hdf5-parallel/hdf5-1.9.234/src
 LDFLAGS = -L/usr/common/software/python/2.7-anaconda-4.4/lib -lpython2.7 -lpthread -ldl -lutil -lm -Xlinker -export-dynamic 
+<<<<<<< HEAD
 
  
 ALL: SWIFT_VPIC
@@ -12,3 +13,14 @@ python_vol.o: python_vol.c
 
 clean:
 	rm *.o SWIFT_VPIC
+=======
+ALL: SWIFT_H5BOSS
+
+SWIFT_H5BOSS: python_vol.o h5boss_swift.o
+	h5pcc -g -O0 h5boss_swift.o python_vol.o $(LDFLAGS) -o SWIFT_H5BOSS
+
+python_vol.o: ${dir}/python_vol.c
+	h5pcc -g -O0 $(CFLAGS) ${dir}python_vol.c -o python_vol.o
+clean:
+	rm SWIFT_H5BOSS h5boss_swift.o
+>>>>>>> 233368b50413eb482127d81ea2bf0bf6e83e005e
