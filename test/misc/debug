@@ -1,1 +1,0 @@
-python3 -c "import distutils.sysconfig; print(distutils.sysconfig.get_config_var('VERSION'))"

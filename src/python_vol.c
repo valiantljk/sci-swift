@@ -661,6 +661,15 @@ H5VL_python_dataset_create(void *obj, H5VL_loc_params_t loc_params, const char *
         if(H5Tencode(type_id, type_buf, &type_size) < 0)
             HGOTO_ERROR(H5E_DATASET, H5E_CANTENCODE, NULL, "can't serialize datatype")
         */
+	printf("Do h5scopy now, line 678\n");
+        fflush(stdout);
+
+        dset->space_id=H5Scopy(space_id);//space_id;
+        printf("Finally[][][]dset->space_id:[%llx],[%llx]\n",dset->space_id,space_id);
+        fflush(stdout);
+        printf("do h5scopy now, line 681\n");
+        dset->type_id=H5Scopy(type_id);
+        fflush(stdout);
         dset->space_id=space_id;
 	dset->type_id=type_id;
 	return (void *) dset;
