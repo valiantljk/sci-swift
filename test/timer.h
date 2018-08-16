@@ -46,7 +46,7 @@ extern float elapse[3];
 		}
 
 #define timer_msg(id) \
-	printf("%f\n", (DTYPE)(elapse[id]));  \
+	printf("Time: %f\n", (DTYPE)(elapse[id]));  \
 
 #define timer_reset(id) elapse[id] = 0
 
