@@ -7,8 +7,8 @@ ALL: SWIFT_VPIC
 SWIFT_VPIC: python_vol.o vpic_swift.o
 	h5pcc -g vpic_swift.o python_vol.o $(LDFLAGS) -o SWIFT_VPIC
 
-python_vol.o: python_vol.c
-	h5pcc -g $(CFLAGS) python_vol.c -o python_vol.o
+python_vol.o: ${dir}/python_vol.c
+	h5pcc -g $(CFLAGS) ${dir}/python_vol.c -o python_vol.o
 
 clean:
 	rm *.o SWIFT_VPIC
