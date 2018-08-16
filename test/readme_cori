@@ -14,7 +14,7 @@ else
 	#pip install python-swiftclient --user
 	echo "Compiling Sci-Swift"
 	sleep 2
-	make
+	make -f $1
 	echo "Configuring Openstack Swift and Python Environment"
 	sleep 2
 	source swift.config.nersc

@@ -3,12 +3,12 @@ CFLAGS = -c -fno-strict-aliasing -Wmissing-include-dirs -O2 -DNDEBUG -fwrapv -O3
 LDFLAGS = -L/usr/common/software/python/2.7-anaconda-4.4/lib -lpython2.7 -lpthread -ldl -lutil -lm -Xlinker -export-dynamic 
 
  
-ALL: SWIFT_VPIC
-SWIFT_VPIC: python_vol.o vpic_swift.o
-	h5pcc -g vpic_swift.o python_vol.o $(LDFLAGS) -o SWIFT_VPIC
+ALL: SWIFT_BDCATS
+SWIFT_BDCATS: python_vol.o bdcats_swift.o
+	h5pcc -g bdcats_swift.o python_vol.o $(LDFLAGS) -o SWIFT_BDCATS
 
 python_vol.o: python_vol.c
 	h5pcc -g $(CFLAGS) ${dir}/python_vol.c -o python_vol.o
 
 clean:
-	rm *.o SWIFT_VPIC
+	rm *.o SWIFT_BDCATS
