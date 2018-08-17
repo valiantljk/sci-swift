@@ -195,6 +195,7 @@ class H5PVol:
 			z=z.replace("/","\\")
 			obj_name = z.split("\\")[-1]
 			container_name = z[:z.find(z.split('\\')[-1])-1]
+			#print ('container name:%s,obj name:%s'%(container_name, obj_name))
 			metadata = swift_metadata_get(container=container_name,sciobj_name=obj_name)
 			m=metadata['dims']
 			m=m[1:len(m)-1]
@@ -209,9 +210,11 @@ class H5PVol:
 					axx=axx+list(dims)
 					#import numpy as np
 					axx=numpy.asarray(axx,dtype='int64')
+					#print (axx)
 					return axx
 		except Exception as e:
-			print (e)
+			#print (e)
+			return None 
 			pass
 
 	def H5VL_python_dataset_write(self, obj_id, mem_type_id, mem_space_id, file_space_id, plist_id, buf, req):
