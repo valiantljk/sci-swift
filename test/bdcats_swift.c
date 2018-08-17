@@ -55,6 +55,7 @@ herr_t ierr;
 hid_t file_id, dset_id;
 hid_t filespace, memspace;
 hid_t fapl;
+hid_t plist_id=H5P_DEFAULT;
 
 // Variables and dimensions
 long numparticles = 8388608;	// 8  meg particles per process
@@ -85,55 +86,55 @@ void read_h5_data(int rank)
 {
 	// Note: printf statements are inserted basically 
 	// to check the progress. Other than that they can be removed
-	dset_id = H5Dopen2(file_id, "x", H5P_DEFAULT);
-        ierr = H5Dread(dset_id, H5T_NATIVE_FLOAT, memspace, filespace, H5P_DEFAULT, x);
+	dset_id = H5Dopen2(file_id, "x", dcpl_id);
+        ierr = H5Dread(dset_id, H5T_NATIVE_FLOAT, memspace, filespace, plist_id, x);
         H5Dclose(dset_id);
 	//if (rank == 0) printf ("Read variable 1 \n");
 
 	dset_id = H5Dopen2(file_id, "y", H5P_DEFAULT);
-        ierr = H5Dread(dset_id, H5T_NATIVE_FLOAT, memspace, filespace, H5P_DEFAULT, y);
+        ierr = H5Dread(dset_id, H5T_NATIVE_FLOAT, memspace, filespace, plist_id, y);
 	//dset_id = H5Dcreate(file_id, "y", H5T_NATIVE_FLOAT, filespace, H5P_DEFAULT, dcpl_id, H5P_DEFAULT);
         //ierr = H5Dread(dset_id, H5T_NATIVE_FLOAT, memspace, filespace, fapl, y);
         H5Dclose(dset_id);
 	//if (rank == 0) printf ("Read variable 2 \n");
 
 	dset_id = H5Dopen2(file_id, "z", H5P_DEFAULT);
-        ierr = H5Dread(dset_id, H5T_NATIVE_FLOAT, memspace, filespace, H5P_DEFAULT, z);
+        ierr = H5Dread(dset_id, H5T_NATIVE_FLOAT, memspace, filespace, plist_id, z);
 	//dset_id = H5Dcreate(file_id, "z", H5T_NATIVE_FLOAT, filespace, H5P_DEFAULT, dcpl_id, H5P_DEFAULT);
         //ierr = H5Dread(dset_id, H5T_NATIVE_FLOAT, memspace, filespace, fapl, z);
         H5Dclose(dset_id);
 	//if (rank == 0) printf ("Read variable 3 \n");
 
 	dset_id = H5Dopen2(file_id, "id1", H5P_DEFAULT);
-        ierr = H5Dread(dset_id, H5T_NATIVE_INT, memspace, filespace, H5P_DEFAULT, id1);
+        ierr = H5Dread(dset_id, H5T_NATIVE_INT, memspace, filespace, plist_id, id1);
 	//dset_id = H5Dcreate(file_id, "id1", H5T_NATIVE_INT, filespace, H5P_DEFAULT, dcpl_id, H5P_DEFAULT);
         //ierr = H5Dread(dset_id, H5T_NATIVE_INT, memspace, filespace, fapl, id1);
         H5Dclose(dset_id);
 	//if (rank == 0) printf ("Read variable 4 \n");
 
 	dset_id = H5Dopen2(file_id, "id2", H5P_DEFAULT);
-        ierr = H5Dread(dset_id, H5T_NATIVE_INT, memspace, filespace, H5P_DEFAULT, id2);
+        ierr = H5Dread(dset_id, H5T_NATIVE_INT, memspace, filespace, plist_id, id2);
 	//dset_id = H5Dcreate(file_id, "id2", H5T_NATIVE_INT, filespace, H5P_DEFAULT, dcpl_id, H5P_DEFAULT);
         //ierr = H5Dread(dset_id, H5T_NATIVE_INT, memspace, filespace, fapl, id2);
         H5Dclose(dset_id);
 	//if (rank == 0) printf ("Read variable 5 \n");
 
 	dset_id = H5Dopen2(file_id, "px", H5P_DEFAULT);
-        ierr = H5Dread(dset_id, H5T_NATIVE_FLOAT, memspace, filespace, H5P_DEFAULT, px);
+        ierr = H5Dread(dset_id, H5T_NATIVE_FLOAT, memspace, filespace, plist_id, px);
 	//dset_id = H5Dcreate(file_id, "px", H5T_NATIVE_FLOAT, filespace, H5P_DEFAULT, dcpl_id, H5P_DEFAULT);
         //ierr = H5Dread(dset_id, H5T_NATIVE_FLOAT, memspace, filespace, fapl, px);
         H5Dclose(dset_id);
 	//if (rank == 0) printf ("Read variable 6 \n");
 
 	dset_id = H5Dopen2(file_id, "py", H5P_DEFAULT);
-        ierr = H5Dread(dset_id, H5T_NATIVE_FLOAT, memspace, filespace, H5P_DEFAULT, py);
+        ierr = H5Dread(dset_id, H5T_NATIVE_FLOAT, memspace, filespace, plist_id, py);
 	//dset_id = H5Dcreate(file_id, "py", H5T_NATIVE_FLOAT, filespace, H5P_DEFAULT, dcpl_id, H5P_DEFAULT);
         //ierr = H5Dread(dset_id, H5T_NATIVE_FLOAT, memspace, filespace, fapl, py);
         H5Dclose(dset_id);
 	//if (rank == 0) printf ("Read variable 7 \n");
 
 	dset_id = H5Dopen2(file_id, "pz", H5P_DEFAULT);
-        ierr = H5Dread(dset_id, H5T_NATIVE_FLOAT, memspace, filespace, H5P_DEFAULT, pz);
+        ierr = H5Dread(dset_id, H5T_NATIVE_FLOAT, memspace, filespace, plist_id, pz);
 	//dset_id = H5Dcreate(file_id, "pz", H5T_NATIVE_FLOAT, filespace, H5P_DEFAULT, dcpl_id, H5P_DEFAULT);
         //ierr = H5Dread(dset_id, H5T_NATIVE_FLOAT, memspace, filespace, fapl, pz);
         H5Dclose(dset_id);
@@ -147,9 +148,9 @@ int main (int argc, char* argv[])
 	
 	MPI_Init(&argc,&argv);
 	if(argc != 3)
-        	PRINTF_ERROR("argc != 3 ./SWIFT_BDCATS file nparticles\n");
+        	printf("argc != 3 ./SWIFT_BDCATS file nparticles\n");
 	int my_rank, num_procs;
-	hid_t fapl=-1;
+	const char plugin_name[7]="python";
 	MPI_Comm_rank (MPI_COMM_WORLD, &my_rank);
 	MPI_Comm_size (MPI_COMM_WORLD, &num_procs);
 	numparticles = (atol (argv[2]));	
@@ -173,22 +174,21 @@ int main (int argc, char* argv[])
 		printf ("Finished initializeing particles \n");
 	}
 	*/
-	MPI_Barrier (MPI_COMM_WORLD);
-	timer_on (0);
-
 	MPI_Allreduce(&numparticles, &total_particles, 1, MPI_LONG_LONG, MPI_SUM, MPI_COMM_WORLD);
         MPI_Scan(&numparticles, &offset, 1, MPI_LONG_LONG, MPI_SUM, MPI_COMM_WORLD);	
 	offset -= numparticles;
 	hid_t acc_tpl;
 
 	char *file_name = argv[1];
+	MPI_Barrier (MPI_COMM_WORLD);
+        timer_on (0);
 
 /*SWIFT VOL Related Code Change*/
         acc_tpl = H5Pcreate (H5P_FILE_ACCESS);
         H5Pset_fapl_swift(acc_tpl,plugin_name, MPI_COMM_WORLD, MPI_INFO_NULL);
-
+	H5Pset_all_coll_metadata_ops(acc_tpl, true);
 /*Rados VOL Related Code Change*/
-
+	
 	/* Create file */
 	file_id = H5Fopen(file_name , H5F_ACC_RDONLY, acc_tpl);
 	if(file_id < 0) {
@@ -203,7 +203,8 @@ int main (int argc, char* argv[])
 
 	filespace = H5Screate_simple(1, (hsize_t *) &total_particles, NULL);
         memspace =  H5Screate_simple(1, (hsize_t *) &numparticles, NULL);
-
+        plist_id = H5Pcreate(H5P_DATASET_XFER);
+        H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
 	//printf("total_particles: %lld\n", total_particles);
 	//printf("my particles   : %ld\n", numparticles);
 
@@ -211,6 +212,7 @@ int main (int argc, char* argv[])
         H5Sselect_hyperslab(filespace, H5S_SELECT_SET, (hsize_t *) &offset, NULL, (hsize_t *) &numparticles, NULL);
 	if (my_rank == 0) printf ("Before reading particles \n");
 	MPI_Barrier (MPI_COMM_WORLD);
+	timer_off (0);
 	timer_on (1);
 
 	//if (my_rank == 0) printf ("Before reading particles \n");
@@ -225,29 +227,25 @@ int main (int argc, char* argv[])
 	free(px); free(py); free(pz);
 	free(id1);
 	free(id2);
-
-	MPI_Barrier (MPI_COMM_WORLD);
-
-	timer_off (0);
-
 	if (my_rank == 0)
 	{
-		printf ("\nTiming results\n");
-		timer_msg (1, "just reading data");
-		timer_msg (0, "opening, reading, closing file");
+		printf ("\nI/O cost (sec):\n");
+		timer_msg (1);
+		printf ("Metadata cost (sec):\n");
+		timer_msg (0);
 		printf ("\n");
 	}
 
 	H5Sclose(memspace);
         H5Sclose(filespace);
-        H5Pclose(fapl);
+        H5Pclose(acc_tpl);
         H5Fclose(file_id);
 	if (my_rank == 0) printf ("After closing HDF5 file \n");
 
 error:
     H5E_BEGIN_TRY {
         H5Fclose(file_id);
-        H5Pclose(fapl);
+        H5Pclose(acc_tpl);
     } H5E_END_TRY;
 
 done:
