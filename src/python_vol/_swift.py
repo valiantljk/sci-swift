@@ -308,3 +308,13 @@ class H5PVol:
 			print ('metadata offlens:',meta_offlen)
 		except Exception as e:
 			pass
+	def H5VL_python_dstobj_scan(self, obj_id, global_meta, meta_offlen, req):
+		# reconstruct the object mapping, i.e., object_name: {[o,l],[o,l],[o,l]}
+		object_mappings={}
+		object_selected={}
+		i=0
+		ol=[global_meta[1],global_meta[2]]
+		obj_name=dsetname+'_'+ str(ol[0])
+		object_mappings[obj_name].append(ol)
+		for (i = 0; i< global_meta[0], i++):
+			ol=[global[]]
