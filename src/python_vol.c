@@ -1116,7 +1116,7 @@ H5VL_python_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
 	file_i++;
     } while(tot_len2 > 0);
     meta_offlen[1] = meta_offlen[3];//min file offset
-    meta_offlen[2] = meta_offlen[cur_metal-2]+meta_offlen[cur_metal-1];//max file offset=  last seq's off + last seq's len
+    meta_offlen[2] = meta_offlen[cur_metal-2]+meta_offlen[cur_metal-1]-1;//max file offset=  last seq's off + last seq's len
     meta_offlen[0] = cur_metal;// total length of this array
 //NOW, meta_offlen has per rank's file offset/length info, and first element tells the total length of this array
 
@@ -1334,7 +1334,7 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
     	int cur_mi=0;
    
     	meta_offlen[1] = meta_offlen[3];//min file offset
-    	meta_offlen[2] = meta_offlen[cur_metal-2]+meta_offlen[cur_metal-1];//max file offset 
+    	meta_offlen[2] = meta_offlen[cur_metal-2]+meta_offlen[cur_metal-1] -1;//max file offset
     	meta_offlen[0] = cur_metal;// total length of this array
     	start_offset = meta_offlen[1];//append into dset name to form a unique object name: dsetname_start_offset, e.g., data_offset_32
   	PyObject * pydata = Data_CPY4(PyLong_AsLong(plong_under), temp_buf, num_elem_memory); 
