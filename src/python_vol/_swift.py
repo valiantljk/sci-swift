@@ -331,31 +331,34 @@ class H5PVol:
             return -1
         #	def H5VL_python_dsetobj_scan(self, obj_id, gmeta, gmeta_length, meta_offlen,meta_offlen_length, req):
 
+    def H5VL_python_dsetobj_scan(self, obj_id, gmeta, gmeta_length, meta_offlen,meta_offlen_length, req):
+	return H5VL_python_dstobj_scan(self, obj_id, gmeta, meta_offlen, req)
+
     def H5VL_python_dstobj_scan(self, obj_id, global_meta, meta_offlen, req):
-        #try:
-            #dst_parent_obj=self.obj_list[obj_id]
-            #z = dst_parent_obj.replace("/","\\")
-            #dst_container_name=z[:z.find(z.split('\\')[-1])-1]
-            #dst_object_name=z.split('\\')[-1]
+        try:
+            dst_parent_obj=self.obj_list[obj_id]
+            z = dst_parent_obj.replace("/","\\")
+            dst_container_name=z[:z.find(z.split('\\')[-1])-1]
+            dst_object_name=z.split('\\')[-1]
             #print ('dset name: %s'%dset_object_name)
             #print ('global metadata:',global_meta)
             #print ('metadata offlens:',meta_offlen)
-        #except Exception as e:
-        #    pass
-        dst_object_name = obj_id # added for test
+        except Exception as e:
+            pass
+        #dst_object_name = obj_id # added for test
         object_mappings, meta_offlen_list = self.Meta_to_Object_Mappings(global_meta, meta_offlen)
         object_selected = self.Object_Binary_Search(object_mappings, meta_offlen_list) # object_selected = {'offset, len':[objid, offset, length, off_in_obj, start_off_in_file, end_off_in_file]}
         #compare start_off_in_file with offset in object_mappings and off_in_obj in object_mappings to get the start_off_in_obj
-        print ('object selected:')
+        #print ('object selected:')
         for x in object_selected.keys():
             for y in object_selected[x]:
                 print (x, y)
-        print("objid, offset, length, off_in_obj, start_off_in_file, end_off_in_file")
-        print ('reading objid:%s, dst_object_name:%s now'%(obj_id,dst_object_name))
+        #print("objid, offset, length, off_in_obj, start_off_in_file, end_off_in_file")
+        #print ('reading objid:%s, dst_object_name:%s now'%(obj_id,dst_object_name))
         con_data = self.dst_oneshot_io(object_selected,obj_id, dst_object_name)
         #con_data=1
-        return object_selected,con_data
-        #return con_data
+        #return object_selected,con_data
+        return con_data
 
     def Dataset_object_internal_read(self, obj_id, dstobj_name):
         """
@@ -388,7 +391,7 @@ class H5PVol:
                 metadata = swift_metadata_get(container=dst_container_name,sciobj_name=dstobj_name)
                 curtype=str(metadata['type'])
                 x=swift_object_download(container=dst_container_name, sciobj_name=dstobj_name,dtype=curtype)
-                curtype='int32' # added for test
+                #curtype='int32' # added for test
                 #f=h5py.File('swift_3.h5','r') #added for test
                 #x=f[dstobj_name][:] #added for test
                 #print ('x is ',x)
@@ -404,26 +407,26 @@ class H5PVol:
         all_objs ={v[0] for k in objsel.keys() for v in objsel[k]}
 
         all_objs = list(set(all_objs))
-        print ('before sorting:',all_objs)
+        #print ('before sorting:',all_objs)
         all_objs.sort()
-        print ('after sorting:',all_objs)
+        #print ('after sorting:',all_objs)
         #Read in all data
 
-        print ('needed objects: ',all_objs)
+        #print ('needed objects: ',all_objs)
         for iobj in all_objs:
             dstname = dstparent + '_' + str(iobj)
             if dstname not in obj_data:
-                print ('data is not yet loaded')
+                #print ('data is not yet loaded')
                 #not read yet, start I/O here
                 ddt = self.Dataset_object_internal_read(obj_id, dstname)
-                print ('data loaded:',ddt)
+                #print ('data loaded:',ddt)
                 obj_data[dstname] = ddt
-            else:
-                print ('data is already loaded into memory')
+            #else:
+            #    print ('data is already loaded into memory')
         #Construct a contiguous array
         data = numpy.empty(shape=(0))
         for ol in objsel.keys():
-            print ('ol is: ',ol)
+            #print ('ol is: ',ol)
             meta_list = objsel[ol]
             for k in range(len(meta_list)):
                 cur_meta =  meta_list[k]
@@ -464,9 +467,9 @@ class H5PVol:
             i = i + global_meta[i] # jump to next object
             number_obj +=1
         #assert (number_obj == len(object_mappings))
-        print ('number of objects:%d'%number_obj) # added for test
+        #print ('number of objects:%d'%number_obj) # added for test
         object_mappings.sort(key=Takesecond) # sort list by offset
-        print ('sorted global off/len pair:',object_mappings) # added for test
+        #print ('sorted global off/len pair:',object_mappings) # added for test
         len_mt = meta_offlen[0]
         meta_offlens =list()
         i=1
@@ -476,7 +479,7 @@ class H5PVol:
             i+=2
             meta_offlens.append(ol)
         meta_offlens.sort(key=Takefirst)
-        print ('sorted local off/len pairs:',meta_offlens)
+        #print ('sorted local off/len pairs:',meta_offlens)
         return object_mappings,meta_offlens
 
     def Object_Binary_Search(self, object_mappings, meta_offlen):
@@ -495,7 +498,7 @@ class H5PVol:
             mid = int(l + (r-l)/2)
             olap = self.obj_overlap(objm[mid], imeta)
             if(olap==0):
-                print('overlaping detected for %s'%imeta)
+                #print('overlaping detected for %s'%imeta)
                 return self.obj_following(objm,mid,imeta)
             elif(olap ==-1):
                 #print('looking left for %s'%imeta)
