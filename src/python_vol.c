@@ -1165,7 +1165,9 @@ H5VL_python_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
     PyObject * py_gmeta = Data_CPY3(gmeta, *gmeta_len+1, 1); //convert into pyobject
     PyObject * py_meta_offlen = Data_CPY3(meta_offlen, *gmeta_len+1, 1);//convert into pyobject
     char method_name_scan[] = "H5VL_python_dsetobj_scan";
-    PyObject * pValue_cdata = PyObject_CallMethod(pInstance, method_name_scan, "lOlOll",PyLong_AsLong(plong_under), py_gmeta,*gmeta_len+1, py_meta_offlen,cur_metal,0);
+    printf("Rank:%d started\n",o->my_rank);
+    PyObject * pValue_cdata = PyObject_CallMethod(pInstance, method_name_scan, "lOlOll",PyLong_AsLong(plong_under), py_gmeta,py_meta_offlen,0);
+    printf("Rank:%d ended\n",o->my_rank);
 //create py reference to c buffer
     //read has memory copy, bc, in python layer, don't know how to fill in buffer directly as of aug 14 2018
     /*
