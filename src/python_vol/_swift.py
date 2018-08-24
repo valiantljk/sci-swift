@@ -331,114 +331,198 @@ class H5PVol:
             return -1
         #	def H5VL_python_dsetobj_scan(self, obj_id, gmeta, gmeta_length, meta_offlen,meta_offlen_length, req):
 
+    def H5VL_python_dsetobj_scan(self, obj_id, gmeta, gmeta_length, meta_offlen,meta_offlen_length, req):
+	return H5VL_python_dstobj_scan(self, obj_id, gmeta, meta_offlen, req)
+
     def H5VL_python_dstobj_scan(self, obj_id, global_meta, meta_offlen, req):
         try:
             dst_parent_obj=self.obj_list[obj_id]
             z = dst_parent_obj.replace("/","\\")
             dst_container_name=z[:z.find(z.split('\\')[-1])-1]
             dst_object_name=z.split('\\')[-1]
-            print ('dset name: %s'%dset_object_name)
-            print ('global metadata:',global_meta)
-            print ('metadata offlens:',meta_offlen)
+            #print ('dset name: %s'%dset_object_name)
+            #print ('global metadata:',global_meta)
+            #print ('metadata offlens:',meta_offlen)
         except Exception as e:
             pass
-        object_mappings = self.Meta_to_Object_Mappings(global_meta)
-        object_selected = self.Object_Binary_Search(object_mappings, meta_offlen) # object_selected = {'offset, len':[objid, offset, length, off_in_obj, start_off_in_file, end_off_in_file]}
+        #dst_object_name = obj_id # added for test
+        object_mappings, meta_offlen_list = self.Meta_to_Object_Mappings(global_meta, meta_offlen)
+        object_selected = self.Object_Binary_Search(object_mappings, meta_offlen_list) # object_selected = {'offset, len':[objid, offset, length, off_in_obj, start_off_in_file, end_off_in_file]}
         #compare start_off_in_file with offset in object_mappings and off_in_obj in object_mappings to get the start_off_in_obj
-        con_data = self.dst_oneshot_io(object_mappings, object_selected,obj_id, dst_object_name)
+        #print ('object selected:')
+        for x in object_selected.keys():
+            for y in object_selected[x]:
+                print (x, y)
+        #print("objid, offset, length, off_in_obj, start_off_in_file, end_off_in_file")
+        #print ('reading objid:%s, dst_object_name:%s now'%(obj_id,dst_object_name))
+        con_data = self.dst_oneshot_io(object_selected,obj_id, dst_object_name)
+        #con_data=1
+        #return object_selected,con_data
         return con_data
 
-    def dst_oneshot_io(self, objmap, objsel, obj_id,dstparent):
+    def Dataset_object_internal_read(self, obj_id, dstobj_name):
+        """
+        Python wrapper for H5VL_dataset_read, return numpy array, interperated as object in C
+
+        Input:
+            same with H5VL_python_dataset_read at C layer
+        Output:
+            numpy array
+        """
+        try:
+            dst_parent_obj=self.obj_list[obj_id]
+            z = dst_parent_obj.replace("/","\\")
+            dst_container_name=z[:z.find(z.split('\\')[-1])-1]
+            dsobj_name=z.split('\\')[-1]
+            #if dstobj_name not in dst_object_name:
+            #    print ('%s not consistent with %s'%(dstobj_name,dst_object_name))
+            #print ('Reading:%s'%dstobj_name) # added for test
+            #assert(obj_id==dstobj_name) #added for test
+            try:
+                '''
+                    buf[:] = dst_parent_obj[:] # TODO: make sure memcopy free
+                    print ("passed in buffer has shape:,",buf.shape)
+                            print ("data to be returned has shape:,",dst_parent_obj)
+                        buf[:] = dst_parent_obj[:]
+                        Direct read from HDF5 file into numpy array
+                        print (buf)
+                        print (buf.flags)
+                    '''
+                metadata = swift_metadata_get(container=dst_container_name,sciobj_name=dstobj_name)
+                curtype=str(metadata['type'])
+                x=swift_object_download(container=dst_container_name, sciobj_name=dstobj_name,dtype=curtype)
+                #curtype='int32' # added for test
+                #f=h5py.File('swift_3.h5','r') #added for test
+                #x=f[dstobj_name][:] #added for test
+                #print ('x is ',x)
+                return x
+            except Exception as e:
+                print ('dataset read in python failed with error: ',e)
+        except Exception as e:
+            print ('retrieve obj failed in internal read:',e)
+            return -1
+
+    def dst_oneshot_io(self, objsel, obj_id,dstparent):
         obj_data={} # record the data that has completed I/O, so no need to read again
-        all_requests_offlen_pairs = list(objsel.keys()) # keys is the offset of each requested offset length pair
-        all_requests_offlen_pairs.sort()
+        all_objs ={v[0] for k in objsel.keys() for v in objsel[k]}
+
+        all_objs = list(set(all_objs))
+        #print ('before sorting:',all_objs)
+        all_objs.sort()
+        #print ('after sorting:',all_objs)
         #Read in all data
-        for iobjs in all_requests_offlen_pairs:
-            key_off_len = iobjs.keys()
-            value_meta = iobjs.values()
-            objname = value_meta[0] # this is the object's offset, while the name will be dset_name + '_' + str(obj_off)
-            dstname = dstparent + '_' + str(objname)
+
+        #print ('needed objects: ',all_objs)
+        for iobj in all_objs:
+            dstname = dstparent + '_' + str(iobj)
             if dstname not in obj_data:
-                print ('data is not yet loaded')
+                #print ('data is not yet loaded')
                 #not read yet, start I/O here
-                obj_data[objname] = self.Dataset_object_internal_read(obj_id, dstname)
-            else:
-                print ('data is already loaded into memory')
+                ddt = self.Dataset_object_internal_read(obj_id, dstname)
+                #print ('data loaded:',ddt)
+                obj_data[dstname] = ddt
+            #else:
+            #    print ('data is already loaded into memory')
         #Construct a contiguous array
         data = numpy.empty(shape=(0))
-        for ol in all_requests_offlen_pairs:
-            meta_list = objmap[ol]
+        for ol in objsel.keys():
+            #print ('ol is: ',ol)
+            meta_list = objsel[ol]
             for k in range(len(meta_list)):
                 cur_meta =  meta_list[k]
-                cur_obj = obj_data[meta_list[k][0]]
-                data_start = cur_meta[3]-cur_meta[1]
-                data_length = cur_meta[5] - cur_meta[4]
-                data_cur = cur_obj[data_start:data_start + data_length]
+                cur_obj = obj_data[dstparent+'_'+str(cur_meta[0])] # get object data by objectid i.e., offset
+                data_start = cur_meta[3] #-cur_meta[1]
+                data_length = cur_meta[5] - cur_meta[4] +1
+                data_cur = cur_obj[data_start:(data_start + data_length)]
                 if data.size ==0:
                     data = data_cur
                 else:
                     data = numpy.append(data, data_cur)
         return data
-    def Meta_to_Object_Mappings(self, global_meta):
+
+
+
+    def Meta_to_Object_Mappings(self, global_meta, meta_offlen):
 
     #:param global_meta:
     #:return: object_mapping dictionary, [objid, offset, length, off_in_obj]
     # obj_name=dset_object_name+'_'+ str(ol[0]) # dset object name with offset as uinque tag
         i = 3 # Skip first three elements, which is total length of this array, min offset, max offset.
         object_mappings = list()
-        number_obj = 1
+        number_obj = 0
         while i < global_meta[0]:
             cur_seq_len = global_meta[i]
             j = i + 3  # points j to the first (offset, length) pair
             cur_seq_len -= 3  # removed min and max offset
             off_in_obj=0
+            #print('i is:%d'%i)
             while (cur_seq_len > 0):  # append other offset lengths
-                ol = [global_meta[j - 3], global_meta[j], global_meta[j + 1],off_in_obj]
-                off_in_obj+=global_meta[j+1] # calculate the offset of this byte sequence within the object
+                ol = [global_meta[i +1], global_meta[j], global_meta[j + 1],off_in_obj]
+                off_in_obj+=global_meta[j+1] # calculate the offset of next byte sequence within the object
                 cur_seq_len -= 2
+                #print ('ith ele in gmeta:%d, objid:%d, off:%d, len:%d, off_inobj:%d'%(i,ol[0],ol[1],ol[2],ol[3]))
+                #print('cur_seq_len is now:%d'%cur_seq_len)
+                j+=2
                 object_mappings.append(ol)
             i = i + global_meta[i] # jump to next object
             number_obj +=1
-        assert (number_obj == len(object_mappings))
+        #assert (number_obj == len(object_mappings))
+        #print ('number of objects:%d'%number_obj) # added for test
         object_mappings.sort(key=Takesecond) # sort list by offset
-        return object_mappings
-    def Takesecond(elem):
-        return elem[1]
+        #print ('sorted global off/len pair:',object_mappings) # added for test
+        len_mt = meta_offlen[0]
+        meta_offlens =list()
+        i=1
+        while i < len_mt:
+            ol=[meta_offlen[i],meta_offlen[i+1]]
+            #print ('i:%d ol is:%s'%(i,ol))
+            i+=2
+            meta_offlens.append(ol)
+        meta_offlens.sort(key=Takefirst)
+        #print ('sorted local off/len pairs:',meta_offlens)
+        return object_mappings,meta_offlens
 
     def Object_Binary_Search(self, object_mappings, meta_offlen):
         object_selected ={}
         l=0
         r=len(object_mappings)-1
         for imeta in meta_offlen:
+            #print ('now searching:',imeta)
             object_selected[imeta[0]] = self.obj_binary_search(object_mappings,l,r, imeta)
+            #print ('searched result:',object_selected[imeta[0]])
+        #print ('selected objects:',object_selected) #added for test
         return object_selected
 
     def obj_binary_search(self, objm, l, r, imeta):
         if(r>=l):
-            mid = l + (r-l)/2
+            mid = int(l + (r-l)/2)
             olap = self.obj_overlap(objm[mid], imeta)
             if(olap==0):
-                #overlapped
+                #print('overlaping detected for %s'%imeta)
                 return self.obj_following(objm,mid,imeta)
             elif(olap ==-1):
+                #print('looking left for %s'%imeta)
                 return self.obj_binary_search(objm, l, mid-1, imeta)
             elif(olap == 1):
+                #print('looking right for %s'%imeta)
                 return self.obj_binary_search(objm, mid+1, r, imeta)
 
     def obj_overlap(self, objm, imeta):
-        objm_l = objm[0]
+        objm_l = objm[1]
 
-        objm_r = objm[1] + objm_l
+        objm_r = objm[2] + objm_l -1
+        #print ('checking overlap b.w. imeta: %s v.s. gmeta: [%d,%d]'%(imeta,objm_l,objm_r))
         imeta_l = imeta[0]
-        imeta_r = imeta_l + imeta[1]
+        imeta_r = imeta_l + imeta[1] - 1
         # case 1: -----
         #        --------
         if (objm_l >= imeta_l and objm_r <= imeta_r):
+            #print ('case 1')
             return 0
         # case 2: ------
         #           ----
         elif (objm_l <= imeta_l and objm_r >= imeta_l):
-            # print ('case 2')
+            #print ('case 2')
             return 0
         # case 3:   ------
         #        ------
@@ -446,32 +530,49 @@ class H5PVol:
             #print('case 3')
             return 0
         elif(objm_r < imeta_l):
-            return -1
-        elif(objm_l > imeta_r):
+            #print('on the left')
             return 1
+        elif(objm_l > imeta_r):
+            #print('on the right')
+            return -1
+        else:
+            print('not sure')
+
     def obj_following(self, objm, found_index, imeta):
         result=list()
         imeta_offset_min = imeta[0]
-        imeta_offset_max = imeta[1] + imeta_offset_min
-        objm_rich = objm[found_index].append(min(imeta_offset_min, objm[found_index][0]))
-        objm_rich = objm_rich.append(min(imeta_offset_max, objm[found_index][0]+objm[found_index][1]))
+        imeta_offset_max = imeta[1] + imeta_offset_min - 1
+        #print('found index:%d'%found_index)
+        #print ('before appending, found:',objm[found_index])
+        objm_rich = numpy.append(objm[found_index], max(imeta_offset_min, objm[found_index][1]))
+        #objm_rich = objm_rich.append(min(imeta_offset_max, objm[found_index][1]+objm[found_index][2]-1))
+        objm_rich = numpy.append(objm_rich, min(imeta_offset_max, objm[found_index][1]+objm[found_index][2]-1))
+        #print ('appending:',objm_rich)
         result.append(objm_rich)
         #search on left
-        left_start = found_index
-        right_start = found_index
-        while(left_start>0):
-            if(self.obj_overlap(objm[left_start - 1],imeta) == 0 ):
-                objm_rich = objm[left_start - 1].append(min(imeta_offset_min, objm[left_start - 1][0]))
-                objm_rich = objm_rich.append(min(imeta_offset_max, objm[left_start - 1][0]+objm[left_start - 1][1]))
+        left_start = found_index-1
+        right_start = found_index+1
+        while(left_start>=0):
+            #print('looking left now')
+            if(self.obj_overlap(objm[left_start],imeta) == 0 ):
+                objm_rich = numpy.append(objm[left_start], min(imeta_offset_min, objm[left_start][1]))
+                #objm_rich = objm_rich.append(min(imeta_offset_max, objm[left_start][1]+objm[left_start][2]-1))
+                objm_rich = numpy.append(objm_rich, min(imeta_offset_max, objm[left_start][1]+objm[left_start][2]-1))
+                #print ('inserting:',objm_rich)
                 result.insert(0,objm_rich)
+                left_start -= 1
             else:
                 break
         #search on the right
         while(right_start<len(objm)):
-            if(self.obj_overlap(objm[right_start + 1],imeta) == 0):
-                objm_rich = objm[right_start + 1].append(min(imeta_offset_min, objm[right_start + 1][0]))
-                objm_rich = objm_rich.append(min(imeta_offset_max, objm[right_start + 1][0]+objm[right_start + 1][1]))
+            #print('looking right now')
+            if(self.obj_overlap(objm[right_start],imeta) == 0):
+                objm_rich = numpy.append(objm[right_start], min(imeta_offset_min, objm[right_start][1]))
+                #objm_rich = objm_rich.append(min(imeta_offset_max, objm[right_start][1]+objm[right_start][2]-1))
+                objm_rich = numpy.append(objm_rich, min(imeta_offset_max, objm[right_start][1]+objm[right_start][2]-1))
+                #print ('appending:',objm_rich)
                 result.append(objm_rich)
+                right_start += 1
             else:
                 break
         return result

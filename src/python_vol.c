@@ -1116,7 +1116,7 @@ H5VL_python_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
 	file_i++;
     } while(tot_len2 > 0);
     meta_offlen[1] = meta_offlen[3];//min file offset
-    meta_offlen[2] = meta_offlen[cur_metal-2]+meta_offlen[cur_metal-1];//max file offset=  last seq's off + last seq's len
+    meta_offlen[2] = meta_offlen[cur_metal-2]+meta_offlen[cur_metal-1]-1;//max file offset=  last seq's off + last seq's len
     meta_offlen[0] = cur_metal;// total length of this array
 //NOW, meta_offlen has per rank's file offset/length info, and first element tells the total length of this array
 
@@ -1164,7 +1164,7 @@ H5VL_python_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
 // return a contiguous buffer for current rank's request from python to C layer
     PyObject * py_gmeta = Data_CPY3(gmeta, *gmeta_len+1, 1); //convert into pyobject
     PyObject * py_meta_offlen = Data_CPY3(meta_offlen, *gmeta_len+1, 1);//convert into pyobject
-    char method_name_scan[] = "H5VL_python_dsetobj_scan";
+    char method_name_scan[] = "H5VL_python_dstobj_scan";
     printf("Rank:%d started\n",o->my_rank);
     PyObject * pValue_cdata = PyObject_CallMethod(pInstance, method_name_scan, "lOlOll",PyLong_AsLong(plong_under), py_gmeta,py_meta_offlen,0);
     printf("Rank:%d ended\n",o->my_rank);
@@ -1189,6 +1189,7 @@ H5VL_python_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
 	 if(count_size<0) {printf("number of elements is zero\n");return -1;}
 	 memcpy(buf,buf1,*type_size**count_size);
 	 PyErr_Print();
+	 //TODO; H5cast to memory space
 	 return 1;
       }
       else return -1;
@@ -1336,7 +1337,7 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
     	int cur_mi=0;
    
     	meta_offlen[1] = meta_offlen[3];//min file offset
-    	meta_offlen[2] = meta_offlen[cur_metal-2]+meta_offlen[cur_metal-1];//max file offset 
+    	meta_offlen[2] = meta_offlen[cur_metal-2]+meta_offlen[cur_metal-1] -1;//max file offset
     	meta_offlen[0] = cur_metal;// total length of this array
     	start_offset = meta_offlen[1];//append into dset name to form a unique object name: dsetname_start_offset, e.g., data_offset_32
   	PyObject * pydata = Data_CPY4(PyLong_AsLong(plong_under), temp_buf, num_elem_memory); 
