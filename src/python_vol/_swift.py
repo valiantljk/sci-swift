@@ -331,8 +331,8 @@ class H5PVol:
             return -1
         #	def H5VL_python_dsetobj_scan(self, obj_id, gmeta, gmeta_length, meta_offlen,meta_offlen_length, req):
 
-    def H5VL_python_dsetobj_scan(self, obj_id, gmeta, gmeta_length, meta_offlen,meta_offlen_length, req):
-	return H5VL_python_dstobj_scan(self, obj_id, gmeta, meta_offlen, req)
+    #def H5VL_python_dsetobj_scan(self, obj_id, gmeta, gmeta_length, meta_offlen,meta_offlen_length, req):
+    #	return H5VL_python_dstobj_scan(self, obj_id, gmeta, meta_offlen, req)
 
     def H5VL_python_dstobj_scan(self, obj_id, global_meta, meta_offlen, req):
         try:
