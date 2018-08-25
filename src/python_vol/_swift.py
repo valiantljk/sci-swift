@@ -15,10 +15,10 @@ from __swift_dataset import swift_object_download
 
 
 def Takesecond(elem):
-return elem[1]
+	return elem[1]
 
 def Takefirst(elem):
-return elem[0]
+	return elem[0]
 
 
 class H5PVol:
@@ -53,21 +53,21 @@ class H5PVol:
 	def H5VL_python_file_open(self, name, flags, fapl_id, dxpl_id, req, ipvol):
 		if (ipvol == 0):
 				try:
-				self.obj_curid = 1  # reset
-				self.obj_list = {}  # reset
-				# Probably just check if (metadata, container validation, file)
-				# save file name--> container name in the runtime dictionary.
-				# at user level, dataset api, etc, can get back container name for read/write (get/put)
-				container_name = name
-				container_id = swift_container_open(container_name)
-				if container_id == 1:  # file exists
-					self.obj_list[self.obj_curid] = container_name
-					curid = self.obj_curid
-					self.obj_curid = curid + 1
-					return curid
-				else:
-					print("returned -1 in python file open")
-					return -1
+					self.obj_curid = 1  # reset
+					self.obj_list = {}  # reset
+					# Probably just check if (metadata, container validation, file)
+					# save file name--> container name in the runtime dictionary.
+					# at user level, dataset api, etc, can get back container name for read/write (get/put)
+					container_name = name
+					container_id = swift_container_open(container_name)
+					if container_id == 1:  # file exists
+						self.obj_list[self.obj_curid] = container_name
+						curid = self.obj_curid
+						self.obj_curid = curid + 1
+						return curid
+					else:
+						print("returned -1 in python file open")
+						return -1
 				except Exception as e:
 					print('file create failed in python with error: ', e)
 					return -1
@@ -230,13 +230,13 @@ class H5PVol:
 			return -1
 
 	def H5VL_python_dataset_read(self, obj_id, mem_type_id, mem_space_id, file_space_id, plist_id, buf, req):
-	"""
-	Python wrapper for H5VL_dataset_read, return numpy array, interperated as object in C
-	Input:
-	    same with H5VL_python_dataset_read at C layer
-	Output:
-	    numpy array
-	"""
+		'''
+		Python wrapper for H5VL_dataset_read, return numpy array, interperated as object in C
+		Input:
+	    	same with H5VL_python_dataset_read at C layer
+		Output:
+	    	numpy array
+		'''
 		try:
 			dst_parent_obj = self.obj_list[obj_id]
 			z = dst_parent_obj.replace("/", "\\")
@@ -285,13 +285,13 @@ class H5PVol:
 			pass
 
 	def Dataset_object_internal_read(self, obj_id, dstobj_name):
-	"""
-	Python wrapper for H5VL_dataset_read, return numpy array, interperated as object in C
-	Input:
-	    same with H5VL_python_dataset_read at C layer
-	Output:
-	    numpy array
-	"""
+		'''
+		Python wrapper for H5VL_dataset_read, return numpy array, interperated as object in C
+		Input:
+	    		same with H5VL_python_dataset_read at C layer
+		Output:
+	    		numpy array
+		'''
 		try:
 			dst_parent_obj = self.obj_list[obj_id]
 			z = dst_parent_obj.replace("/", "\\")
