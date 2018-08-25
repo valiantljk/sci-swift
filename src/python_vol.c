@@ -288,7 +288,8 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
 
 static void *
 H5VL_python_file_open(const char *name, unsigned flags, hid_t fapl_id, hid_t dxpl_id, void **req)
-{
+
+{ 
     //printf("in H5VL file open\n");
     H5VL_python_fapl_t *fa = NULL;
     H5P_genplist_t *plist = NULL;      /* Property list pointer */
@@ -304,9 +305,8 @@ H5VL_python_file_open(const char *name, unsigned flags, hid_t fapl_id, hid_t dxp
     int ret;
     void *ret_value = NULL;
     hid_t under_fapl;
-    H5VL_python_t *file;
-
-    //Allocate file object 
+    H5VL_python_t *file =NULL;
+   //Allocate file object 
     if(NULL==(file = (H5VL_python_t *)calloc(1, sizeof(H5VL_python_t))))
       //HGOTO_ERROR(H5E_FILE, H5E_CANTALLOC, NULL, "can't allocate RADOS file struct");
 	printf("can't allocate swift file struct\n");
@@ -320,7 +320,8 @@ H5VL_python_file_open(const char *name, unsigned flags, hid_t fapl_id, hid_t dxp
     if( H5Pexist(fapl_id, pvol_name)>0){
       H5Pget(fapl_id, pvol_name, &ipvol);
     }
-
+    printf("%s:%u\n",__func__,__LINE__);
+    fflush(stdout);
     /* Get information from the FAPL */
     if(NULL == (plist = H5P_object_verify(fapl_id, H5P_FILE_ACCESS)))
         //HGOTO_ERROR(H5E_ARGS, H5E_BADTYPE, NULL, "not a file access property list")
@@ -344,37 +345,34 @@ H5VL_python_file_open(const char *name, unsigned flags, hid_t fapl_id, hid_t dxp
      * fapl ID */
     MPI_Comm_rank(fa->comm, &file->my_rank);
     MPI_Comm_size(fa->comm, &file->num_nprocs);
-
-    //Question: what infor to bdcast? 
-
-
     char class_name [ ] = "swift";
     const char module_name[ ] = "python_vol";
+    PyErr_Print();
     pModule = PyImport_ImportModule(module_name);
-    //PyErr_Print();
+    PyErr_Print();
+    fflush(stdout);
     //Instantiate an object
   
     if(pModule != NULL){
-      //if(pInstance!=NULL){
-	//     printf("Supporting one file only, please close existing files before opening/creating new file\n");	
-	     //call file close and free file instance
-	  //   Py_DECREF(pInstance);
-	     //return NULL; 
-       //}
-       //printf("New file object\n");
-       pInstance = PyObject_CallMethod(pModule, class_name,NULL,NULL);
+      pInstance = PyObject_CallMethod(pModule, class_name,NULL,NULL);
+      PyErr_Print();
     }
     else{
        printf("Failed to get non-null file class\n");
     }
-     
+    printf("%s:%u\n",__func__,__LINE__);
+    fflush(stdout);     
     //file->under_object = H5VLfile_open(name, flags, under_fapl, dxpl_id, req);
     char method_name[]= "H5VL_python_file_open";
     if(pInstance == NULL)
        fprintf(stderr, "New File instance failed\n");
     else{
+       printf("start opening in vol:%s\n",name);
+	fflush(stdout);
        pValue = PyObject_CallMethod(pInstance, method_name, "slllll", name, flags, fapl_id, dxpl_id, 0, 0);
        //PyErr_Print();
+       printf("ok opening in vol:%s\n",name);
+	fflush(stdout);
        if (pValue != NULL) {
              //printf("------- Result of H5Fopen from python: %ld\n", PyLong_AsLong(pValue));
              PyObject * rt=PyLong_AsVoidPtr(pValue);
@@ -388,6 +386,8 @@ H5VL_python_file_open(const char *name, unsigned flags, hid_t fapl_id, hid_t dxp
              return NULL;
         }
     }
+    printf("%s:%u\n",__func__,__LINE__);
+    fflush(stdout);
     //printf("------- PYTHON H5Fopen\n");
     return (void *)file;	
 }
@@ -1166,8 +1166,10 @@ H5VL_python_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
     PyObject * py_meta_offlen = Data_CPY3(meta_offlen, *gmeta_len+1, 1);//convert into pyobject
     char method_name_scan[] = "H5VL_python_dstobj_scan";
     printf("Rank:%d started\n",o->my_rank);
+    fflush(stdout);
     PyObject * pValue_cdata = PyObject_CallMethod(pInstance, method_name_scan, "lOlOll",PyLong_AsLong(plong_under), py_gmeta,py_meta_offlen,0);
     printf("Rank:%d ended\n",o->my_rank);
+    fflush(stdout);
 //create py reference to c buffer
     //read has memory copy, bc, in python layer, don't know how to fill in buffer directly as of aug 14 2018
     /*
