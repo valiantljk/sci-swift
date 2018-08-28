@@ -227,14 +227,6 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
      * fapl ID */
     MPI_Comm_rank(fa->comm, &file->my_rank);
     MPI_Comm_size(fa->comm, &file->num_nprocs);
-
-
-    /* Determine if we requested collective object ops for the file */
-   // if(H5Pget_all_coll_metadata_ops(fapl_id, &file->collective) < 0)
-        //HGOTO_ERROR(H5E_FILE, H5E_CANTGET, NULL, "can't get collective access property")
-   //	printf("can't get collective access property\n");
-    //under_fapl = *((hid_t *)H5Pget_vol_info(fapl_id));
-    //printf("under_fapl:%ld\n",under_fapl);
     int ipvol=0; //default is using swift for python vol
     char pvol_name[3]="py"; 
     if( H5Pexist(fapl_id, pvol_name)>0){
@@ -252,12 +244,6 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
     PyErr_Print();    
     
     if(pModule != NULL){
-       //if(pInstance!=NULL){
-       //   printf("Supporting one file operation only, please close existing files before opening/creating new file\n");
-          //call file close and free file instance
-        //  Py_DECREF(pInstance);
-        //  return NULL;
-       //}
        pInstance = PyObject_CallMethod(pModule, class_name,NULL,NULL);
        PyErr_Print();
     }
@@ -289,7 +275,10 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
 static void *
 H5VL_python_file_open(const char *name, unsigned flags, hid_t fapl_id, hid_t dxpl_id, void **req)
 
-{ 
+{
+
+    PyObject *pModule=NULL, *pClass=NULL;
+    PyObject *pValue=NULL;
     //printf("in H5VL file open\n");
     H5VL_python_fapl_t *fa = NULL;
     H5P_genplist_t *plist = NULL;      /* Property list pointer */
@@ -311,18 +300,11 @@ H5VL_python_file_open(const char *name, unsigned flags, hid_t fapl_id, hid_t dxp
       //HGOTO_ERROR(H5E_FILE, H5E_CANTALLOC, NULL, "can't allocate RADOS file struct");
 	printf("can't allocate swift file struct\n");
     //under_fapl = *((hid_t *)H5Pget_vol_info(fapl_id));
-    PyObject *pModule=NULL, *pClass=NULL;
-    PyObject *pValue=NULL;
     //printf("Testing H5VL file open\n");
     //const char class_name[ ] = "H5PVol";
     int ipvol=0; //default is using swift for python vol
     char pvol_name[3]="py";
-    if( H5Pexist(fapl_id, pvol_name)>0){
-      H5Pget(fapl_id, pvol_name, &ipvol);
-    }
-    printf("%s:%u\n",__func__,__LINE__);
-    fflush(stdout);
-    /* Get information from the FAPL */
+   /* Get information from the FAPL */
     if(NULL == (plist = H5P_object_verify(fapl_id, H5P_FILE_ACCESS)))
         //HGOTO_ERROR(H5E_ARGS, H5E_BADTYPE, NULL, "not a file access property list")
 	printf("not a file access property list\n");
@@ -345,14 +327,13 @@ H5VL_python_file_open(const char *name, unsigned flags, hid_t fapl_id, hid_t dxp
      * fapl ID */
     MPI_Comm_rank(fa->comm, &file->my_rank);
     MPI_Comm_size(fa->comm, &file->num_nprocs);
-    char class_name [ ] = "swift";
-    const char module_name[ ] = "python_vol";
-    PyErr_Print();
+    //printf("number of processes: %d\n",file->num_nprocs);
+    if( H5Pexist(fapl_id, pvol_name)>0){
+      H5Pget(fapl_id, pvol_name, &ipvol);
+    }
+    char class_name[] = "swift";
+    const char module_name[]= "python_vol";
     pModule = PyImport_ImportModule(module_name);
-    PyErr_Print();
-    fflush(stdout);
-    //Instantiate an object
-  
     if(pModule != NULL){
       pInstance = PyObject_CallMethod(pModule, class_name,NULL,NULL);
       PyErr_Print();
@@ -360,19 +341,13 @@ H5VL_python_file_open(const char *name, unsigned flags, hid_t fapl_id, hid_t dxp
     else{
        printf("Failed to get non-null file class\n");
     }
-    printf("%s:%u\n",__func__,__LINE__);
-    fflush(stdout);     
-    //file->under_object = H5VLfile_open(name, flags, under_fapl, dxpl_id, req);
+   //file->under_object = H5VLfile_open(name, flags, under_fapl, dxpl_id, req);
     char method_name[]= "H5VL_python_file_open";
     if(pInstance == NULL)
        fprintf(stderr, "New File instance failed\n");
     else{
-       printf("start opening in vol:%s\n",name);
-	fflush(stdout);
        pValue = PyObject_CallMethod(pInstance, method_name, "slllll", name, flags, fapl_id, dxpl_id, 0, 0);
        //PyErr_Print();
-       printf("ok opening in vol:%s\n",name);
-	fflush(stdout);
        if (pValue != NULL) {
              //printf("------- Result of H5Fopen from python: %ld\n", PyLong_AsLong(pValue));
              PyObject * rt=PyLong_AsVoidPtr(pValue);
@@ -386,10 +361,10 @@ H5VL_python_file_open(const char *name, unsigned flags, hid_t fapl_id, hid_t dxp
              return NULL;
         }
     }
-    printf("%s:%u\n",__func__,__LINE__);
-    fflush(stdout);
+        printf("%s:%u\n",__func__,__LINE__);
+        fflush(stdout);
     //printf("------- PYTHON H5Fopen\n");
-    return (void *)file;	
+    return NULL;	
 }
 
 static herr_t 
@@ -729,10 +704,17 @@ H5VL_python_dataset_open(void *obj, H5VL_loc_params_t loc_params, const char *na
     H5VL_python_t *o = (H5VL_python_t *)obj;
     PyObject * plong_under = PyLong_FromVoidPtr(o->under_object);
     dset = (H5VL_python_t *)calloc(1, sizeof(H5VL_python_t));
-
+    H5FD_mpi_comm_info_dup(o->comm, o->info, &dset->comm, &dset->info);
     //retrieve metadata and fill in memory buffer for later using. 
     PyObject *pValue=NULL;
-    char method_name[] = "H5VL_python_dataset_open";
+    /* H5P_genplist_t * plist = NULL;
+    hid_t type_id, space_id;
+    plist = (H5P_genplist_t *)H5I_object(dapl_id);
+    // get creation properties 
+    H5P_get(plist, H5VL_PROP_DSET_TYPE_ID, &type_id);
+    H5P_get(plist, H5VL_PROP_DSET_SPACE_ID, &space_id);
+    printf("rank:%d, dataset open: dapl_id:%u, space_id:%u\n",o->my_rank,dapl_id,space_id);
+    */    char method_name[] = "H5VL_python_dataset_open";
     if(pInstance==NULL){
       fprintf(stderr, "pInstance is NULL in dataset open\n");
       return NULL;
@@ -743,6 +725,8 @@ H5VL_python_dataset_open(void *obj, H5VL_loc_params_t loc_params, const char *na
         void * rt_py = PyLong_AsVoidPtr(pValue);
         if (rt_py==NULL) fprintf(stderr, "Dataset open, returned pointer from python is NULL\n");
         dset->under_object = rt_py;
+//	dset->space_id = space_id;
+//	dset->type_id = type_id;
         return (void *) dset;
       }
     }
@@ -984,17 +968,19 @@ PyObject * Data_CPY4(long dsetId, void * buf, size_t len)
     return NULL;
 }
 
-PyObject * Data_CPY3(void * buf, size_t len, int dtype)
+PyObject * Data_CPY3(void * buf, int len, int dtype)
 {
     npy_intp dims=len; //TODO: this is something to be fixed later, the limit of PyArray_SimpleNewFromData
     //Create pyobject reference to c buffer
-    PyObject * pydata;
+    import_array();
+    PyObject * pydata=NULL;
     if (dtype == 0){//int16 
       pydata = PyArray_SimpleNewFromData(1, &dims, NPY_INT16, buf );
     }
     else if (dtype == 1){//int32
       pydata = PyArray_SimpleNewFromData(1, &dims, NPY_INT32, buf );
-    }
+      PyErr_Print();
+   }
     else if (dtype == 2) {//float32
       pydata = PyArray_SimpleNewFromData(1, &dims, NPY_FLOAT, buf );
     }
@@ -1044,17 +1030,28 @@ H5VL_python_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
     MPI_Comm_size(o->comm, &o->num_nprocs);
 
     size_t  type_size = H5Tget_size(mem_type_id);
-    if((ndims = H5Sget_simple_extent_ndims(o->space_id)) < 0)
+    //TODO:dataspace info needs to be stored during dataset create, then read from memory into buffer at here
+    /*if((ndims = H5Sget_simple_extent_ndims(o->space_id)) < 0)
         printf("can't get number of dimensions\n");
+    printf("ndims:%d\n",ndims);
     if(ndims != H5Sget_simple_extent_dims(o->space_id, dim, NULL))
         printf("can't get dimensions\n");
-
-
+    printf("dims[0]:%d\n",dim[0]);
+    printf("space id:%u\n",o->space_id);
+   */
+    hid_t type_id=0,space_id=0;
+    //H5P_get(plist_id, H5VL_PROP_DSET_TYPE_ID, &type_id);
+    //H5P_get(plist_id, H5VL_PROP_DSET_SPACE_ID, &space_id);
+    //printf("rank:%d, type_id:%u,space_id:%u\n",o->my_rank, type_id,space_id);
+    //fflush(stdout);
+    //o->space_id = space_id;
+    //o->type_id = type_id;
 //VERIFY HYPERSLAB SELECTION 
     /* Get "real" file space */
-    if(file_space_id == H5S_ALL)
-        real_file_space_id = o->space_id;
-    else
+    //if(file_space_id == H5S_ALL)
+        //real_file_space_id = o->space_id;
+//	real_file_space_id = space_id;
+//    else
         real_file_space_id = file_space_id;
 
     /* Get number of elements in file space selection */
@@ -1083,8 +1080,6 @@ H5VL_python_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
     if(H5S_select_iter_init(&file_sel_iter, file_space_obj, type_size) < 0)
         printf("unable to initialize selection iterator\n");
     file_sel_iter_init = TRUE;       /* Selection iteration info has been initialized */
-
-
 //GET SELECTIONS
 
     //calculate file space offset from file space selection 
@@ -1118,87 +1113,74 @@ H5VL_python_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
     meta_offlen[1] = meta_offlen[3];//min file offset
     meta_offlen[2] = meta_offlen[cur_metal-2]+meta_offlen[cur_metal-1]-1;//max file offset=  last seq's off + last seq's len
     meta_offlen[0] = cur_metal;// total length of this array
-//NOW, meta_offlen has per rank's file offset/length info, and first element tells the total length of this array
-
-
-//QUERY GLOBAL METADATA
-    int * gmeta;
-    int * gmeta_len=malloc(sizeof(int));
+    //NOW, meta_offlen has per rank's file offset/length info, and first element tells the total length of this array
+    //QUERY GLOBAL METADATA
+    npy_intp * gmeta=NULL;
+    int gmeta_len=0;
     if(o->my_rank==0){
 
-        PyObject * pmeta = malloc(sizeof(PyObject));
+        //PyObject * pmeta = NULL; //malloc(sizeof(PyObject));
+        long pmeta=0;
         PyObject * pValue = NULL;
         char method_name [] = "H5VL_python_dataset_read";
         if(pInstance == NULL){
                 printf("pInstance is NULL in dataset read\n");
                 return -1;
         } else {
-                pValue = PyObject_CallMethod(pInstance, method_name, "lllllOl", PyLong_AsLong(plong_under), mem_type_id, mem_space_id, file_space_id,plist_id, pmeta,-2);
+		long req_meta =-2;
+                pValue = PyObject_CallMethod(pInstance, method_name, "lllllll", PyLong_AsLong(plong_under), mem_type_id, mem_space_id, file_space_id,plist_id, pmeta,req_meta);
                 PyErr_Print();
+		PyArrayObject * dt_arr=(PyArrayObject *)pValue;
+//		printf("%s:%u\n",__func__,__LINE__);
+  //  		fflush(stdout); 
                 if(pValue !=NULL){
-                        gmeta = (int * ) (((PyArrayObject *) pValue)->data);
-                        gmeta_len = gmeta; //only fill one element, i.e., the length of metadata
+                        gmeta = (npy_intp *) dt_arr->data;
+                        gmeta_len =(int)gmeta[0]+1; //only fill one element, i.e., the length of metadata
+//			printf("rank:%d, inside, gmeta[0]:%d\n",o->my_rank, gmeta[0]);
+ //    			printf("rank:%d, inside, gmeta_len length:%d\n",o->my_rank, gmeta_len);
                 }
         }
 
     }
-    MPI_Bcast(gmeta_len, 1, MPI_INT, 0, o->comm); // bcast total length of metadata info
+    MPI_Bcast(&gmeta_len, 1, MPI_INT, 0, o->comm); // bcast total length of metadata info
+    //printf("rank:%d, after bcast, gmeta_len length:%d\n",o->my_rank, gmeta_len);
+    int * re_gmeta=(int *) malloc(sizeof(int)*gmeta_len);;
+    if(re_gmeta==NULL) printf("rank:%d, re_gmeta is null\n",o->my_rank);
+    if(o->my_rank==0){
+	int km;
+	for(km=0;km<gmeta_len;km++){
+	   re_gmeta[km]=gmeta[km];
+	}
+	printf("\n");
+    } 
     //allocate the meta buffer with gmeta_len
-    if(o->my_rank!=0)
-        gmeta = malloc(sizeof(int)*(*gmeta_len+1));
-
-    MPI_Bcast( gmeta,*gmeta_len+1, MPI_INT, 0, o->comm); // bcast metadata info: length, min_off, max_off, off1,len1,off2, len2, ...
-    //now rank 0 should have same content with other ranks
-
-// Figure out which object to be read for the current rank.
-
-// Goal is to calculate a object list, that can cover this rank's request TODO: in the future, explore two phase collective object I/O, may ask Tang to do this work, Oct 2018, target SC 2019, etc
-
-// Input: 
-//	gmeta: The metadata info about all objects within this dataset
-//	meta_offlen: the required off/len info of each byte sequence in the file
-// Output:
-//	obj_meta: object off(
-
-// Implementation: pass all the request to python layer
-// return a contiguous buffer for current rank's request from python to C layer
-    PyObject * py_gmeta = Data_CPY3(gmeta, *gmeta_len+1, 1); //convert into pyobject
-    PyObject * py_meta_offlen = Data_CPY3(meta_offlen, *gmeta_len+1, 1);//convert into pyobject
+    MPI_Barrier(o->comm);
+    //printf("rank:%d, %s:%u\n",o->my_rank, __func__,__LINE__);
+    //fflush(stdout);
+    if(re_gmeta!=NULL)
+        MPI_Bcast( re_gmeta,gmeta_len, MPI_INT, 0, o->comm); // bcast metadata info: length, min_off, max_off, off1,len1,off2, len2, ...
+    else 
+	printf("rank:%d, re_gmeta is NULL\n",o->my_rank);
+    re_gmeta=(void *) re_gmeta;
+   
+    PyObject * py_gmeta =NULL;
+    py_gmeta = Data_CPY3(re_gmeta, gmeta_len, 1); //convert into pyobject
+    PyObject * py_meta_offlen = NULL;
+    py_meta_offlen = Data_CPY3(meta_offlen, gmeta_len, 1);//convert into pyobject
     char method_name_scan[] = "H5VL_python_dstobj_scan";
-    printf("Rank:%d started\n",o->my_rank);
-    fflush(stdout);
-    PyObject * pValue_cdata = PyObject_CallMethod(pInstance, method_name_scan, "lOlOll",PyLong_AsLong(plong_under), py_gmeta,py_meta_offlen,0);
-    printf("Rank:%d ended\n",o->my_rank);
-    fflush(stdout);
-//create py reference to c buffer
-    //read has memory copy, bc, in python layer, don't know how to fill in buffer directly as of aug 14 2018
-    /*
-    hsize_t * count_size=malloc(sizeof(hsize_t));
-    int * type_size=malloc(sizeof(int));
-    PyObject * pydata= Data_CPY(PyLong_AsLong(plong_under), buf,count_size,type_size);
-    PyObject *pValue=NULL;
-    char method_name[] = "H5VL_python_dataset_read";
-    if(pInstance==NULL){
-      printf("pInstance is NULL in dataset read\n");
-      return -1; 
-    }else{
-      pValue = PyObject_CallMethod(pInstance, method_name, "lllllOl", PyLong_AsLong(plong_under),  mem_type_id, mem_space_id, file_space_id,plist_id, pydata,0);
-      PyErr_Print();
-      if(pValue !=NULL){
-	 void * buf1=(void *) (((PyArrayObject *) pValue)->data);
-	 buf = (int *) buf;
-	 buf1 = (int *) buf1;
-	 if(count_size<0) {printf("number of elements is zero\n");return -1;}
-	 memcpy(buf,buf1,*type_size**count_size);
+    PyObject * pValue_cdata =NULL;
+    pValue_cdata = PyObject_CallMethod(pInstance, method_name_scan, "lOOl",PyLong_AsLong(plong_under), py_gmeta,py_meta_offlen,0);
+    printf("rank:%d read done, %s:%u\n",o->my_rank, __func__,__LINE__);
+    MPI_Barrier(o->comm);
+    if(pValue_cdata !=NULL){
+	 //void * buf1=(void *) (((PyArrayObject *) pValue_cdata)->data);
+	 //buf = (int *) buf;
+	 //buf1 = (int *) buf1;
 	 PyErr_Print();
 	 //TODO; H5cast to memory space
 	 return 1;
-      }
-      else return -1;
     }
-    */
-   
-   return 1;     
+    return 1;     
 }
 static herr_t 
 H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
@@ -1342,6 +1324,7 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
     	meta_offlen[2] = meta_offlen[cur_metal-2]+meta_offlen[cur_metal-1] -1;//max file offset
     	meta_offlen[0] = cur_metal;// total length of this array
     	start_offset = meta_offlen[1];//append into dset name to form a unique object name: dsetname_start_offset, e.g., data_offset_32
+	printf("rank:%d, meta len:%d, meta min:%d, meta max:%d\n",o->my_rank, meta_offlen[0],meta_offlen[1],meta_offlen[2]);
   	PyObject * pydata = Data_CPY4(PyLong_AsLong(plong_under), temp_buf, num_elem_memory); 
   	pValue = PyObject_CallMethod(pInstance, method_name, "lllllOl", 
 		PyLong_AsLong(plong_under),  mem_type_id, mem_space_id, file_space_id,plist_id, pydata, start_offset);

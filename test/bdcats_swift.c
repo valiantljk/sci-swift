@@ -87,11 +87,11 @@ void read_h5_data(int rank)
 	// Note: printf statements are inserted basically 
 	// to check the progress. Other than that they can be removed
 	dset_id = H5Dopen2(file_id, "x", H5P_DEFAULT);
-	printf("dset opened\n");
-	fflush(stdout);
+        printf("%s:%u\n",__func__,__LINE__);
+        fflush(stdout);
         ierr = H5Dread(dset_id, H5T_NATIVE_FLOAT, memspace, filespace, plist_id, x);
-        printf("dset read in\n");
-	fflush(stdout);
+        printf("%s:%u\n",__func__,__LINE__);
+        fflush(stdout);
         H5Dclose(dset_id);
 	//if (rank == 0) printf ("Read variable 1 \n");
 
@@ -189,14 +189,14 @@ int main (int argc, char* argv[])
         timer_on (0);
 	printf("start\n");
 	fflush(stdout);
+         
 /*SWIFT VOL Related Code Change*/
+        Py_Initialize();
+	import_array();
         acc_tpl = H5Pcreate (H5P_FILE_ACCESS);
         H5Pset_fapl_swift(acc_tpl,plugin_name, MPI_COMM_WORLD, MPI_INFO_NULL);
 	H5Pset_all_coll_metadata_ops(acc_tpl, true);
 /*Rados VOL Related Code Change*/
-	printf("openning: %s\n",file_name);
- 	fflush(stdout);
-	/* Create file */
 	file_id = H5Fopen(file_name , H5F_ACC_RDONLY, acc_tpl);
 	if(file_id < 0) {
 		printf("Error with opening file!\n");
@@ -208,7 +208,6 @@ int main (int argc, char* argv[])
 	{
 		printf ("Opened HDF5 file... \n");
 	}
-	fflush(stdout);
 	filespace = H5Screate_simple(1, (hsize_t *) &total_particles, NULL);
         memspace =  H5Screate_simple(1, (hsize_t *) &numparticles, NULL);
         plist_id = H5Pcreate(H5P_DATASET_XFER);
@@ -218,24 +217,20 @@ int main (int argc, char* argv[])
 
         //H5Pset_dxpl_mpio(fapl, H5FD_MPIO_COLLECTIVE);
         H5Sselect_hyperslab(filespace, H5S_SELECT_SET, (hsize_t *) &offset, NULL, (hsize_t *) &numparticles, NULL);
-	if (my_rank == 0) printf ("Before reading particles \n");
 	MPI_Barrier (MPI_COMM_WORLD);
 	timer_off (0);
 	timer_on (1);
-	fflush(stdout);
-	//if (my_rank == 0) printf ("Before reading particles \n");
 	//printf("Rank:%d started\n",my_rank);
 	read_h5_data(my_rank);
 	//printf("Rank:%d ended\n",my_rank);
-	MPI_Barrier (MPI_COMM_WORLD);
+  	MPI_Barrier (MPI_COMM_WORLD);
 	timer_off (1);
-	if (my_rank == 0) printf ("After reading particles \n");
-	printf("end\n");
-        fflush(stdout);
 	free(x); free(y); free(z);
 	free(px); free(py); free(pz);
 	free(id1);
 	free(id2);
+        printf("%s:%u\n",__func__,__LINE__);
+        fflush(stdout);
 	if (my_rank == 0)
 	{
 		printf ("\nI/O cost (sec):\n");
@@ -245,12 +240,13 @@ int main (int argc, char* argv[])
 		printf ("\n");
 	}
 
-	H5Sclose(memspace);
-        H5Sclose(filespace);
-        H5Pclose(acc_tpl);
-        H5Fclose(file_id);
+	//H5Sclose(memspace);
+        //H5Sclose(filespace);
+        //H5Pclose(acc_tpl);
+        //H5Fclose(file_id);
 	if (my_rank == 0) printf ("After closing HDF5 file \n");
-
+    	printf("%s:%u\n",__func__,__LINE__);
+    	fflush(stdout);
 error:
     H5E_BEGIN_TRY {
         H5Fclose(file_id);
