@@ -1,4 +1,5 @@
 import time
+import numpy
 def h5py():
 	try:
 		from _h5py import H5PVol

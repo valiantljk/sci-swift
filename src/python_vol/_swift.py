@@ -13,6 +13,7 @@ from __swift_dataset import swift_metadata_create
 from __swift_dataset import swift_metadata_get
 from __swift_dataset import swift_object_download
 
+print ('in python_vol:_swift.py, numpy version is:%s'%(numpy.version.version))
 
 def Takesecond(elem):
 	return elem[1]

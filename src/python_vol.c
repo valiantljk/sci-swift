@@ -25,7 +25,7 @@
 #include "python_vol.h"
 #include "inttypes.h"
 #define PYTHON 502
-#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+#define NPY_NO_DEPRECATED_API NPY_1_13_API_VERSION
 typedef struct H5VL_python_fapl_t {
     MPI_Comm    comm; /*communicator*/
     MPI_Info    info; /*file information*/

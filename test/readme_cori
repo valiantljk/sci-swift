@@ -9,9 +9,9 @@ else
 	echo "Your NIM Password is your Swift Store Login Password"
 	module load python
 	module load hdf5-parallel/1.9.234
-	#echo "Installing Python Swiftclient"
+	echo "Installing Python Swiftclient"
 	#sleep 2
-	#pip install python-swiftclient --user
+	pip install python-swiftclient --user
 	echo "Compiling Sci-Swift"
 	sleep 2
 	make -f $1
