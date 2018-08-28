@@ -88,6 +88,8 @@ class H5PVol:
 			curid = self.obj_curid
 			self.obj_list[curid] = full_path
 			self.obj_curid = curid + 1
+			#print('python dset open:',curid)
+			#print('python dset oepn, metadata:',metadata)
 			return curid
 		except Exception as e:
 			print('retrieve obj failed in python dataset open:', e)
@@ -244,10 +246,20 @@ class H5PVol:
 			dst_container_name = z[:z.find(z.split('\\')[-1]) - 1]
 			dst_object_name = z.split('\\')[-1]
 			try:
+			#	print ('container:[%s]obj:[%s], req:%d'%(dst_container_name, dst_object_name,req))			
 				metadata = swift_metadata_get(container=dst_container_name, sciobj_name=dst_object_name)
 				curtype = str(metadata['type'])
-				x = swift_object_download(container=dst_container_name, sciobj_name=dst_object_name,
-					dtype=curtype).reshape(buf.shape)
+			#	print ("meta:",metadata)
+				if (req >= 0):
+					dst_object_name = dst_object_name + '_' + str(req)  # data of this hyperslab block, ended with start offset
+				if (req == -2):
+					dst_object_name = dst_object_name + '_' + 'meta'  # meta of this hyperslab block
+				if (req == -3):
+					dst_object_name = dst_object_name + '_' + 'simple'  # no hyperslab enabled
+				#x = swift_object_download(container=dst_container_name, sciobj_name=dst_object_name,dtype=curtype)#.reshape(buf.shape)
+				x = swift_object_download(container=dst_container_name, sciobj_name=dst_object_name)
+			#	print ("data:",x)
+				x = numpy.asarray(x, dtype='int64')
 				return x
 			except Exception as e:
 				print('dataset read in python failed with error: ', e)
@@ -276,12 +288,19 @@ class H5PVol:
 			z = dst_parent_obj.replace("/", "\\")
 			dst_container_name = z[:z.find(z.split('\\')[-1]) - 1]
 			dst_object_name = z.split('\\')[-1]
-			object_mappings, meta_offlen_list = self.Meta_to_Object_Mappings(
-			global_meta, meta_offlen)
-			object_selected = self.Object_Binary_Search(
-			object_mappings, meta_offlen_list)
-			con_data = self.dst_oneshot_io(object_selected, obj_id, dst_object_name)
-			return con_data
+			print ('start obj mapping cal now')
+			import cPickle as pickle
+			with open("global_meta_"+dst_object_name, 'wb') as fp:
+				pickle.dump(global_meta,fp)
+				pickle.dump(meta_offlen,fp)
+			#object_mappings, meta_offlen_list = self.Meta_to_Object_Mappings(global_meta, meta_offlen)
+			#object_selected = self.Object_Binary_Search(object_mappings, meta_offlen_list)
+			#print ('object_mappings:',object_mappings)
+			#print ('object_selected:',object_selected)
+			#con_data = self.dst_oneshot_io(object_selected, obj_id, dst_object_name)
+			#print ('con_data:',con_data)
+			#return con_data
+			return 1
 		except Exception as e:
 			pass
 
@@ -304,6 +323,7 @@ class H5PVol:
 				curtype = str(metadata['type'])
 				x = swift_object_download(
 				container=dst_container_name, sciobj_name=dstobj_name, dtype=curtype)
+				#x = numpy.asarray(x, dtype='int64')
 				return x
 			except Exception as e:
 				print('dataset read in python failed with error: ', e)
