@@ -293,6 +293,7 @@ class H5PVol:
 			with open("global_meta_"+dst_object_name, 'wb') as fp:
 				pickle.dump(global_meta,fp)
 				pickle.dump(meta_offlen,fp)
+			print('dumped metadata for obj:%s'%dst_object_name)
 			#object_mappings, meta_offlen_list = self.Meta_to_Object_Mappings(global_meta, meta_offlen)
 			#object_selected = self.Object_Binary_Search(object_mappings, meta_offlen_list)
 			#print ('object_mappings:',object_mappings)
