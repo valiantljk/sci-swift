@@ -13,7 +13,7 @@ from __swift_dataset import swift_metadata_create
 from __swift_dataset import swift_metadata_get
 from __swift_dataset import swift_object_download
 
-print ('in python_vol:_swift.py, numpy version is:%s'%(numpy.version.version))
+#print ('in python_vol:_swift.py, numpy version is:%s'%(numpy.version.version))
 
 def Takesecond(elem):
 	return elem[1]
@@ -172,6 +172,7 @@ class H5PVol:
 				# insert new object#TODO: need full name or not? April Fool Day Puzzle
 				self.obj_list[curid] = z
 				self.obj_curid = curid + 1  # update current index
+				print ('dset created')
 				return curid
 			except Exception as e:
 				print('dataset create in python failed with error: ', e)
@@ -210,6 +211,7 @@ class H5PVol:
 			z = dst_parent_obj
 			dst_container_name = z[:z.find(z.split('\\')[-1]) - 1]
 			dst_object_name = z.split('\\')[-1]
+			print ('in vol, writting dst:%s in container:%s'%(dst_object_name,dst_container_name))
 			try:
 				metadata = swift_metadata_get(container=dst_container_name, sciobj_name=dst_object_name)
 				if (req >= 0):
@@ -218,11 +220,9 @@ class H5PVol:
 					dst_object_name = dst_object_name + '_' + 'meta'  # meta of this hyperslab block
 				if (req == -3):
 					dst_object_name = dst_object_name + '_' + 'simple'  # no hyperslab enabled
+				print ('--->writing obj:%s'%dst_object_name)
 				swift_object_create(container=dst_container_name, sciobj_name=dst_object_name, sciobj_source=buf)
-				sci_obj_meta = {}
-				if (sys.getsizeof(self.obj_list) % 52428800 == 0):
-					print("objects in memory is %.2f MB now" %
-						(5 * sys.getsizeof(self.obj_list) / 5242880))
+				#sci_obj_meta = {}
 				curid = self.obj_curid
 				return curid
 			except Exception as e:

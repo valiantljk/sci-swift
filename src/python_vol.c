@@ -592,7 +592,7 @@ H5VL_python_dataset_create(void *obj, H5VL_loc_params_t loc_params, const char *
     PyObject * py_dims = PyArray_SimpleNewFromData(1, &dtm, NPY_INTP,dt->dims);//TODO: 64 bits, vs 32 bit 
     PyObject * py_maxdims = PyArray_SimpleNewFromData(1, &dtm, NPY_INTP,dt->maxdims );  
     /* Get the dcpl plist structure */
-    plist = (H5P_genplist_t *)H5I_object(dcpl_id);
+    //plist = (H5P_genplist_t *)H5I_object(dcpl_id);
     //printf("[][][][]dcpl_id:[%lu][%llx]\n",dcpl_id,dcpl_id);
     /*
     if(NULL == (plist = (H5P_genplist_t *)H5I_object(dcpl_id)))
@@ -601,6 +601,8 @@ H5VL_python_dataset_create(void *obj, H5VL_loc_params_t loc_params, const char *
     /* get creation properties */
     H5P_get(plist, H5VL_PROP_DSET_TYPE_ID, &type_id);
     H5P_get(plist, H5VL_PROP_DSET_SPACE_ID, &space_id);
+    printf("type_id:%u,space_id:%u\n",type_id,space_id);
+    fflush(stdout);
     //printf("Get again,type id:[%lu][%llx],space_id:[%lu][%llx]\n",type_id,type_id,space_id,space_id);
     /*
     if(H5P_get(plist, H5VL_PROP_DSET_TYPE_ID, &type_id) < 0)
@@ -621,33 +623,8 @@ H5VL_python_dataset_create(void *obj, H5VL_loc_params_t loc_params, const char *
         void * rt_py = PyLong_AsVoidPtr(pValue);
         if (rt_py==NULL) fprintf(stderr, "Dataset create, returned pointer from python is NULL\n");
         dset->under_object = rt_py;
-	//when you create a dataset, you also want to serialize the space and type info and adds as metadata into the dataset
-	//you can just store it in memory, but later when you want to re-open this dataset, you still need to retrieve it from storage
-	//let me first try the in memory part. 
-	//The following encode part will be used in disk verision
-        /* Encode dataspace */
-        /*
-        if(H5Sencode(space_id, NULL, &space_size) < 0)
-            HGOTO_ERROR(H5E_ARGS, H5E_BADTYPE, NULL, "can't determine serialized length of dataaspace")
-        if(NULL == (space_buf = H5MM_malloc(space_size)))
-            HGOTO_ERROR(H5E_RESOURCE, H5E_CANTALLOC, NULL, "can't allocate buffer for serialized dataaspace")
-        if(H5Sencode(space_id, space_buf, &space_size) < 0)
-            HGOTO_ERROR(H5E_DATASET, H5E_CANTENCODE, NULL, "can't serialize dataaspace")	
-        */
-	//type_id
-	/* Encode datatype */
-        /*
-        if(H5Tencode(type_id, NULL, &type_size) < 0)
-            HGOTO_ERROR(H5E_ARGS, H5E_BADTYPE, NULL, "can't determine serialized length of datatype")
-        if(NULL == (type_buf = H5MM_malloc(type_size)))
-            HGOTO_ERROR(H5E_RESOURCE, H5E_CANTALLOC, NULL, "can't allocate buffer for serialized datatype")
-        if(H5Tencode(type_id, type_buf, &type_size) < 0)
-            HGOTO_ERROR(H5E_DATASET, H5E_CANTENCODE, NULL, "can't serialize datatype")
-        */
-       //printf("Before Finally[][][]dset->space_id:[%llx],[%llx]\n",dset->space_id,space_id);
-       /* printf("Do h5scopy now, line 678\n");
-	fflush(stdout);
-	
+
+	/*
         dset->space_id=H5Scopy(space_id);//space_id;
 	printf("Finally[][][]dset->space_id:[%llx],[%llx]\n",dset->space_id,space_id);
 	fflush(stdout);
@@ -655,6 +632,8 @@ H5VL_python_dataset_create(void *obj, H5VL_loc_params_t loc_params, const char *
 	dset->type_id=H5Scopy(type_id);
 	fflush(stdout);
 	*/
+	//dset->type_id = H5Tcopy(type_id);
+	//dset->space_id = H5Tcopy(space_id);
 	dset->space_id =space_id;
 	dset->type_id = type_id;
 	return (void *) dset;
@@ -663,40 +642,6 @@ H5VL_python_dataset_create(void *obj, H5VL_loc_params_t loc_params, const char *
     return NULL;
 
 }
-/*
-static void *                                                                                                                               
-H5VL_python_dataset_get(void *obj, H5VL_loc_params_t loc_params, const char *name, hid_t dcpl_id, hid_t dapl_id, hid_t dxpl_id, void **req)               
-{   
-    H5VL_python_t *dset;
-    H5VL_python_t *o = (H5VL_python_t *)obj;
-    PyObject * plong_under = PyLong_FromVoidPtr(o->under_object);                                                                           
-    dset = (H5VL_python_t *)calloc(1, sizeof(H5VL_python_t));
-    import_array();
-    H5VL_DT * dt= malloc(sizeof(H5VL_DT)); //get the dataset size, type                                                                     
-    helper_dt (dcpl_id, dt);                                                                                                                
-    //printf("Testing H5VL_DT,%d\n",dt->py_type); 
-    npy_intp dtm=dt->ndims;  
-    PyObject * py_dims = PyArray_SimpleNewFromData(1, &dtm, NPY_INTP,dt->dims);//TODO: 64 bits, vs 32 bit                                   
-    PyObject * py_maxdims = PyArray_SimpleNewFromData(1, &dtm, NPY_INTP,dt->maxdims );                                                      
-    PyObject *pValue=NULL;                                                                                                                  
-    char method_name[] = "H5VL_python_dataset_create";
-    if(pInstance==NULL){                                                                                                                    
-      fprintf(stderr, "pInstance is NULL in group create\n");                                                                               
-      return NULL; 
-    }else{
-      pValue = PyObject_CallMethod(pInstance, method_name, "llsllllllOO", PyLong_AsLong(plong_under), 0, name, dcpl_id, dapl_id, dxpl_id, 0,dt->ndims,dt->py_type,py_dims, py_maxdims);
-      if(pValue !=NULL){
-        //printf("------- Result of H5Dcreate from python: %ld\n", PyLong_AsLong(pValue));                                                  
-        void * rt_py = PyLong_AsVoidPtr(pValue);
-        if (rt_py==NULL) fprintf(stderr, "Dataset create, returned pointer from python is NULL\n");                                         
-        dset->under_object = rt_py;                                                                                                         
-        return (void *) dset;                                                                                                               
-      }                                                                                                                                     
-    } 
-    return NULL;                                                                                                                            
-
-}
-*/
 static void *
 H5VL_python_dataset_open(void *obj, H5VL_loc_params_t loc_params, const char *name, hid_t dapl_id, hid_t dxpl_id, void **req)
 {
@@ -732,49 +677,6 @@ H5VL_python_dataset_open(void *obj, H5VL_loc_params_t loc_params, const char *na
     }
     return NULL;
 }
-/*
-hsize_t H5Count(long dsetId, hsize_t *nelem, int * type_size)
-{
-    char dt_name[] = "H5VL_python_dt_info";
-    npy_intp ndims=0,dtype=0;
-    npy_intp *dims=NULL;
-    //if((h5_ndims = H5Sget_simple_extent_ndims(dset->space_id)) < 0)
-    //    HGOTO_ERROR(H5E_DATASET, H5E_CANTGET, FAIL, "can't get number of dimensions")
-    //if(ndims != H5Sget_simple_extent_dims(dset->space_id, dim, NULL))
-    //    HGOTO_ERROR(H5E_DATASET, H5E_CANTGET, FAIL, "can't get dimensions")
-    
-    import_array();
-    //retrieve the dataset information based dataset id in python vol layer. 
-    if(pInstance!=NULL){
-       PyObject * dt_obj= PyObject_CallMethod(pInstance, dt_name, "l",dsetId);
-       if(dt_obj==NULL){
-        fprintf(stderr, "dt_Obj is null\n");
-        return -1;
-       }
-       PyArrayObject * dt_arr=(PyArrayObject *)dt_obj;
-       //convert back to c array
-       if(dt_arr->descr->type_num>=0){
-         npy_intp * dt_if =(npy_intp *) dt_arr->data;
-         ndims=dt_if[0];
-         dtype=dt_if[1];
-         dims=dt_if+2; //pointer starts from 3rd element
-       }else{
-        printf("dt_arr.type_num:%d is not PyArray_LONG\n",dt_arr->descr->type_num);
-       }
-
-    }
-    else{
-       fprintf(stderr, "pInstance is NULL\n");
-       return -1;
-    }
-   npy_intp i=0;
-   npy_intp x=1;
-   for(i=0;i<ndims;i++) x*=dims[i];
-   *x1=(hsize_t)x;
-   *type_size=(int)dtype
-   return (hsize_t) x;
-}
-*/
 PyObject * Data_CPY(long dsetId, void * buf,hsize_t * nelem, int * type_size)
 {
     char dt_name[] = "H5VL_python_dt_info";
@@ -1199,7 +1101,7 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
         printf("can't get number of dimensions\n");
     if(ndims != H5Sget_simple_extent_dims(o->space_id, dim, NULL))
         printf("can't get dimensions\n");
-
+    
     /* Get "real" file space */
     if(file_space_id == H5S_ALL)
         real_file_space_id = o->space_id;
@@ -1222,7 +1124,8 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
     }
     MPI_Comm_rank(o->comm, &o->my_rank);
     MPI_Comm_size(o->comm, &o->num_nprocs); 
-    
+    printf("rank:%d %s:%u\n",o->my_rank, __func__,__LINE__);
+    fflush(stdout);
     // Assuming H5Pget_layout returns H5D_CONTIGUOUS, skip cases of H5D_COMPACT, and H5D_CHUNKED
     // skip type checking
     size_t  type_size = H5Tget_size(mem_type_id); 
@@ -1254,8 +1157,17 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
       printf("pInstance is NULL in dataset write\n");
       return -1;
     }
-    char * temp_buf = (char *)malloc(tot_len);
-    if(temp_buf == NULL) printf("error in allocating temp buffer\n");
+    char * temp_buf=NULL;
+    if(tot_len>0){
+    	temp_buf = (char *)malloc(tot_len);
+    }else{
+	printf("total length in dataset write is 0\n");
+	return 0;
+    }
+    if(temp_buf == NULL) {
+	printf("error in allocating temp buffer\n");
+	return 0;
+    }
     int cur_loc = 0;
     int start_offset=0;
     size_t * meta_offlen= (size_t *) malloc (3*sizeof(size_t));
@@ -1281,7 +1193,8 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
     } while(tot_len > 0);
    
 
-
+    printf("rank:%d %s:%u\n",o->my_rank, __func__,__LINE__);
+    fflush(stdout);
     if(no_hyperslab==-1){//TODO: figure out how to check whether hyperslab is used, H5Pget_dxpl_mpio
 	//do independent I/O for each rank
 	PyObject * pydata = NULL; 
@@ -1319,12 +1232,18 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
     	} while(tot_len2 > 0);
 
     	int cur_mi=0;
-   
+        printf("rank:%d %s:%u\n",o->my_rank, __func__,__LINE__);
+        fflush(stdout);
+	if(cur_metal <=3){
+		printf("cur_metal <=3,error\n");
+		return 0;
+	}
     	meta_offlen[1] = meta_offlen[3];//min file offset
     	meta_offlen[2] = meta_offlen[cur_metal-2]+meta_offlen[cur_metal-1] -1;//max file offset
     	meta_offlen[0] = cur_metal;// total length of this array
     	start_offset = meta_offlen[1];//append into dset name to form a unique object name: dsetname_start_offset, e.g., data_offset_32
 	printf("rank:%d, meta len:%d, meta min:%d, meta max:%d\n",o->my_rank, meta_offlen[0],meta_offlen[1],meta_offlen[2]);
+        fflush(stdout);
   	PyObject * pydata = Data_CPY4(PyLong_AsLong(plong_under), temp_buf, num_elem_memory); 
   	pValue = PyObject_CallMethod(pInstance, method_name, "lllllOl", 
 		PyLong_AsLong(plong_under),  mem_type_id, mem_space_id, file_space_id,plist_id, pydata, start_offset);
@@ -1353,6 +1272,7 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
                total_meta+1, receive_counts, displs, MPI_INT,
                0, o->comm);
 	//write total_meta into storage
+	printf("rank:%d %s:%u\n",o->my_rank, __func__,__LINE__);
     	if(o->my_rank ==0) {
 		total_meta[0] = total_meta_length;
     		PyObject * pydata_meta = Data_CPY3((void *)total_meta, total_meta_length+1, 1);
@@ -1360,14 +1280,14 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
      		PyObject_CallMethod(pInstance, method_name, "lllllOl", 
 			PyLong_AsLong(plong_under),  mem_type_id, mem_space_id, 
 		file_space_id,plist_id, pydata_meta, meta_global_mark); 
-		if(total_meta != NULL) free(total_meta);
-       		if(pydata_meta != NULL) Py_DECREF(pydata_meta);
+		//	if(total_meta != NULL) free(total_meta);
+       		//if(pydata_meta != NULL) Py_DECREF(pydata_meta);
     	}
    	//dset_gmeta: len, len_meta1,min_off_meta1, max_off_meta1,len_meta2,min_off_meta2,max_off_meta2, ....
-	if (temp_buf != NULL ) free(temp_buf);
-	if (meta_offlen != NULL) free(meta_offlen);
-	if(receive_counts != NULL) free(receive_counts);
-	if (pydata != NULL) Py_DECREF(pydata);
+	//if (temp_buf != NULL ) free(temp_buf);
+	//if (meta_offlen != NULL) free(meta_offlen);
+	//if(receive_counts != NULL) free(receive_counts);
+	//if (pydata != NULL) Py_DECREF(pydata);
     }
     return 1;     
 }
