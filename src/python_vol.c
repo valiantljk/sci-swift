@@ -24,6 +24,9 @@
 
 #include "python_vol.h"
 #include "inttypes.h"
+#include "timer.h"
+struct timeval start_time[3];
+float elapse[3];
 #define PYTHON 502
 #define NPY_NO_DEPRECATED_API NPY_1_13_API_VERSION
 typedef struct H5VL_python_fapl_t {
@@ -152,6 +155,7 @@ const H5VL_class_t H5VL_python_g = {
 typedef struct H5VL_python_t {
     void  *under_object;
     char * file_name;
+    char * dset_name;
     size_t file_name_len;
     unsigned flags;
     hid_t fcpl_id;
@@ -235,7 +239,7 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
     //TODO: need to write the meta into disk
     //TODO: need to create the root group
     PyObject *pModule, *pClass;
-    PyObject *pValue=NULL; 
+    PyObject *pValue=malloc(sizeof(PyObject)); 
     const char module_name[ ] = "python_vol";
     char class_name[] = "swift";
     char method_name[]= "H5VL_python_file_create";
@@ -253,20 +257,13 @@ H5VL_python_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t f
     if(pInstance == NULL)
        printf("New File instance failed\n");
     else{
-       pValue = PyObject_CallMethod(pInstance, method_name, "sllllll", name, flags, fcpl_id, fapl_id, dxpl_id, 0, 0);
-       PyErr_Print();
-       if (pValue != NULL) {
-	     //printf("------- Result of H5Fopen from python: %ld\n", PyLong_AsLong(pValue));
-             PyObject * rt=PyLong_AsVoidPtr(pValue);
-             void * rt_py = rt;
-	     if (rt_py==NULL) fprintf(stderr, "File create, returned pointer from python is NULL\n");
-             file->under_object = rt_py;
- 	     return (void *) file;
-        }
-        else {
-             fprintf(stderr,"Call failed in H5VL File Create\n");
-             return NULL;
-        }	
+       	pValue = PyObject_CallMethod(pInstance, method_name, "sllllll", name, flags, fcpl_id, fapl_id, dxpl_id, (long)(file->my_rank), 0);
+       	PyErr_Print();
+	if(pValue == NULL) return NULL;	
+	//MPI_Bcast(pValue, 1, MPI_UNSIGNED_LONG, 0, file->comm);
+     	void * rt=PyLong_AsVoidPtr(pValue);
+        file->under_object = rt;
+ 	return (void *) file;
     }
     //printf("------- PYTHON H5Fcreate\n");
     return NULL;
@@ -381,6 +378,8 @@ static herr_t
 H5VL_python_file_close(void *file, hid_t dxpl_id, void **req)
 {
     H5VL_python_t *f = (H5VL_python_t *)file;
+    MPI_Comm_rank(f->comm, &f->my_rank);
+    MPI_Comm_size(f->comm, &f->num_nprocs);
     if(f==NULL || f->under_object==NULL) {
 	return 1;
     }
@@ -391,16 +390,13 @@ H5VL_python_file_close(void *file, hid_t dxpl_id, void **req)
       printf("pInstance is NULL in file close\n");
       return -1;
     }else{
-      pValue = PyObject_CallMethod(pInstance, method_name, "lll", PyLong_AsLong(plong_under), dxpl_id, 0);
-      PyErr_Print();
-      if(pValue !=NULL){
-        free(f);
-	Py_DECREF(pInstance);
-	//printf("cleaning pInstance\n");
+	if (f->my_rank ==0){
+      		pValue = PyObject_CallMethod(pInstance, method_name, "lll", PyLong_AsLong(plong_under), dxpl_id, 0);
+      		PyErr_Print();
+		if(pValue == NULL) return -1;
+	}
 	return 1;
-      }
-    }
-    return -1;
+   }
 }
 /* Group callbacks Implementation*/
 static void *
@@ -572,7 +568,7 @@ H5VL_python_dataset_create(void *obj, H5VL_loc_params_t loc_params, const char *
     dset = (H5VL_python_t *)calloc(1, sizeof(H5VL_python_t));
     H5FD_mpi_comm_info_dup(o->comm, o->info, &dset->comm, &dset->info);
     //printf("number of processes inside pyvol dataset_create:%d\n",o->num_nprocs);
-    PyObject *pValue=NULL;
+    PyObject *pValue=malloc(sizeof(PyObject));
     char method_name[] = "H5VL_python_dataset_create";
     size_t type_size = 0;
     size_t space_size = 0;
@@ -580,64 +576,33 @@ H5VL_python_dataset_create(void *obj, H5VL_loc_params_t loc_params, const char *
     void *type_buf = NULL;
     void *space_buf = NULL;
     H5P_genplist_t *plist = NULL;      /* Property list pointer */
-
-
     plist = (H5P_genplist_t *)H5I_object(dcpl_id);
-  
     import_array();
+    MPI_Comm_rank(o->comm, &o->my_rank);
+    MPI_Comm_size(o->comm, &o->num_nprocs);
     H5VL_DT * dt= malloc(sizeof(H5VL_DT)); //get the dataset size, type
     helper_dt (dcpl_id, dt);
-    //printf("Testing H5VL_DT,%d\n",dt->py_type); 
     npy_intp dtm=dt->ndims; 
     PyObject * py_dims = PyArray_SimpleNewFromData(1, &dtm, NPY_INTP,dt->dims);//TODO: 64 bits, vs 32 bit 
     PyObject * py_maxdims = PyArray_SimpleNewFromData(1, &dtm, NPY_INTP,dt->maxdims );  
-    /* Get the dcpl plist structure */
-    //plist = (H5P_genplist_t *)H5I_object(dcpl_id);
-    //printf("[][][][]dcpl_id:[%lu][%llx]\n",dcpl_id,dcpl_id);
-    /*
-    if(NULL == (plist = (H5P_genplist_t *)H5I_object(dcpl_id)))
-        HGOTO_ERROR(H5E_ATOM, H5E_BADATOM, NULL, "can't find object for ID")
-    */
-    /* get creation properties */
     H5P_get(plist, H5VL_PROP_DSET_TYPE_ID, &type_id);
     H5P_get(plist, H5VL_PROP_DSET_SPACE_ID, &space_id);
-    printf("type_id:%u,space_id:%u\n",type_id,space_id);
-    fflush(stdout);
-    //printf("Get again,type id:[%lu][%llx],space_id:[%lu][%llx]\n",type_id,type_id,space_id,space_id);
-    /*
-    if(H5P_get(plist, H5VL_PROP_DSET_TYPE_ID, &type_id) < 0)
-        HGOTO_ERROR(H5E_PLIST, H5E_CANTGET, NULL, "can't get property value for datatype id")
-    if(H5P_get(plist, H5VL_PROP_DSET_SPACE_ID, &space_id) < 0)
-        HGOTO_ERROR(H5E_PLIST, H5E_CANTGET, NULL, "can't get property value for space id")
-    */
-    fflush(stdout);
-    if(pInstance==NULL){
+   if(pInstance==NULL){
       fprintf(stderr, "pInstance is NULL in group create\n");
       return NULL; 
     }else{
 	pValue = PyObject_CallMethod(pInstance, method_name, "llsllllilOO", 
-		PyLong_AsLong(plong_under), 0, name, dcpl_id, dapl_id, 
-		dxpl_id, 0,dt->ndims,dt->py_type,py_dims, py_maxdims);
-     if(pValue !=NULL){
-        //printf("------- Result of H5Dcreate from python: %ld\n", PyLong_AsLong(pValue));
-        void * rt_py = PyLong_AsVoidPtr(pValue);
-        if (rt_py==NULL) fprintf(stderr, "Dataset create, returned pointer from python is NULL\n");
-        dset->under_object = rt_py;
-
-	/*
-        dset->space_id=H5Scopy(space_id);//space_id;
-	printf("Finally[][][]dset->space_id:[%llx],[%llx]\n",dset->space_id,space_id);
-	fflush(stdout);
-	printf("do h5scopy now, line 681\n");
-	dset->type_id=H5Scopy(type_id);
-	fflush(stdout);
-	*/
-	//dset->type_id = H5Tcopy(type_id);
-	//dset->space_id = H5Tcopy(space_id);
-	dset->space_id =space_id;
-	dset->type_id = type_id;
-	return (void *) dset;
-      }      
+			PyLong_AsLong(plong_under), 0, name, dcpl_id, dapl_id, 
+			dxpl_id,(long)(o->my_rank), dt->ndims, dt->py_type, py_dims, py_maxdims);
+    	if(pValue == NULL){
+	       	printf("pValue retruend from dataset create is NULL\n");
+	}
+	void * rt_py = PyLong_AsVoidPtr(pValue);
+	dset->under_object = rt_py;
+        dset->space_id =space_id;
+	dset->dset_name = HDstrdup(name);
+        dset->type_id = type_id;
+        return (void *) dset;      
     } 
     return NULL;
 
@@ -820,18 +785,14 @@ PyObject * Data_CPY4(long dsetId, void * buf, size_t len)
     if(pInstance!=NULL){
        PyObject * dt_obj= NULL; 
        dt_obj = PyObject_CallMethod(pInstance, dt_name, "l",dsetId);
-	PyErr_Print();
-       if(dt_obj==NULL){
-        fprintf(stderr, "dt_Obj is null\n");
-        return NULL;
-       }
        PyArrayObject * dt_arr=(PyArrayObject *)dt_obj;
        //convert back to c array
-       if(dt_arr->descr->type_num>=0){
+       if(dt_arr->descr!=NULL && dt_arr->descr->type_num>=0){
          npy_intp * dt_if =(npy_intp *) dt_arr->data;
          dtype = dt_if[1];
        }else{
-        printf("dt_arr.type_num:%d is not PyArray_LONG\n",dt_arr->descr->type_num);
+         printf("dt_arr.type_num:%d is not PyArray_LONG\n",dt_arr->descr->type_num);
+	 fflush(stdout);
        }
     }
     else{
@@ -839,6 +800,7 @@ PyObject * Data_CPY4(long dsetId, void * buf, size_t len)
        return NULL;
     }
 
+    //dtype = 1;
     //Create pyobject reference to c buffer
     PyObject * pydata=NULL;
     if (dtype == 0){//int16
@@ -892,10 +854,15 @@ PyObject * Data_CPY3(void * buf, int len, int dtype)
     else if (dtype == 4) { //unsigned int
       pydata = PyArray_SimpleNewFromData(1, &dims, NPY_UINT, buf );
     }
+    else if (dtype == 5){ //unsigned long long
+	pydata = PyArray_SimpleNewFromData(1, &dims, NPY_UINT64, buf );
+    }
     else {
       fprintf(stderr, "Type is not supported for now Jan 31 2018\n");
       return NULL;
     }
+   // printf("returning pydata c\n");
+   // fflush(stdout);
     //convert to C-contiguous array
     PyObject * pydata_c = PyArray_FROM_OF(pydata, NPY_ARRAY_C_CONTIGUOUS);
     return pydata_c;
@@ -1124,8 +1091,8 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
     }
     MPI_Comm_rank(o->comm, &o->my_rank);
     MPI_Comm_size(o->comm, &o->num_nprocs); 
-    printf("rank:%d %s:%u\n",o->my_rank, __func__,__LINE__);
-    fflush(stdout);
+    //printf("rank:%d %s:%u\n",o->my_rank, __func__,__LINE__);
+    //fflush(stdout);
     // Assuming H5Pget_layout returns H5D_CONTIGUOUS, skip cases of H5D_COMPACT, and H5D_CHUNKED
     // skip type checking
     size_t  type_size = H5Tget_size(mem_type_id); 
@@ -1191,10 +1158,10 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
 	cur_loc += io_len;
         mem_i++;
     } while(tot_len > 0);
-   
+    
 
-    printf("rank:%d %s:%u\n",o->my_rank, __func__,__LINE__);
-    fflush(stdout);
+    //printf("rank:%d %s:%u\n",o->my_rank, __func__,__LINE__);
+    //fflush(stdout);
     if(no_hyperslab==-1){//TODO: figure out how to check whether hyperslab is used, H5Pget_dxpl_mpio
 	//do independent I/O for each rank
 	PyObject * pydata = NULL; 
@@ -1232,8 +1199,8 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
     	} while(tot_len2 > 0);
 
     	int cur_mi=0;
-        printf("rank:%d %s:%u\n",o->my_rank, __func__,__LINE__);
-        fflush(stdout);
+        //printf("rank:%d %s:%u\n",o->my_rank, __func__,__LINE__);
+        //fflush(stdout);
 	if(cur_metal <=3){
 		printf("cur_metal <=3,error\n");
 		return 0;
@@ -1242,11 +1209,28 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
     	meta_offlen[2] = meta_offlen[cur_metal-2]+meta_offlen[cur_metal-1] -1;//max file offset
     	meta_offlen[0] = cur_metal;// total length of this array
     	start_offset = meta_offlen[1];//append into dset name to form a unique object name: dsetname_start_offset, e.g., data_offset_32
-	printf("rank:%d, meta len:%d, meta min:%d, meta max:%d\n",o->my_rank, meta_offlen[0],meta_offlen[1],meta_offlen[2]);
+	/*printf("rank:%d, meta len:%d, meta min:%d, meta max:%d\n",o->my_rank, meta_offlen[0],meta_offlen[1],meta_offlen[2]);
+	int imetaol=0;
+	for(imetaol=0; imetaol<meta_offlen[0]; imetaol++){
+		printf("Rank:%d,%d-th meta:%d\n",o->my_rank, imetaol, meta_offlen[imetaol]);
+	}
         fflush(stdout);
+	*/
+	//return 1;
+	double dct1=MPI_Wtime();
   	PyObject * pydata = Data_CPY4(PyLong_AsLong(plong_under), temp_buf, num_elem_memory); 
-  	pValue = PyObject_CallMethod(pInstance, method_name, "lllllOl", 
+	double dct2=MPI_Wtime();
+	if(o->my_rank==0){
+                printf("Dataset:%s:DataCPY_Time:%f\n",o->dset_name, dct2-dct1);
+        }
+	//timer io only
+	double dt1=MPI_Wtime();
+	pValue = PyObject_CallMethod(pInstance, method_name, "lllllOl", 
 		PyLong_AsLong(plong_under),  mem_type_id, mem_space_id, file_space_id,plist_id, pydata, start_offset);
+	double dt2=MPI_Wtime();
+	if(o->my_rank==0){
+		printf("Dataset:%s:Data_Time:%f\n",o->dset_name, dt2-dt1);
+	}
   	// communicate metadata and ask rank 0 to write metadata as one object with name dset_gmeta
     	int elems_cur_rank = meta_offlen[0]; // this includes length of array, min_off, max_off and offset list, thus 1 + 2 + 2*num_elem_file
 	//gather size info from other ranks 
@@ -1255,34 +1239,45 @@ H5VL_python_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
 	//figure out displs and total length
     	int * displs=NULL;
     	int total_meta_length=0;
-    	int * total_meta =NULL;
+    	size_t * total_meta =NULL;
     	if(o->my_rank==0){
      		displs = malloc(o->num_nprocs * sizeof(int));
      		displs[0] = 0; //rank root
      		total_meta_length += receive_counts[0];
+		//printf("displs[%d]:%d,receive_counts:%d\n",0,displs[0],receive_counts[0]);
      		int mi=1;
      		for (mi=1;mi< o->num_nprocs; mi++){
 			displs[mi] = total_meta_length;
+			//printf("displs[%d]:%d,receive_counts:%d\n",mi,displs[mi],receive_counts[mi]);
 			total_meta_length += receive_counts[mi];
      		}
-    		total_meta = malloc((total_meta_length+1) * sizeof(int)); 
+    		total_meta = malloc((total_meta_length+1) * sizeof(size_t)); 
     	}
     	//gather all metadata into total_meta
-    	MPI_Gatherv(meta_offlen, elems_cur_rank, MPI_INT,
-               total_meta+1, receive_counts, displs, MPI_INT,
+    	MPI_Gatherv(meta_offlen, elems_cur_rank, MPI_UNSIGNED_LONG_LONG,
+               total_meta+1, receive_counts, displs, MPI_UNSIGNED_LONG_LONG,
                0, o->comm);
 	//write total_meta into storage
-	printf("rank:%d %s:%u\n",o->my_rank, __func__,__LINE__);
+	//printf("rank:%d %s:%u\n",o->my_rank, __func__,__LINE__);
+	double mt1=MPI_Wtime();
     	if(o->my_rank ==0) {
 		total_meta[0] = total_meta_length;
-    		PyObject * pydata_meta = Data_CPY3((void *)total_meta, total_meta_length+1, 1);
+          /*      int gmetaol=0;
+                for(gmetaol=0;gmetaol<total_meta_length+1;gmetaol++){
+                        printf("%d-th Gmeta=%d\n",gmetaol,total_meta[gmetaol]);
+                }
+        */
+    		PyObject * pydata_meta = Data_CPY3((void *)total_meta, total_meta_length+1, 5);
      		long meta_global_mark=-2;
+		
      		PyObject_CallMethod(pInstance, method_name, "lllllOl", 
 			PyLong_AsLong(plong_under),  mem_type_id, mem_space_id, 
 		file_space_id,plist_id, pydata_meta, meta_global_mark); 
 		//	if(total_meta != NULL) free(total_meta);
        		//if(pydata_meta != NULL) Py_DECREF(pydata_meta);
     	}
+	double mt2 = MPI_Wtime(); 
+	if(o->my_rank==0)printf( "Dataset:%s:Meta time:%f\n",o->dset_name, mt2 - mt1 );
    	//dset_gmeta: len, len_meta1,min_off_meta1, max_off_meta1,len_meta2,min_off_meta2,max_off_meta2, ....
 	//if (temp_buf != NULL ) free(temp_buf);
 	//if (meta_offlen != NULL) free(meta_offlen);
@@ -1295,24 +1290,22 @@ static herr_t
 H5VL_python_dataset_close(void *dset, hid_t dxpl_id, void **req)
 {
     H5VL_python_t *d = (H5VL_python_t *)dset;
+    MPI_Comm_rank(d->comm, &d->my_rank);
+    MPI_Comm_size(d->comm, &d->num_nprocs);
     PyObject * plong_under = PyLong_FromVoidPtr(d->under_object);    
     PyObject *pValue=NULL;
     char method_name [] ="H5VL_python_dataset_close";
     if(pInstance==NULL){
       printf("pInstance is NULL in dataset close\n");
-      return 1;
+      return -1;
     }else{
-      //printf("in C, dataset id is %ld\n",PyLong_AsLong(plong_under));
-      pValue = PyObject_CallMethod(pInstance, method_name, "lll", PyLong_AsLong(plong_under), dxpl_id, 0);
-      PyErr_Print(); 
-      if(pValue !=NULL){
-        //printf("------- Result of H5Dclose from python: %ld\n", PyLong_AsLong(pValue));
-        return 1;
-      }
-      else
-        return -1;
-    }
-    //printf ("------- PYTHON H5Dclose\n");
-    free(d);
-    return 1;
+	if(d->my_rank ==0){
+      		pValue = PyObject_CallMethod(pInstance, method_name, "lll", PyLong_AsLong(plong_under), dxpl_id, 0);
+      		PyErr_Print(); 
+      		if(pValue ==NULL){
+			return -1; 
+		}
+	}
+	return 1;
+   }
 }

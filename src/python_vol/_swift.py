@@ -38,7 +38,8 @@ class H5PVol:
 				self.obj_curid = 1
 				self.obj_list = {}  # reset
 				# create a container for this file, container name = file name
-				swift_container_create(name)
+				if(req==0):
+					swift_container_create(name)
 				# save container_name in the runtime dictionary, at user level, code can get back container by the returned id,
 				self.obj_list[self.obj_curid] = name
 				curid = self.obj_curid
@@ -158,27 +159,22 @@ class H5PVol:
 			z = dst_parent_obj + '\\' + name
 			dst_container_name = z[:z.find(z.split('\\')[-1]) - 1]
 			dst_obj_name = z.split('\\')[-1]
-			try:
-				sci_obj_source = numpy.empty(
-				dims, dtype=self.dt_types[pytype], order='C')
-				swift_object_create(container=dst_container_name, sciobj_name=dst_obj_name)
-				sci_obj_meta = {}
-				sci_obj_meta['type'] = str(self.dt_types[pytype])
-				sci_obj_meta['dims'] = numpy.array_str(dims)
-				sci_obj_meta['ndim'] = str(ndims)
-				r1 = swift_metadata_create(container=dst_container_name, sciobj_name=dst_obj_name, sciobj_metadata=sci_obj_meta)
-				# TODO: append shape, type info into object's metadata
-				curid = self.obj_curid
-				# insert new object#TODO: need full name or not? April Fool Day Puzzle
-				self.obj_list[curid] = z
-				self.obj_curid = curid + 1  # update current index
-				print ('dset created')
-				return curid
-			except Exception as e:
-				print('dataset create in python failed with error: ', e)
-				return -1
+			sci_obj_source = numpy.empty(dims, dtype=self.dt_types[pytype], order='C')
+			#swift_object_create(container=dst_container_name, sciobj_name=dst_obj_name)
+			sci_obj_meta = {}
+			sci_obj_meta['type'] = str(self.dt_types[pytype])
+			sci_obj_meta['dims'] = numpy.array_str(dims)
+			sci_obj_meta['ndim'] = str(ndims)
+			#swift_metadata_create(container=dst_container_name, sciobj_name=dst_obj_name, sciobj_metadata=sci_obj_meta)
+			post_options ={'meta':sci_obj_meta}
+			if (req==0):
+				swift_object_create(container=dst_container_name, sciobj_name=dst_obj_name, options=post_options)
+			curid = self.obj_curid
+			self.obj_list[curid] = z
+			self.obj_curid = curid + 1  # update current index
+			return curid
 		except Exception as e:
-			print('retrieve obj failed in python dataset create:', e)
+			print ('Failure in dataset create at python layer:',e)
 			return -1
 	def H5VL_python_dt_info(self, obj_id):
 		try:
@@ -205,24 +201,24 @@ class H5PVol:
 			pass
 
 	def H5VL_python_dataset_write(self, obj_id, mem_type_id, mem_space_id, file_space_id, plist_id, buf, req):
-	# print ("-----------------ENTER Dataset Write-----------------")
+		# print ("-----------------ENTER Dataset Write-----------------")
 		try:
 			dst_parent_obj = self.obj_list[obj_id]
 			z = dst_parent_obj
 			dst_container_name = z[:z.find(z.split('\\')[-1]) - 1]
 			dst_object_name = z.split('\\')[-1]
-			print ('in vol, writting dst:%s in container:%s'%(dst_object_name,dst_container_name))
 			try:
-				metadata = swift_metadata_get(container=dst_container_name, sciobj_name=dst_object_name)
+				#metadata = swift_metadata_get(container=dst_container_name, sciobj_name=dst_object_name)
 				if (req >= 0):
-					dst_object_name = dst_object_name + '_' + str(req)  # data of this hyperslab block, ended with start offset
+					# data of this hyperslab block, ended with start offset
+					dst_object_name = dst_object_name + '_' + str(req) 
 				if (req == -2):
-					dst_object_name = dst_object_name + '_' + 'meta'  # meta of this hyperslab block
+					# meta of this hyperslab block
+					dst_object_name = dst_object_name + '_' + 'meta'
 				if (req == -3):
-					dst_object_name = dst_object_name + '_' + 'simple'  # no hyperslab enabled
-				print ('--->writing obj:%s'%dst_object_name)
+					# no hyperslab enabled
+					dst_object_name = dst_object_name + '_' + 'simple' 
 				swift_object_create(container=dst_container_name, sciobj_name=dst_object_name, sciobj_source=buf)
-				#sci_obj_meta = {}
 				curid = self.obj_curid
 				return curid
 			except Exception as e:
@@ -246,10 +242,8 @@ class H5PVol:
 			dst_container_name = z[:z.find(z.split('\\')[-1]) - 1]
 			dst_object_name = z.split('\\')[-1]
 			try:
-			#	print ('container:[%s]obj:[%s], req:%d'%(dst_container_name, dst_object_name,req))			
 				metadata = swift_metadata_get(container=dst_container_name, sciobj_name=dst_object_name)
 				curtype = str(metadata['type'])
-			#	print ("meta:",metadata)
 				if (req >= 0):
 					dst_object_name = dst_object_name + '_' + str(req)  # data of this hyperslab block, ended with start offset
 				if (req == -2):

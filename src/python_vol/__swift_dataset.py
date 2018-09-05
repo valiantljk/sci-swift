@@ -7,7 +7,7 @@
 try:
 	from __swift_connect import swift_connect
 	import numpy
-        import sys
+        import sys 
 	from StringIO import StringIO
 	from swiftclient.service import SwiftError, SwiftService, SwiftUploadObject
 except Exception as e:
@@ -31,43 +31,34 @@ def swift_object_create(container, sciobj_name, sciobj_source=None, options=None
 		None
 	"""
 	try:	
-		with SwiftService(options = options) as swift:
-			try:
+		if (options == None):
+			options = {'object_uu_threads': 1}
+		else:
+			add_options = {'object_uu_threads': 1}
+			options.update(add_options)
+			#print ('final options are:',options)
+		try:	
+			with SwiftService(options = options) as swift:
 				objs = []
-				post_options={}
-				try:
-					meta_old=swift_metadata_get(container=container,sciobj_name=sciobj_name)
-			        	sci_obj_meta={}
-					sci_obj_meta['type'] = str(meta_old['type'])
-                                	sci_obj_meta['dims'] = str(meta_old['dims'])
-                                	sci_obj_meta['ndim'] = str(meta_old['ndim'])
-					post_options={"meta": sci_obj_meta, "long": "True"}
-				except Exception as e:
-					pass
 				if sciobj_source is None:
-					try:	
-						objs = [SwiftUploadObject(
-							None, sciobj_name
-							)]
-					except Exception as e:
-						print ('construct object error: ',e)
+					objs = [SwiftUploadObject(None, sciobj_name)]
 				else:
 					objs = sci_swift_object(sciobj_name, sciobj_source)
 				try:
-					r=swift.upload(container=container,objects=objs)
-				except Exception as e:
-					print ("swift.upload: ",e)
-				try:
+					r = swift.upload(container=container, objects=objs)
 					for ri in r:
 						if not ri['success']:
-							print ('object upload error')
-							print ('error:%s',r['error'])
+							print ('failed in uploading')
+							break
 				except Exception as e:
-					print ('ri[''] failed, ',e)
-			except Exception as e:
-				print ("object create error:",e)
+					print ('swift.upload:',e)
+					pass
+		except Exception as e:
+			print ('swift service failed:',e)
+			pass
 	except Exception as e:
 		print ("swift object create initialize failed:",e)
+		pass
 def swift_object_download(container, sciobj_name, sciobj_dst=None, dtype=None, options=None):
 	conn= swift_connect()
 	container.replace('/','\\')
@@ -140,6 +131,7 @@ def swift_metadata_create(container, sciobj_name, sciobj_metadata,options=None):
 						print ('error:%s',r['error'])
 			except Exception as e:
 				print ('ri[''] failed, ',e)
+				pass
 		except Exception as e: 
 			print ('stat error: ',e)
 
@@ -164,5 +156,5 @@ def swift_metadata_get(container,sciobj_name, options=None):
 					meta_data['ndim']=item['headers']['x-object-meta-ndim']
 			return meta_data
 		except Exception as e:
-			#print ('stat error:',e)
+			print ('stat error:',e)
 			pass
