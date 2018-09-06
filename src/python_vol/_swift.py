@@ -253,6 +253,8 @@ class H5PVol:
 				#x = swift_object_download(container=dst_container_name, sciobj_name=dst_object_name,dtype=curtype)#.reshape(buf.shape)
 				x = swift_object_download(container=dst_container_name, sciobj_name=dst_object_name)
 			#	print ("data:",x)
+				if(req == -2):
+					print ("data:",x)
 				x = numpy.asarray(x, dtype='int64')
 				return x
 			except Exception as e:
@@ -298,6 +300,20 @@ class H5PVol:
 			return 1
 		except Exception as e:
 			pass
+	def H5VL_python_dstobj_scan_simulate(self, obj_id, global_meta, meta_offlen, req):
+		try:
+			dst_parent_obj = self.obj_list[obj_id]
+			z = dst_parent_obj.replace("/", "\\")
+			dst_container_name = z[:z.find(z.split('\\')[-1]) - 1]
+			dst_object_name = z.split('\\')[-1]
+			obj_off = req * 1048576 # rank zero will be _0, rank 1 will be _1048576, rank 2 will be _2097152, etc
+			dst_object_name = dst_object_name + '_' + str(obj_off)
+			curtype='float32'
+			x = swift_object_download(container=dst_container_name, sciobj_name=dstobj_name, dtype=curtype)
+			return x
+		except Exception as e:
+			print ('read error in python',e)
+			return -1	
 
 	def Dataset_object_internal_read(self, obj_id, dstobj_name):
 		'''
@@ -318,7 +334,7 @@ class H5PVol:
 				curtype = str(metadata['type'])
 				x = swift_object_download(
 				container=dst_container_name, sciobj_name=dstobj_name, dtype=curtype)
-				#x = numpy.asarray(x, dtype='int64')
+				x = numpy.asarray(x, dtype=curtype)
 				return x
 			except Exception as e:
 				print('dataset read in python failed with error: ', e)

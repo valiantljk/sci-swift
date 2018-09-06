@@ -1036,9 +1036,9 @@ H5VL_python_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
     py_gmeta = Data_CPY3(re_gmeta, gmeta_len, 1); //convert into pyobject
     PyObject * py_meta_offlen = NULL;
     py_meta_offlen = Data_CPY3(meta_offlen, gmeta_len, 1);//convert into pyobject
-    char method_name_scan[] = "H5VL_python_dstobj_scan";
+    char method_name_scan[] = "H5VL_python_dstobj_scan_simulate";
     PyObject * pValue_cdata =NULL;
-    pValue_cdata = PyObject_CallMethod(pInstance, method_name_scan, "lOOl",PyLong_AsLong(plong_under), py_gmeta,py_meta_offlen,0);
+    pValue_cdata = PyObject_CallMethod(pInstance, method_name_scan, "lOOl",PyLong_AsLong(plong_under), py_gmeta,py_meta_offlen,o->my_rank);
     printf("rank:%d read done, %s:%u\n",o->my_rank, __func__,__LINE__);
     MPI_Barrier(o->comm);
     if(pValue_cdata !=NULL){
